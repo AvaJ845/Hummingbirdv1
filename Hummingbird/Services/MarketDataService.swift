@@ -132,7 +132,8 @@ actor MarketDataService: MarketDataProviding {
         components.path = "/v8/finance/chart/\(ticker)"
         components.queryItems = [
             URLQueryItem(name: "interval", value: "1d"),
-            URLQueryItem(name: "range", value: days <= 90 ? "3mo" : "6mo")
+            URLQueryItem(name: "range", value: days <= 90 ? "3mo" : "6mo"),
+            URLQueryItem(name: "includeAdjustedClose", value: "true")
         ]
 
         guard let url = components.url else { throw MarketDataError.invalidURL }

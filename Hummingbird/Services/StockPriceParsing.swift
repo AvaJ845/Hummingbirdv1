@@ -17,26 +17,42 @@ enum StockPriceParsing {
             throw MarketDataError.notFound(ticker)
         }
 
-        var points: [PricePoint] = []
-        points.reserveCapacity(min(timestamps.count, closes.count))
+        // Prefer split/dividend-adjusted close so corporate actions don't inject
+        // artificial jumps into the trend/drift math. Fall back to raw close.
+        let adjusted = result.indicators.adjclose?.first?.adjclose
 
-        for (timestamp, close) in zip(timestamps, closes) {
-            guard let close, close > 0 else { continue }
+        var points: [PricePoint] = []
+        let usableCount = min(timestamps.count, closes.count)
+        points.reserveCapacity(usableCount)
+
+        for index in 0..<usableCount {
+            let adjustedClose = (adjusted != nil && index < adjusted!.count) ? adjusted![index] : nil
+            guard let price = firstValidPrice(adjustedClose, closes[index]) else { continue }
             points.append(
                 PricePoint(
-                    date: Date(timeIntervalSince1970: TimeInterval(timestamp)),
-                    close: close
+                    date: Date(timeIntervalSince1970: TimeInterval(timestamps[index])),
+                    close: price
                 )
             )
         }
 
         guard !points.isEmpty else { throw MarketDataError.notFound(ticker) }
+        // Yahoo returns ascending time; sort defensively so `suffix` is the most recent.
+        let ordered = points.sorted { $0.date < $1.date }
         return PriceSeries(
             symbol: ticker,
             assetClass: .stock,
-            points: Array(points.suffix(days)),
+            points: Array(ordered.suffix(days)),
             isSample: false
         )
+    }
+
+    /// First positive, finite candidate (adjusted close preferred over raw close).
+    private static func firstValidPrice(_ candidates: Double?...) -> Double? {
+        for value in candidates {
+            if let value, value.isFinite, value > 0 { return value }
+        }
+        return nil
     }
 }
 
@@ -56,9 +72,14 @@ private struct YahooChartResponse: Decodable {
 
     struct Indicators: Decodable {
         let quote: [Quote]
+        let adjclose: [AdjClose]?
     }
 
     struct Quote: Decodable {
         let close: [Double?]
+    }
+
+    struct AdjClose: Decodable {
+        let adjclose: [Double?]
     }
 }

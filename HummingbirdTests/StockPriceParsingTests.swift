@@ -27,6 +27,54 @@ final class StockPriceParsingTests: XCTestCase {
         XCTAssertFalse(series.isSample)
     }
 
+    func testParseYahooChartPrefersAdjustedClose() throws {
+        // Raw close shows a 2:1 split jump (200 -> 100); adjusted close is smooth.
+        let json = """
+        {
+          "chart": {
+            "result": [{
+              "timestamp": [1704153600, 1704240000, 1704326400],
+              "indicators": {
+                "quote": [{ "close": [200.0, 100.0, 101.0] }],
+                "adjclose": [{ "adjclose": [100.0, 100.0, 101.0] }]
+              }
+            }]
+          }
+        }
+        """.data(using: .utf8)!
+
+        let series = try StockPriceParsing.parseYahooChart(json, ticker: "AAPL", days: 30)
+
+        XCTAssertEqual(series.points.count, 3)
+        // Adjusted close removes the artificial split jump.
+        XCTAssertEqual(series.points[0].close, 100.0, accuracy: 0.0001)
+        XCTAssertEqual(series.points[1].close, 100.0, accuracy: 0.0001)
+        XCTAssertEqual(series.points[2].close, 101.0, accuracy: 0.0001)
+    }
+
+    func testParseYahooChartFallsBackToRawCloseWhenAdjustedMissing() throws {
+        // adjclose present but with a null hole → that row uses raw close.
+        let json = """
+        {
+          "chart": {
+            "result": [{
+              "timestamp": [1704153600, 1704240000],
+              "indicators": {
+                "quote": [{ "close": [185.5, 187.1] }],
+                "adjclose": [{ "adjclose": [null, 186.0] }]
+              }
+            }]
+          }
+        }
+        """.data(using: .utf8)!
+
+        let series = try StockPriceParsing.parseYahooChart(json, ticker: "AAPL", days: 30)
+
+        XCTAssertEqual(series.points.count, 2)
+        XCTAssertEqual(series.points[0].close, 185.5, accuracy: 0.0001) // raw fallback
+        XCTAssertEqual(series.points[1].close, 186.0, accuracy: 0.0001) // adjusted
+    }
+
     func testParseYahooChartUnknownSymbol() {
         let json = """
         { "chart": { "result": null, "error": { "code": "Not Found", "description": "No data found" } } }
