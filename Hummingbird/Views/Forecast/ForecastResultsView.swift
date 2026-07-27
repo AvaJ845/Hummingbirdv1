@@ -7,6 +7,15 @@ struct ForecastResultsView: View {
     let entitlements: EntitlementStore
     let onUnlock: () -> Void
     var onCompareMethods: (() -> Void)? = nil
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Two-up metric tiles side by side normally; stacked at accessibility sizes
+    /// so each value keeps full width and stays legible.
+    private var metricLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 10))
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -110,7 +119,7 @@ struct ForecastResultsView: View {
 
     private var compactMetrics: some View {
         let change = forecast.expectedChange
-        return HStack(spacing: 10) {
+        return metricLayout {
             MetricTile(
                 title: "Now",
                 value: (forecast.lastClose ?? 0).asCurrency(),
@@ -130,7 +139,7 @@ struct ForecastResultsView: View {
     private var advancedMetrics: some View {
         let change = forecast.expectedChange
         return VStack(spacing: 10) {
-            HStack(spacing: 10) {
+            metricLayout {
                 MetricTile(
                     title: "Current",
                     value: (forecast.lastClose ?? 0).asCurrency(),
@@ -144,7 +153,7 @@ struct ForecastResultsView: View {
                     valueColor: Theme.changeColor(change)
                 )
             }
-            HStack(spacing: 10) {
+            metricLayout {
                 MetricTile(
                     title: "Projected change",
                     value: change?.asSignedPercent() ?? "—",
@@ -318,6 +327,7 @@ struct ChartLegend: View {
 
 struct ForecastDetailList: View {
     let forecast: Forecast
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Card {
@@ -331,10 +341,12 @@ struct ForecastDetailList: View {
                             Spacer()
                             Text(point.mean.asCurrency())
                                 .font(.subheadline.weight(.medium))
-                            Text("±\(point.bandHalfWidth.asCurrency(maximumFractionDigits: 0))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 70, alignment: .trailing)
+                            if !dynamicTypeSize.isAccessibilitySize {
+                                Text("±\(point.bandHalfWidth.asCurrency(maximumFractionDigits: 0))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 70, alignment: .trailing)
+                            }
                         }
                         .padding(.vertical, 8)
                         .accessibilityElement(children: .combine)

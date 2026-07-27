@@ -10,6 +10,7 @@ struct ModelDisagreementCard: View {
     var bestRecentModelID: String? = nil
     let onSelect: (ForecastModel) -> Void
     let onUnlock: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var changes: [Double] {
         visiblePreviews.map(\.expectedChange)
@@ -23,17 +24,15 @@ struct ModelDisagreementCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label(
-                        easyMode ? "Do the methods agree?" : "Method comparison",
-                        systemImage: "arrow.left.arrow.right"
-                    )
-                    .font(.headline.weight(.semibold))
-                    Spacer()
-                    if let spread {
-                        Text("Differ by \(spread.asSignedPercent())")
-                            .font(.caption.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(.secondary)
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        comparisonTitle
+                        Spacer()
+                        differBy
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        comparisonTitle
+                        differBy
                     }
                 }
 
@@ -99,10 +98,13 @@ struct ModelDisagreementCard: View {
                             Text(preview.expectedChange.asSignedPercent())
                                 .font(.subheadline.monospacedDigit())
                                 .foregroundStyle(Theme.changeColor(preview.expectedChange))
-                            if !easyMode {
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                            if !easyMode, !dynamicTypeSize.isAccessibilitySize {
                                 Text(preview.targetPrice.asCurrency())
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(.secondary)
+                                    .lineLimit(1)
                                     .frame(width: 72, alignment: .trailing)
                             }
                         }
@@ -136,6 +138,22 @@ struct ModelDisagreementCard: View {
     private var bestPreview: ModelForecastPreview? {
         guard let bestRecentModelID else { return nil }
         return visiblePreviews.first { $0.model.id == bestRecentModelID }
+    }
+
+    private var comparisonTitle: some View {
+        Label(
+            easyMode ? "Do the methods agree?" : "Method comparison",
+            systemImage: "arrow.left.arrow.right"
+        )
+        .font(.headline.weight(.semibold))
+    }
+
+    @ViewBuilder private var differBy: some View {
+        if let spread {
+            Text("Differ by \(spread.asSignedPercent())")
+                .font(.caption.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

@@ -77,20 +77,20 @@ struct ForecastInputCard: View {
 
     private var horizonSlider: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Projection horizon")
-                    .font(.subheadline.weight(.medium))
-                Spacer()
-                Text("\(viewModel.horizon) days")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .contentTransition(.numericText())
-                    .accessibilityHidden(true)
-                if !entitlements.isPro {
-                    Button(action: onUnlock) {
-                        ProBadge()
+            // Stacks to two lines when the label + value can't fit on one (large text).
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    horizonTitle
+                    Spacer()
+                    horizonValue
+                    horizonProBadge
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    horizonTitle
+                    HStack(spacing: 8) {
+                        horizonValue
+                        horizonProBadge
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
@@ -111,6 +111,28 @@ struct ForecastInputCard: View {
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
+        }
+    }
+
+    @ViewBuilder private var horizonTitle: some View {
+        Text("Projection horizon")
+            .font(.subheadline.weight(.medium))
+    }
+
+    @ViewBuilder private var horizonValue: some View {
+        Text("\(viewModel.horizon) days")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .contentTransition(.numericText())
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder private var horizonProBadge: some View {
+        if !entitlements.isPro {
+            Button(action: onUnlock) {
+                ProBadge()
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -145,6 +167,8 @@ struct ForecastInputCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Method: \(viewModel.model.name), \(viewModel.model.familyLabel)")
         .accessibilityHint("Opens method picker")
     }
 
