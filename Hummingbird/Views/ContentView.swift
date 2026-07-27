@@ -7,6 +7,7 @@ struct ContentView: View {
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let store = EntitlementStore()
@@ -178,6 +179,20 @@ struct ContentView: View {
         }
         .task {
             viewModel.refreshIndicators()
+        }
+        .onChange(of: viewModel.hasResult) { _, hasResult in
+            if hasResult, scenePhase == .active {
+                viewModel.beginAutoRefresh()
+            } else if !hasResult {
+                viewModel.endAutoRefresh()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, viewModel.hasResult {
+                viewModel.beginAutoRefresh()
+            } else if phase != .active {
+                viewModel.endAutoRefresh()
+            }
         }
         .sensoryFeedback(.success, trigger: viewModel.forecastGeneration)
         .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.8), trigger: dictation.phase == .listening)

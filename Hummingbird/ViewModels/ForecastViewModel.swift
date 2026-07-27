@@ -57,6 +57,10 @@ final class ForecastViewModel {
     private(set) var indicatorSnapshots: [EconomicSnapshot] = []
     /// Bumps on each successful forecast so UI can fire sensory feedback.
     private(set) var forecastGeneration = 0
+    /// True while a silent background price refresh is in flight (no full-screen spinner).
+    private(set) var isRefreshing = false
+    /// Timestamp of the most recent successful price load (initial run or auto-refresh).
+    private(set) var lastUpdated: Date?
     /// Set when the user hits a Pro gate — UI presents the paywall.
     var pendingPaywallReason: String?
 
@@ -104,11 +108,15 @@ final class ForecastViewModel {
         return max - min
     }
 
+    /// How often the loaded ticker silently re-fetches its latest price.
+    let autoRefreshInterval: TimeInterval = 60
+
     private let service: any MarketDataProviding
     private let economicService: any EconomicDataProviding
     private let entitlements: EntitlementStore
     private var runTask: Task<Void, Never>?
     private var indicatorTask: Task<Void, Never>?
+    private var autoRefreshTask: Task<Void, Never>?
 
     init(
         service: any MarketDataProviding = MarketDataService(),
@@ -209,6 +217,53 @@ final class ForecastViewModel {
         recomputeForecast()
     }
 
+    // MARK: - Auto refresh
+
+    /// Begin periodic silent refreshes of the loaded ticker's latest price.
+    /// Idempotent — a no-op if a loop is already running.
+    func beginAutoRefresh() {
+        guard autoRefreshTask == nil else { return }
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                let interval = self?.autoRefreshInterval ?? 60
+                try? await Task.sleep(for: .seconds(interval))
+                guard let self, !Task.isCancelled else { break }
+                await self.silentRefresh()
+            }
+        }
+    }
+
+    /// Stop the auto-refresh loop (e.g. when results clear or the app backgrounds).
+    func endAutoRefresh() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
+    }
+
+    /// Re-fetch the currently displayed asset's price without the full-screen
+    /// loading state, then recompute the projection in place. Refreshes the
+    /// *loaded* series (not the input field), and swallows failures so the last
+    /// good result stays on screen.
+    func silentRefresh() async {
+        guard let current = series, hasResult, !isLoading, !isRefreshing else { return }
+        guard model.status.isAvailable, entitlements.canUse(model: model) else { return }
+
+        isRefreshing = true
+        defer { isRefreshing = false }
+
+        do {
+            let fetched = try await service.history(symbol: current.symbol, assetClass: current.assetClass)
+            guard !Task.isCancelled, fetched.isForecastable else { return }
+            // Bail if the user loaded a different asset while this was in flight.
+            guard let now = series, now.symbol == current.symbol, now.assetClass == current.assetClass else { return }
+            series = fetched
+            usingSampleData = fetched.isSample
+            recomputeForecast()
+            lastUpdated = Date()
+        } catch {
+            // Silent — keep showing the last good data on transient failures.
+        }
+    }
+
     private func performRun(symbol: String) async {
         isLoading = true
         errorMessage = nil
@@ -243,6 +298,7 @@ final class ForecastViewModel {
                 macro: activeMacro
             )
             forecastGeneration += 1
+            lastUpdated = Date()
         } catch is CancellationError {
             return
         } catch {

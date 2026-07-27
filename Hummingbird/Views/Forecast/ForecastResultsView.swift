@@ -68,13 +68,16 @@ struct ForecastResultsView: View {
 
     private func sketchCard(easyMode: Bool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .top) {
                 Text(easyMode ? "Price sketch" : viewModel.symbol.uppercased())
                     .font(.title3.weight(.semibold))
                 Spacer()
-                Text("\(forecast.model.name) · \(viewModel.horizon)d")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 4) {
+                    LiveStatusBadge(lastUpdated: viewModel.lastUpdated, isRefreshing: viewModel.isRefreshing)
+                    Text("\(forecast.model.name) · \(viewModel.horizon)d")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
             }
 
             ForecastChart(forecast: forecast)
@@ -143,6 +146,49 @@ struct ForecastResultsView: View {
             }
         }
         .animation(.snappy(duration: 0.25), value: forecast.targetPrice)
+    }
+}
+
+/// Small "Live" pill showing that the loaded ticker auto-updates, plus how long
+/// ago the last price landed. Shows a spinner while a refresh is in flight.
+struct LiveStatusBadge: View {
+    let lastUpdated: Date?
+    let isRefreshing: Bool
+    @State private var pulse = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if isRefreshing {
+                ProgressView()
+                    .controlSize(.mini)
+            } else {
+                Circle()
+                    .fill(Theme.up)
+                    .frame(width: 6, height: 6)
+                    .opacity(pulse ? 0.3 : 1)
+                    .accessibilityHidden(true)
+            }
+
+            Group {
+                if let lastUpdated {
+                    Text("Live · ") + Text(lastUpdated, style: .relative)
+                } else {
+                    Text("Live")
+                }
+            }
+            .font(.caption2.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
+                pulse = true
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(isRefreshing ? "Updating live price" : "Live price, updates automatically")
     }
 }
 
