@@ -1,0 +1,29 @@
+name: Hummingbird
+options:
+  bundleIdPrefix: com.hummingbird
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    GENERATE_INFOPLIST_FILE: YES
+    ENABLE_PREVIEWS: YES
+targets:
+  Hummingbird:
+    type: application
+    platform: iOS
+    sources:
+      - path: Hummingbird
+    settings:
+      base:
+        PRODUCT_NAME: Hummingbird
+        PRODUCT_BUNDLE_IDENTIFIER: com.hummingbird.app
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_CFBundleDisplayName: Hummingbird
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
