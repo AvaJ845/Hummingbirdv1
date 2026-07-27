@@ -5,6 +5,7 @@ struct ForecastResultsView: View {
     @Bindable var viewModel: ForecastViewModel
     let forecast: Forecast
     let entitlements: EntitlementStore
+    @Bindable var watchlist: WatchlistStore
     let onUnlock: () -> Void
     var onCompareMethods: (() -> Void)? = nil
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -22,6 +23,8 @@ struct ForecastResultsView: View {
             if viewModel.usingSampleData {
                 SampleDataBanner()
             }
+
+            watchToggle
 
             // Hero beat — do the methods agree? (Fellow + DE ask)
             if !viewModel.modelPreviews.isEmpty {
@@ -78,6 +81,27 @@ struct ForecastResultsView: View {
                 .tint(Theme.accent)
                 .accessibilityHint("Opens the full method list")
             }
+        }
+    }
+
+    @ViewBuilder private var watchToggle: some View {
+        if let item = viewModel.currentWatchItem {
+            let isWatched = watchlist.contains(symbol: item.symbol, assetClass: item.assetClass)
+            Button {
+                watchlist.toggle(symbol: item.symbol, assetClass: item.assetClass, displayName: item.title)
+                if let series = viewModel.loadedSeries,
+                   let snapshot = WatchlistIntelligence.snapshot(for: item, series: series) {
+                    watchlist.saveSnapshot(snapshot)
+                }
+            } label: {
+                Label(isWatched ? "On your watchlist" : "Add to watchlist",
+                      systemImage: isWatched ? "star.fill" : "star")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(isWatched ? Theme.accent : .secondary)
+            .accessibilityHint(isWatched ? "Removes this asset from your watchlist" : "Saves this asset for glanceable updates")
         }
     }
 

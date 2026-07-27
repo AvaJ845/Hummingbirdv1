@@ -35,14 +35,19 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "**/*.storekit"
+          - "**/*.entitlements"
           - "Resources/Legal/**"
       - path: Hummingbird/Resources/Legal
         buildPhase: resources
         type: folder
+    dependencies:
+      - target: HummingbirdWidget
+        embed: true
     settings:
       base:
         PRODUCT_NAME: Hummingbird
         PRODUCT_BUNDLE_IDENTIFIER: com.hummingbird.app
+        CODE_SIGN_ENTITLEMENTS: Hummingbird/Hummingbird.entitlements
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_CFBundleDisplayName: Hummingbird
@@ -53,6 +58,29 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1,2"
+  HummingbirdWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: HummingbirdWidget
+        excludes:
+          - "**/*.entitlements"
+          - "Info.plist"
+      - path: Hummingbird/Support/AppGroup.swift
+      - path: Hummingbird/Support/Theme.swift
+      - path: Hummingbird/Support/Formatters.swift
+      - path: Hummingbird/Models/Asset.swift
+      - path: Hummingbird/Models/WatchlistItem.swift
+      - path: Hummingbird/Services/SharedStorage.swift
+      - path: Hummingbird/Views/Watchlist/Sparkline.swift
+    settings:
+      base:
+        PRODUCT_NAME: HummingbirdWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.hummingbird.app.widget
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: HummingbirdWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HummingbirdWidget/HummingbirdWidget.entitlements
+        SKIP_INSTALL: YES
   HummingbirdTests:
     type: bundle.unit-test
     platform: iOS

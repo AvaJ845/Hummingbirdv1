@@ -4,6 +4,8 @@ struct ContentView: View {
     @State private var entitlements: EntitlementStore
     @State private var viewModel: ForecastViewModel
     @State private var dictation = DictationController()
+    @State private var watchlist = WatchlistStore()
+    @State private var showWatchlist = false
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
@@ -70,9 +72,26 @@ struct ContentView: View {
                 viewModel.pendingPaywallReason = nil
             }
         }
+        .onChange(of: viewModel.forecastGeneration) { _, _ in
+            saveSnapshotIfWatched()
+        }
+        .sheet(isPresented: $showWatchlist) {
+            WatchlistView(store: watchlist) { item in
+                viewModel.load(item)
+            }
+        }
         .task {
             await entitlements.loadProducts()
         }
+    }
+
+    /// Keep the widget/watchlist snapshot fresh whenever a watched asset is projected.
+    private func saveSnapshotIfWatched() {
+        guard let item = viewModel.currentWatchItem,
+              watchlist.contains(symbol: item.symbol, assetClass: item.assetClass),
+              let series = viewModel.loadedSeries,
+              let snapshot = WatchlistIntelligence.snapshot(for: item, series: series) else { return }
+        watchlist.saveSnapshot(snapshot)
     }
 
     private var home: some View {
@@ -117,6 +136,7 @@ struct ContentView: View {
                         viewModel: viewModel,
                         forecast: forecast,
                         entitlements: entitlements,
+                        watchlist: watchlist,
                         onUnlock: { open(.paywall(reason: "Pro lets you compare every method’s path in one place.")) },
                         onCompareMethods: { open(.models) }
                     )
@@ -144,6 +164,16 @@ struct ContentView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    symbolFocused = false
+                    showWatchlist = true
+                } label: {
+                    Image(systemName: watchlist.items.isEmpty ? "star" : "star.fill")
+                }
+                .disabled(dictation.isActive)
+                .accessibilityLabel("Watchlist")
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if !entitlements.isPro {
                     Button {

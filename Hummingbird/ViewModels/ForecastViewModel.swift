@@ -75,6 +75,22 @@ final class ForecastViewModel {
         return !forecast.isEmpty
     }
 
+    /// The asset currently loaded (from the fetched series, not the input field).
+    var currentWatchItem: WatchlistItem? {
+        guard let series else { return nil }
+        return WatchlistItem(symbol: series.symbol, assetClass: series.assetClass)
+    }
+
+    /// Read-only access to the loaded series (for snapshot building).
+    var loadedSeries: PriceSeries? { series }
+
+    /// Load a saved asset and run it.
+    func load(_ item: WatchlistItem) {
+        assetClass = item.assetClass
+        symbol = item.symbol
+        run()
+    }
+
     var selectedIndicatorCount: Int { selectedIndicatorIDs.count }
 
     var activeMacro: MacroAdjustment {
