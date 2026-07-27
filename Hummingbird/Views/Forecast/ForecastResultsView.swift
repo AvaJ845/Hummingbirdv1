@@ -73,7 +73,12 @@ struct ForecastResultsView: View {
                     .font(.title3.weight(.semibold))
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
-                    LiveStatusBadge(lastUpdated: viewModel.lastUpdated, isRefreshing: viewModel.isRefreshing)
+                    LiveStatusBadge(
+                        label: viewModel.liveStatusLabel,
+                        isLive: viewModel.isPriceLive,
+                        lastUpdated: viewModel.lastUpdated,
+                        isRefreshing: viewModel.isRefreshing
+                    )
                     Text("\(forecast.model.name) · \(viewModel.horizon)d")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -105,6 +110,7 @@ struct ForecastResultsView: View {
                 value: (forecast.lastClose ?? 0).asCurrency(),
                 subtitle: "Last close"
             )
+            .priceFlash(token: viewModel.priceUpdateToken, direction: viewModel.priceDirection)
             MetricTile(
                 title: "Sketch",
                 value: change?.asSignedPercent() ?? "—",
@@ -124,6 +130,7 @@ struct ForecastResultsView: View {
                     value: (forecast.lastClose ?? 0).asCurrency(),
                     subtitle: "Last close"
                 )
+                .priceFlash(token: viewModel.priceUpdateToken, direction: viewModel.priceDirection)
                 MetricTile(
                     title: "Projected",
                     value: (forecast.targetPrice ?? 0).asCurrency(),
@@ -149,13 +156,18 @@ struct ForecastResultsView: View {
     }
 }
 
-/// Small "Live" pill showing that the loaded ticker auto-updates, plus how long
+/// Small status pill: shows whether the loaded ticker is auto-updating live
+/// (pulsing green dot) or the market is closed (steady grey dot), plus how long
 /// ago the last price landed. Shows a spinner while a refresh is in flight.
 struct LiveStatusBadge: View {
+    var label: String = "Live"
+    var isLive: Bool = true
     let lastUpdated: Date?
     let isRefreshing: Bool
     @State private var pulse = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var dotColor: Color { isLive ? Theme.up : .secondary }
 
     var body: some View {
         HStack(spacing: 5) {
@@ -164,31 +176,80 @@ struct LiveStatusBadge: View {
                     .controlSize(.mini)
             } else {
                 Circle()
-                    .fill(Theme.up)
+                    .fill(dotColor)
                     .frame(width: 6, height: 6)
-                    .opacity(pulse ? 0.3 : 1)
+                    .opacity(isLive && pulse ? 0.3 : 1)
                     .accessibilityHidden(true)
             }
 
             Group {
                 if let lastUpdated {
-                    Text("Live · ") + Text(lastUpdated, style: .relative)
+                    Text("\(label) · ") + Text(lastUpdated, style: .relative)
                 } else {
-                    Text("Live")
+                    Text(label)
                 }
             }
             .font(.caption2.weight(.semibold))
             .monospacedDigit()
             .foregroundStyle(.secondary)
         }
-        .onAppear {
-            guard !reduceMotion else { return }
+        .onAppear { startPulseIfNeeded() }
+        .onChange(of: isLive) { _, _ in startPulseIfNeeded() }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private func startPulseIfNeeded() {
+        if isLive, !reduceMotion {
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                 pulse = true
             }
+        } else {
+            withAnimation(.default) { pulse = false }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isRefreshing ? "Updating live price" : "Live price, updates automatically")
+    }
+
+    private var accessibilityText: String {
+        if isRefreshing { return "Updating price" }
+        return isLive ? "Live price, updates automatically" : "Market closed, showing last price"
+    }
+}
+
+/// Briefly tints a view green (up) or red (down) when a new price lands, then
+/// fades out. Respects Reduce Motion by using a gentler flash.
+struct PriceFlash: ViewModifier {
+    let token: Int
+    let direction: ForecastViewModel.PriceDirection
+    @State private var intensity: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var color: Color {
+        switch direction {
+        case .up: return Theme.up
+        case .down: return Theme.down
+        case .unchanged: return .clear
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(color.opacity(intensity))
+                    .allowsHitTesting(false)
+            )
+            .onChange(of: token) { _, _ in
+                guard direction != .unchanged else { return }
+                intensity = reduceMotion ? 0.14 : 0.28
+                withAnimation(.easeOut(duration: 0.9)) { intensity = 0 }
+            }
+    }
+}
+
+extension View {
+    /// Flash the view when `token` changes, colored by price `direction`.
+    func priceFlash(token: Int, direction: ForecastViewModel.PriceDirection) -> some View {
+        modifier(PriceFlash(token: token, direction: direction))
     }
 }
 

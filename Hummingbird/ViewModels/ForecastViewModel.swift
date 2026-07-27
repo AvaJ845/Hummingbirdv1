@@ -61,8 +61,14 @@ final class ForecastViewModel {
     private(set) var isRefreshing = false
     /// Timestamp of the most recent successful price load (initial run or auto-refresh).
     private(set) var lastUpdated: Date?
+    /// Direction of the most recent auto-refresh price change (drives the flash).
+    private(set) var priceDirection: PriceDirection = .unchanged
+    /// Bumps only when an auto-refresh actually moves the displayed close.
+    private(set) var priceUpdateToken = 0
     /// Set when the user hits a Pro gate — UI presents the paywall.
     var pendingPaywallReason: String?
+
+    enum PriceDirection { case up, down, unchanged }
 
     var hasResult: Bool {
         guard let forecast else { return false }
@@ -108,8 +114,32 @@ final class ForecastViewModel {
         return max - min
     }
 
-    /// How often the loaded ticker silently re-fetches its latest price.
-    let autoRefreshInterval: TimeInterval = 60
+    /// Adaptive auto-refresh cadence for the loaded asset:
+    /// crypto trades 24/7 (fast); stocks refresh briskly only while the US
+    /// market is open, and slowly off-hours when the last close won't move.
+    var autoRefreshInterval: TimeInterval {
+        guard let series else { return 60 }
+        switch series.assetClass {
+        case .crypto:
+            return 30
+        case .stock:
+            return MarketCalendar.isUSMarketOpen() ? 45 : 300
+        }
+    }
+
+    /// Whether the loaded asset's price is currently live (for the badge).
+    var isPriceLive: Bool {
+        guard let series else { return false }
+        switch series.assetClass {
+        case .crypto: return true
+        case .stock: return MarketCalendar.isUSMarketOpen()
+        }
+    }
+
+    var liveStatusLabel: String { isPriceLive ? "Live" : "Market closed" }
+
+    /// Baseline close used to detect auto-refresh price moves; reset on each full run.
+    private var lastObservedClose: Double?
 
     private let service: any MarketDataProviding
     private let economicService: any EconomicDataProviding
@@ -259,6 +289,14 @@ final class ForecastViewModel {
             usingSampleData = fetched.isSample
             recomputeForecast()
             lastUpdated = Date()
+            // Detect a real price move to trigger the flash.
+            if let newClose = forecast?.lastClose {
+                if let prev = lastObservedClose, newClose != prev {
+                    priceDirection = newClose > prev ? .up : .down
+                    priceUpdateToken += 1
+                }
+                lastObservedClose = newClose
+            }
         } catch {
             // Silent — keep showing the last good data on transient failures.
         }
@@ -299,6 +337,9 @@ final class ForecastViewModel {
             )
             forecastGeneration += 1
             lastUpdated = Date()
+            // Reset the flash baseline — a fresh run is not a "price move".
+            lastObservedClose = forecast?.lastClose
+            priceDirection = .unchanged
         } catch is CancellationError {
             return
         } catch {
