@@ -6,6 +6,7 @@ struct WatchlistView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var refreshingIDs: Set<String> = []
+    @State private var showAdd = false
     private let service = MarketDataService()
 
     var body: some View {
@@ -20,12 +21,19 @@ struct WatchlistView: View {
             .navigationTitle("Watchlist")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if !store.items.isEmpty {
-                    ToolbarItem(placement: .topBarLeading) { EditButton() }
+                ToolbarItem(placement: .topBarLeading) {
+                    if !store.items.isEmpty { EditButton() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button { showAdd = true } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("Add asset")
                     Button("Done") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showAdd) {
+                AddAssetSheet(store: store)
             }
             .task { await refreshAll() }
             .refreshable { await refreshAll() }
@@ -57,12 +65,49 @@ struct WatchlistView: View {
                         }
                         .tint(.orange)
                     }
+                    .contextMenu { menu(for: item) }
                 }
                 .onDelete { store.remove(atOffsets: $0) }
                 .onMove { store.move(fromOffsets: $0, toOffset: $1) }
             } footer: {
-                Text("Best method = the one with the lowest recent backtest error for that asset. A track record of the past, not a prediction or advice. Swipe right to get a movement alert — never a buy/sell signal.")
+                Text("Best method = the one with the lowest recent backtest error for that asset. A track record of the past, not a prediction or advice. Long-press for movement alerts — never a buy/sell signal.")
             }
+        }
+    }
+
+    @ViewBuilder private func menu(for item: WatchlistItem) -> some View {
+        Menu("Movement alert") {
+            Button { enableAlert(item, threshold: 0.03) } label: { Label("3% or more", systemImage: "bell") }
+            Button { enableAlert(item, threshold: 0.05) } label: { Label("5% or more", systemImage: "bell") }
+            Button { enableAlert(item, threshold: 0.10) } label: { Label("10% or more", systemImage: "bell") }
+            if store.isAlerting(item) {
+                Button(role: .destructive) {
+                    store.setAlert(enabled: false, for: item)
+                } label: {
+                    Label("Turn off alerts", systemImage: "bell.slash")
+                }
+            }
+        }
+        Button(role: .destructive) {
+            store.remove(symbol: item.symbol, assetClass: item.assetClass)
+        } label: {
+            Label("Remove", systemImage: "trash")
+        }
+    }
+
+    private var emptyState: some View {
+        ContentUnavailableView {
+            Label("No saved assets", systemImage: "star")
+        } description: {
+            Text("Add an asset — or tap the star on any projection — for a glanceable, always-fresh sketch.")
+        } actions: {
+            Button {
+                showAdd = true
+            } label: {
+                Label("Add asset", systemImage: "plus")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
         }
     }
 
@@ -74,12 +119,9 @@ struct WatchlistView: View {
         }
     }
 
-    private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No saved assets", systemImage: "star")
-        } description: {
-            Text("Tap the star on any projection to add it here for a glanceable, always-fresh sketch.")
-        }
+    private func enableAlert(_ item: WatchlistItem, threshold: Double) {
+        store.setAlert(enabled: true, threshold: threshold, for: item)
+        Task { await NotificationService.requestAuthorization() }
     }
 
     private func refreshAll() async {
