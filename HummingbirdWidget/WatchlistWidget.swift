@@ -6,30 +6,44 @@ struct WatchEntry: TimelineEntry {
     let snapshot: WatchlistSnapshot?
 }
 
-struct WatchProvider: TimelineProvider {
+struct WatchProvider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> WatchEntry {
-        WatchEntry(date: .now, snapshot: nil)
+        WatchEntry(date: .now, snapshot: SharedStorage.snapshots().first)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (WatchEntry) -> Void) {
-        completion(WatchEntry(date: .now, snapshot: SharedStorage.snapshots().first))
+    func snapshot(for configuration: SelectAssetIntent, in context: Context) async -> WatchEntry {
+        WatchEntry(date: .now, snapshot: resolve(configuration))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<WatchEntry>) -> Void) {
-        let entry = WatchEntry(date: .now, snapshot: SharedStorage.snapshots().first)
+    func timeline(for configuration: SelectAssetIntent, in context: Context) async -> Timeline<WatchEntry> {
+        let entry = WatchEntry(date: .now, snapshot: resolve(configuration))
         let next = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now
-        completion(Timeline(entries: [entry], policy: .after(next)))
+        return Timeline(entries: [entry], policy: .after(next))
+    }
+
+    /// The chosen asset's snapshot, or the most recently updated one if unset.
+    private func resolve(_ configuration: SelectAssetIntent) -> WatchlistSnapshot? {
+        let snapshots = SharedStorage.snapshots()
+        if let id = configuration.asset?.id,
+           let match = snapshots.first(where: { $0.id == id }) {
+            return match
+        }
+        return snapshots.first
     }
 }
 
 struct WatchlistWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "HummingbirdWatchlist", provider: WatchProvider()) { entry in
+        AppIntentConfiguration(
+            kind: "HummingbirdWatchlist",
+            intent: SelectAssetIntent.self,
+            provider: WatchProvider()
+        ) { entry in
             WatchlistWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Watchlist")
-        .description("Your top watched asset's price and best-method sketch. Educational, not advice.")
+        .description("A watched asset's price and best-method sketch. Educational, not advice.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

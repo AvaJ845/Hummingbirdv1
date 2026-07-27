@@ -17,6 +17,18 @@ final class WatchlistRefreshTests: XCTestCase {
         XCTAssertFalse(snapshot?.bestMethodName.isEmpty ?? true)
     }
 
+    func testSharedStorageExposesSavedItemsForWidgetPicker() {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let store = WatchlistStore(defaults: defaults)
+        store.add(symbol: "bitcoin", assetClass: .crypto)
+        store.add(symbol: "AAPL", assetClass: .stock)
+
+        // The widget's configuration EntityQuery reads exactly this.
+        let shared = SharedStorage.items(defaults: defaults)
+        XCTAssertEqual(shared.count, 2)
+        XCTAssertEqual(Set(shared.map(\.title)), ["Bitcoin", "AAPL"])
+    }
+
     func testBackgroundTaskIdentifierMatchesInfoPlist() {
         // Guards against the scheduler identifier drifting from the Info.plist entry.
         XCTAssertEqual(BackgroundRefresh.taskIdentifier, "com.hummingbird.app.refresh")
