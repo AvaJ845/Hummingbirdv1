@@ -4,6 +4,8 @@ struct ModelInsightCard: View {
     let model: ForecastModel
     let macro: MacroAdjustment
     var easyMode: Bool = true
+    /// Recent holdout backtest error (MAPE fraction) for this model, if available.
+    var recentError: Double? = nil
 
     var body: some View {
         Card {
@@ -50,6 +52,16 @@ struct ModelInsightCard: View {
                         } else {
                             labeledValue(title: "Applied nudge", value: "None")
                         }
+                        if let recentError {
+                            labeledValue(title: "Recent error (14d)", value: recentError.asPercent())
+                        }
+                    }
+
+                    if recentError != nil {
+                        Text("Recent error = how far this method missed over the last 14 days when run 14 days ago. Backtest of the past, not a promise about the future.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }

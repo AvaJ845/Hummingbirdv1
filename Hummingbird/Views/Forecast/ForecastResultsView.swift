@@ -40,7 +40,12 @@ struct ForecastResultsView: View {
 
                 compactMetrics
             } else {
-                ModelInsightCard(model: forecast.model, macro: forecast.macro, easyMode: false)
+                ModelInsightCard(
+                    model: forecast.model,
+                    macro: forecast.macro,
+                    easyMode: false,
+                    recentError: viewModel.preview(for: forecast.model)?.recentError
+                )
 
                 if forecast.macro.isActive {
                     MacroImpactCard(macro: forecast.macro, horizon: viewModel.horizon, easyMode: false)

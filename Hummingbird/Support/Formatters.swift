@@ -16,4 +16,9 @@ extension Double {
         if self > 0 { return "+\(body)" }
         return body
     }
+
+    /// Unsigned percent (e.g. for error magnitudes).
+    func asPercent(maximumFractionDigits: Int = 1) -> String {
+        formatted(.percent.precision(.fractionLength(maximumFractionDigits)))
+    }
 }

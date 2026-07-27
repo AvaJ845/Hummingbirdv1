@@ -100,7 +100,8 @@ final class ForecastViewModel {
                 model: candidate,
                 targetPrice: target,
                 expectedChange: change,
-                macroBias: result.macro.horizonBias
+                macroBias: result.macro.horizonBias,
+                recentError: Forecaster.backtestMAPE(series: series, model: candidate)
             )
         }
     }

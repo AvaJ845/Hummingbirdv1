@@ -21,12 +21,15 @@ actor MarketDataService: MarketDataProviding {
         guard !symbol.isEmpty else { throw MarketDataError.emptySymbol }
 
         do {
+            let series: PriceSeries
             switch assetClass {
             case .crypto:
-                return try await fetchCrypto(id: symbol.lowercased(), days: days)
+                series = try await fetchCrypto(id: symbol.lowercased(), days: days)
             case .stock:
-                return try await fetchYahooStock(ticker: symbol.uppercased(), days: days)
+                series = try await fetchYahooStock(ticker: symbol.uppercased(), days: days)
             }
+            // Scrub isolated bad ticks from real feeds before modeling.
+            return PriceSanitizer.clean(series)
         } catch let error as MarketDataError {
             throw error
         } catch is CancellationError {

@@ -38,6 +38,41 @@ enum Forecaster {
         return Forecast(model: model, history: points, points: forecastPoints, macro: macro)
     }
 
+    // MARK: - Backtest
+
+    /// Holdout backtest error: fit on all but the last `holdout` days, project
+    /// that many days, and return the Mean Absolute Percentage Error versus the
+    /// actual held-out closes. This measures how this method *would have* tracked
+    /// recent prices — a backtest of past behavior, NOT a guarantee of future
+    /// accuracy. Returns nil when there isn't enough history to fit and hold out.
+    static func backtestMAPE(series: PriceSeries, model: ForecastModel, holdout: Int = 14) -> Double? {
+        let points = series.points
+        let h = max(1, holdout)
+        guard points.count >= minimumHistoryCount + h else { return nil }
+
+        let train = Array(points.prefix(points.count - h))
+        let actual = Array(points.suffix(h))
+        let trainSeries = PriceSeries(
+            symbol: series.symbol,
+            assetClass: series.assetClass,
+            points: train,
+            isSample: series.isSample
+        )
+
+        // Backtest the raw method (no macro tilt) so it reflects the model itself.
+        let projected = forecast(series: trainSeries, model: model, horizon: h).points
+        guard projected.count == h else { return nil }
+
+        var errorSum = 0.0
+        var counted = 0
+        for (predicted, real) in zip(projected, actual) where real.close != 0 {
+            errorSum += abs(predicted.mean - real.close) / abs(real.close)
+            counted += 1
+        }
+        guard counted > 0 else { return nil }
+        return errorSum / Double(counted)
+    }
+
     // MARK: - Macro tilt
 
     /// Scales each step toward `horizonBias` by step/horizon and widens bands.

@@ -167,4 +167,6 @@ struct ModelForecastPreview: Identifiable, Hashable, Sendable {
     let targetPrice: Double
     let expectedChange: Double
     let macroBias: Double
+    /// Recent holdout backtest error (MAPE, as a fraction). Nil if not enough history.
+    var recentError: Double? = nil
 }

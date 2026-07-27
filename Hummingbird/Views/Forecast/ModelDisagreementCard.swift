@@ -64,6 +64,11 @@ struct ModelDisagreementCard: View {
                                     Text(preview.model.familyLabel)
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
+                                } else if let recentError = preview.recentError {
+                                    Text("Recent error \(recentError.asPercent())")
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .accessibilityLabel("Recent backtest error \(recentError.asPercent())")
                                 }
                             }
                             Spacer()
