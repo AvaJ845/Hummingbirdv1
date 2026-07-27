@@ -4,21 +4,41 @@ options:
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
+  groupSortPosition: top
 settings:
   base:
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
-    SWIFT_VERSION: "5.0"
-    DEVELOPMENT_TEAM: ""
+    MARKETING_VERSION: "1.4.2"
+    CURRENT_PROJECT_VERSION: "7"
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: "3L683975L8"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     ENABLE_PREVIEWS: YES
+    SWIFT_STRICT_CONCURRENCY: complete
+    ALWAYS_SEARCH_USER_PATHS: NO
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      ENABLE_TESTABILITY: YES
+      GCC_PREPROCESSOR_DEFINITIONS: "DEBUG=1 $(inherited)"
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      ENABLE_TESTABILITY: NO
 targets:
   Hummingbird:
     type: application
     platform: iOS
     sources:
       - path: Hummingbird
+        excludes:
+          - "**/.DS_Store"
+          - "**/*.storekit"
+          - "Resources/Legal/**"
+      - path: Hummingbird/Resources/Legal
+        buildPhase: resources
+        type: folder
     settings:
       base:
         PRODUCT_NAME: Hummingbird
@@ -26,4 +46,37 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         INFOPLIST_KEY_CFBundleDisplayName: Hummingbird
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Educational projections — not financial advice."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        TARGETED_DEVICE_FAMILY: "1,2"
+  HummingbirdTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: HummingbirdTests
+    dependencies:
+      - target: Hummingbird
+    settings:
+      base:
+        PRODUCT_NAME: HummingbirdTests
+        PRODUCT_BUNDLE_IDENTIFIER: com.hummingbird.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Hummingbird.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Hummingbird"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+schemes:
+  Hummingbird:
+    build:
+      targets:
+        Hummingbird: all
+        HummingbirdTests: [test]
+    test:
+      config: Debug
+      targets:
+        - HummingbirdTests
+    run:
+      config: Debug
+      storeKitConfiguration: Products.storekit

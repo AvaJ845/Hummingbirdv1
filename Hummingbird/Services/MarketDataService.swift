@@ -1,21 +1,20 @@
 import Foundation
 
-enum MarketDataError: LocalizedError {
-    case emptySymbol
-    case notFound(String)
+/// Fetches historical daily prices from key-less public endpoints:
+/// - Crypto: CoinGecko primary, Yahoo `{TICKER}-USD` failover
+/// - Stocks: Yahoo Finance chart API
+/// Falls back to deterministic sample data when the network is unavailable.
+actor MarketDataService: MarketDataProviding {
+    private let session: URLSession
+    private let sampleProvider: @Sendable (String, AssetClass, Int) -> PriceSeries
 
-    var errorDescription: String? {
-        switch self {
-        case .emptySymbol: return "Enter a symbol to forecast."
-        case .notFound(let s): return "Couldn't find data for \"\(s)\"."
-        }
+    init(
+        session: URLSession = .shared,
+        sampleProvider: @escaping @Sendable (String, AssetClass, Int) -> PriceSeries = SampleData.series
+    ) {
+        self.session = session
+        self.sampleProvider = sampleProvider
     }
-}
-
-/// Fetches historical daily prices. Uses free, key-less public endpoints:
-/// crypto via CoinGecko, stocks via Stooq. Falls back to a deterministic
-/// synthetic series when the network is unavailable so the app always works.
-struct MarketDataService {
 
     func history(symbol rawSymbol: String, assetClass: AssetClass, days: Int = 180) async throws -> PriceSeries {
         let symbol = rawSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -26,95 +25,130 @@ struct MarketDataService {
             case .crypto:
                 return try await fetchCrypto(id: symbol.lowercased(), days: days)
             case .stock:
-                return try await fetchStock(ticker: symbol.uppercased(), days: days)
+                return try await fetchYahooStock(ticker: symbol.uppercased(), days: days)
             }
         } catch let error as MarketDataError {
             throw error
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
-            // Network / decoding failure — degrade gracefully to sample data.
-            return SampleData.series(symbol: symbol, assetClass: assetClass, days: days)
+            return sampleProvider(symbol, assetClass, days)
         }
     }
 
-    // MARK: - Crypto (CoinGecko)
+    // MARK: - Crypto
 
     private func fetchCrypto(id: String, days: Int) async throws -> PriceSeries {
-        var comps = URLComponents(string: "https://api.coingecko.com/api/v3/coins/\(id)/market_chart")!
-        comps.queryItems = [
+        do {
+            return try await fetchCoinGecko(id: id, days: days)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as MarketDataError where error == .notFound(id) {
+            // Unknown id — try Yahoo ticker mapping before giving up.
+            if let yahoo = CryptoSymbolMap.yahooTicker(for: id) {
+                do {
+                    return try await fetchYahooCrypto(coinID: id, yahooTicker: yahoo, days: days)
+                } catch is CancellationError {
+                    throw CancellationError()
+                } catch {
+                    throw MarketDataError.notFound(id)
+                }
+            }
+            throw error
+        } catch {
+            // Rate limit / transport — Yahoo failover, then sample via outer catch.
+            if let yahoo = CryptoSymbolMap.yahooTicker(for: id) {
+                return try await fetchYahooCrypto(coinID: id, yahooTicker: yahoo, days: days)
+            }
+            throw error
+        }
+    }
+
+    private func fetchCoinGecko(id: String, days: Int) async throws -> PriceSeries {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "api.coingecko.com"
+        components.path = "/api/v3/coins/\(id)/market_chart"
+        components.queryItems = [
             URLQueryItem(name: "vs_currency", value: "usd"),
             URLQueryItem(name: "days", value: String(days)),
             URLQueryItem(name: "interval", value: "daily")
         ]
-        let (data, response) = try await URLSession.shared.data(from: comps.url!)
-        if let http = response as? HTTPURLResponse, http.statusCode == 404 {
-            throw MarketDataError.notFound(id)
+
+        guard let url = components.url else { throw MarketDataError.invalidURL }
+
+        var request = URLRequest(url: url)
+        request.setValue(AppNetwork.userAgent, forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 20
+
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 404 { throw MarketDataError.notFound(id) }
+            if http.statusCode == 429 { throw URLError(.resourceUnavailable) }
+            if !(200...299).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
+            }
         }
-        struct ChartResponse: Decodable { let prices: [[Double]] }
-        let decoded = try JSONDecoder().decode(ChartResponse.self, from: data)
+
+        struct ChartResponse: Decodable {
+            let prices: [[Double]]
+        }
+
+        let decoded: ChartResponse
+        do {
+            decoded = try JSONDecoder().decode(ChartResponse.self, from: data)
+        } catch {
+            throw MarketDataError.decodingFailed
+        }
+
         let points: [PricePoint] = decoded.prices.compactMap { pair in
             guard pair.count == 2 else { return nil }
-            return PricePoint(date: Date(timeIntervalSince1970: pair[0] / 1000), close: pair[1])
+            return PricePoint(
+                date: Date(timeIntervalSince1970: pair[0] / 1000),
+                close: pair[1]
+            )
         }
+
         guard !points.isEmpty else { throw MarketDataError.notFound(id) }
         return PriceSeries(symbol: id, assetClass: .crypto, points: points, isSample: false)
     }
 
-    // MARK: - Stocks (Stooq CSV)
-
-    private func fetchStock(ticker: String, days: Int) async throws -> PriceSeries {
-        let url = URL(string: "https://stooq.com/q/d/l/?s=\(ticker.lowercased()).us&i=d")!
-        let (data, _) = try await URLSession.shared.data(from: url)
-        guard let csv = String(data: data, encoding: .utf8) else { throw MarketDataError.notFound(ticker) }
-
-        let lines = csv.split(separator: "\n").map(String.init)
-        guard lines.count > 1, lines[0].lowercased().contains("date") else {
-            throw MarketDataError.notFound(ticker)
-        }
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-
-        var points: [PricePoint] = []
-        for line in lines.dropFirst() {
-            let cols = line.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-            // Date,Open,High,Low,Close,Volume
-            guard cols.count >= 5, let date = formatter.date(from: cols[0]), let close = Double(cols[4]) else { continue }
-            points.append(PricePoint(date: date, close: close))
-        }
-        guard !points.isEmpty else { throw MarketDataError.notFound(ticker) }
-        let trimmed = Array(points.suffix(days))
-        return PriceSeries(symbol: ticker, assetClass: .stock, points: trimmed, isSample: false)
+    private func fetchYahooCrypto(coinID: String, yahooTicker: String, days: Int) async throws -> PriceSeries {
+        let series = try await fetchYahooStock(ticker: yahooTicker, days: days)
+        return PriceSeries(
+            symbol: coinID,
+            assetClass: .crypto,
+            points: series.points,
+            isSample: false
+        )
     }
-}
 
-// MARK: - Sample data
+    // MARK: - Stocks (Yahoo)
 
-enum SampleData {
-    /// Deterministic pseudo-random walk seeded by the symbol, so the same
-    /// symbol always yields the same series (useful offline / in previews).
-    static func series(symbol: String, assetClass: AssetClass, days: Int) -> PriceSeries {
-        var seed = UInt64(abs(symbol.hashValue) & 0x7fffffff) &+ 1
-        func next() -> Double {
-            seed = seed &* 6364136223846793005 &+ 1442695040888963407
-            return Double(seed >> 33) / Double(UInt64(1) << 31)
-        }
+    private func fetchYahooStock(ticker: String, days: Int) async throws -> PriceSeries {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "query1.finance.yahoo.com"
+        components.path = "/v8/finance/chart/\(ticker)"
+        components.queryItems = [
+            URLQueryItem(name: "interval", value: "1d"),
+            URLQueryItem(name: "range", value: days <= 90 ? "3mo" : "6mo")
+        ]
 
-        let base = assetClass == .crypto ? 30_000.0 : 150.0
-        var price = base * (0.7 + next() * 0.6)
-        let drift = (next() - 0.45) * 0.004
-        let vol = assetClass == .crypto ? 0.035 : 0.015
+        guard let url = components.url else { throw MarketDataError.invalidURL }
 
-        let calendar = Calendar(identifier: .gregorian)
-        let start = calendar.date(byAdding: .day, value: -days, to: Date()) ?? Date()
-        var points: [PricePoint] = []
-        for i in 0..<days {
-            let shock = (next() - 0.5) * 2 * vol
-            price = max(0.01, price * (1 + drift + shock))
-            if let date = calendar.date(byAdding: .day, value: i, to: start) {
-                points.append(PricePoint(date: date, close: price))
+        var request = URLRequest(url: url)
+        request.setValue(AppNetwork.userAgent, forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 20
+
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 404 { throw MarketDataError.notFound(ticker) }
+            if !(200...299).contains(http.statusCode) {
+                throw URLError(.badServerResponse)
             }
         }
-        return PriceSeries(symbol: symbol, assetClass: assetClass, points: points, isSample: true)
+
+        return try StockPriceParsing.parseYahooChart(data, ticker: ticker, days: days)
     }
 }

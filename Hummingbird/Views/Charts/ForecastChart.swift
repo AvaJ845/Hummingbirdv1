@@ -5,50 +5,53 @@ struct ForecastChart: View {
     let forecast: Forecast
 
     private var historyTail: [PricePoint] {
-        // Show a comparable amount of history to the forecast horizon for context.
         let count = max(forecast.points.count * 2, 30)
         return Array(forecast.history.suffix(count))
     }
 
     private var yDomain: ClosedRange<Double> {
-        let hs = historyTail.map(\.close)
+        let history = historyTail.map(\.close)
         let lows = forecast.points.map(\.lower)
         let highs = forecast.points.map(\.upper)
-        let all = hs + lows + highs
+        let all = history + lows + highs
         guard let min = all.min(), let max = all.max(), min < max else { return 0...1 }
         let pad = (max - min) * 0.08
         return (min - pad)...(max + pad)
     }
 
+    private var accessibilitySummary: String {
+        let current = forecast.lastClose?.asCurrency() ?? "unknown"
+        let target = forecast.targetPrice?.asCurrency() ?? "unknown"
+        let change = forecast.expectedChange?.asSignedPercent() ?? "unknown"
+        return "Price sketch. Current \(current), projected \(target), change \(change), with an uncalibrated guess range — not a real probability."
+    }
+
     var body: some View {
         Chart {
-            // Confidence band
-            ForEach(forecast.points) { p in
+            ForEach(forecast.points) { point in
                 AreaMark(
-                    x: .value("Date", p.date),
-                    yStart: .value("Lower", p.lower),
-                    yEnd: .value("Upper", p.upper)
+                    x: .value("Date", point.date),
+                    yStart: .value("Lower", point.lower),
+                    yEnd: .value("Upper", point.upper)
                 )
                 .foregroundStyle(Theme.accent.opacity(0.14))
                 .interpolationMethod(.catmullRom)
             }
 
-            // History line
-            ForEach(historyTail) { p in
+            ForEach(historyTail) { point in
                 LineMark(
-                    x: .value("Date", p.date),
-                    y: .value("Price", p.close),
+                    x: .value("Date", point.date),
+                    y: .value("Price", point.close),
                     series: .value("Series", "History")
                 )
                 .foregroundStyle(Color.secondary)
                 .lineStyle(StrokeStyle(lineWidth: 2))
             }
 
-            // Forecast mean line
-            ForEach(forecast.points) { p in
+            ForEach(forecast.points) { point in
                 LineMark(
-                    x: .value("Date", p.date),
-                    y: .value("Price", p.mean),
+                    x: .value("Date", point.date),
+                    y: .value("Price", point.mean),
                     series: .value("Series", "Forecast")
                 )
                 .foregroundStyle(Theme.accent)
@@ -56,7 +59,6 @@ struct ForecastChart: View {
                 .interpolationMethod(.catmullRom)
             }
 
-            // Marker at the last known close
             if let last = forecast.history.last {
                 PointMark(
                     x: .value("Date", last.date),
@@ -71,8 +73,8 @@ struct ForecastChart: View {
             AxisMarks(position: .leading) { value in
                 AxisGridLine().foregroundStyle(Color.secondary.opacity(0.12))
                 AxisValueLabel {
-                    if let v = value.as(Double.self) {
-                        Text(v.asCurrency(maximumFractionDigits: 0))
+                    if let price = value.as(Double.self) {
+                        Text(price.asCurrency(maximumFractionDigits: 0))
                             .font(.caption2)
                     }
                 }
@@ -86,5 +88,8 @@ struct ForecastChart: View {
             }
         }
         .frame(height: 260)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilitySummary)
+        .accessibilityAddTraits(.isImage)
     }
 }

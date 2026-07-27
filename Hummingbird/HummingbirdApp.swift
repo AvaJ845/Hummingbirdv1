@@ -6,6 +6,7 @@ struct HummingbirdApp: App {
         WindowGroup {
             ContentView()
                 .tint(Theme.accent)
+                .preferredColorScheme(nil)
         }
     }
 }

@@ -1,62 +1,71 @@
 # Hummingbird
 
-A native iOS app for **on-device stock & crypto price forecasting with economic context** —
+A native iOS app for **on-device statistical stock & crypto projections with economic context** —
 a SwiftUI reimagining of the original [HummingBirdv2](https://github.com/AvaJ845/HummingBirdv2)
 Streamlit tool.
 
 Where the original ran Python + Prophet on a server, Hummingbird runs everything **on the phone**:
 no backend, no API keys, no account.
 
+Projections are statistical sketches for education only — **not financial advice, price targets, or predictions.**
+
 ## Features
 
-- **Assets** — forecast stocks (ticker) or crypto (coin id).
-- **On-device forecasting** — statistical models written in Swift, no server round-trip:
-  - **Skylark** — linear trend + weekly seasonality (default, high confidence)
-  - **Meadowlark** — pure least-squares trend
-  - **Swift** — EMA momentum
-  - **Kingfisher** — mean reversion (beta)
-  - **Phoenix** — blended ensemble (coming soon)
-- **Adjustable horizon** — 7–90 days, recomputed instantly.
-- **Charts** — history, dashed forecast line, and an 80% confidence band (Swift Charts).
-- **Metrics** — current price, target, expected change, model confidence.
-- **Economic indicators** — FRED-style macro context panel.
-- **Graceful offline** — falls back to deterministic sample data when prices can't be fetched,
-  with a clear banner.
-
-Forecasts are statistical estimates for educational use only — **not financial advice.**
+- **Easy mode (default)** — plain English bottom line, possible range, and whether methods agree.
+- **Agree-first results** — after Run, the first surface asks if simple methods agree.
+- **Assets** — stocks (ticker) or crypto (coin id); optional mic dictation fills the field like typing.
+- **On-device methods** (simple math on public history — not PhD-vetted forecasts):
+  - **Drift** / **Trend + weekday** / **Straight trend** / **Holt** — free
+  - **Momentum** / **Mean reversion** / **Blend** — Pro ($19.99/year)
+- **Rate what-ifs** — live Yahoo daily yields only (`^IRX`, `^TNX`). Failures omitted (no fake samples).
+- **Honest UI** — uncalibrated guess range, Steady/Typical/Experimental style labels, sample banners for offline prices.
+- **Hummingbird Pro** — StoreKit 2 freemium (**$19.99/year** only). Same free APIs as Free. See [Docs/MONETIZATION.md](Docs/MONETIZATION.md).
+- **Graceful offline** — deterministic sample data with clear banners.
+- **Private by design** — privacy manifest; no tracking; no accounts.
 
 ## Data sources
 
-- Crypto: [CoinGecko](https://www.coingecko.com/) `market_chart` (key-less)
-- Stocks: [Stooq](https://stooq.com/) daily CSV (key-less)
+All key-less. No paid API vendors in any plan.
 
-## Architecture
+| Asset / Macro | Source | Auth |
+| --- | --- | --- |
+| Crypto | [CoinGecko](https://www.coingecko.com/) primary; Yahoo `{TICKER}-USD` failover | Key-less |
+| Stocks | [Yahoo Finance](https://finance.yahoo.com/) chart API | Key-less |
+| Fed proxy / 10Y | Yahoo `^IRX`, `^TNX` (daily) | Key-less |
 
-```
-Hummingbird/
-├── HummingbirdApp.swift            App entry
-├── Models/Models.swift             Asset, PriceSeries, Forecast, ForecastModel, EconomicIndicator
-├── Services/
-│   ├── MarketDataService.swift     Async price fetching + sample fallback
-│   └── Forecaster.swift            On-device statistical forecasting
-├── ViewModels/ForecastViewModel.swift
-├── Views/
-│   ├── ContentView.swift           Main screen
-│   ├── ForecastChart.swift         Swift Charts visualization
-│   ├── ModelPickerSheet.swift
-│   ├── EconomicIndicatorsSheet.swift
-│   └── Components.swift            Reusable cards, tiles, badges
-└── Support/Theme.swift             Colors, gradient, formatters
-```
+## Monetization (summary)
+
+Fair & simple: free forever stays useful; Pro sells comparison depth, not prophecy. **No plan unlocks paid APIs** — same key-less public feeds for everyone (zero data-vendor overhead).
+
+| Tier | Includes |
+| --- | --- |
+| Free | Drift, Trend + weekday, Straight trend, Holt, Easy Mode, ≤30d, daily rate what-ifs |
+| Pro ($19.99/yr) | More methods to compare, ≤90d, full disagreement lab |
+
+| Plan | Price | Role |
+| --- | --- | --- |
+| Yearly | $19.99 | Only Pro plan |
+
+Details: [Docs/MONETIZATION.md](Docs/MONETIZATION.md) · App Store kit: [Docs/APP_STORE.md](Docs/APP_STORE.md) · Legal: [Docs/PRIVACY.md](Docs/PRIVACY.md), [Docs/TERMS.md](Docs/TERMS.md). Local StoreKit: `Products.storekit` (attached to Run scheme).
 
 ## Build & run
-
-Requires Xcode 16+ (built with Xcode 26). The project is generated with
-[XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
 ```bash
 xcodegen generate
 open Hummingbird.xcodeproj
 ```
 
-Then run on any iOS 17+ simulator or device.
+Attach `Products.storekit` to the Run scheme for local purchases. iOS 17+.
+
+```bash
+xcodebuild -scheme Hummingbird -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+```
+
+## Docs
+
+- [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md)
+- [Docs/MONETIZATION.md](Docs/MONETIZATION.md)
+- [Docs/APP_STORE.md](Docs/APP_STORE.md)
+- [Docs/PRIVACY.md](Docs/PRIVACY.md)
+- [Docs/TERMS.md](Docs/TERMS.md)

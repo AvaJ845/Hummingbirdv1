@@ -1,0 +1,65 @@
+{
+  "identifier" : "HummingbirdProducts",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "",
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "HummingbirdPro",
+      "localizations" : [
+        {
+          "customAppName" : "Hummingbird",
+          "description" : "Compare more price sketches — educational tools, not predictions or financial advice.",
+          "displayName" : "Hummingbird Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Hummingbird Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "33333333-3333-3333-3333-333333333333",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Yearly on-device comparison tools. Same free public data as Free; no premium feeds. Cancel anytime.",
+              "displayName" : "Hummingbird Pro",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.hummingbird.app.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
