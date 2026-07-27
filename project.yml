@@ -36,6 +36,7 @@ targets:
           - "**/.DS_Store"
           - "**/*.storekit"
           - "**/*.entitlements"
+          - "Info.plist"
           - "Resources/Legal/**"
       - path: Hummingbird/Resources/Legal
         buildPhase: resources
@@ -43,18 +44,28 @@ targets:
     dependencies:
       - target: HummingbirdWidget
         embed: true
+    info:
+      path: Hummingbird/Info.plist
+      properties:
+        CFBundleDisplayName: Hummingbird
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSHumanReadableCopyright: "Educational projections — not financial advice."
+        NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
+        NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
+        ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.hummingbird.app.refresh
     settings:
       base:
         PRODUCT_NAME: Hummingbird
         PRODUCT_BUNDLE_IDENTIFIER: com.hummingbird.app
         CODE_SIGN_ENTITLEMENTS: Hummingbird/Hummingbird.entitlements
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
-        INFOPLIST_KEY_CFBundleDisplayName: Hummingbird
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Educational projections — not financial advice."
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
-        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
-        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1,2"

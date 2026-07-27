@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct WatchlistView: View {
     @Bindable var store: WatchlistStore
@@ -130,25 +131,12 @@ struct WatchlistView: View {
                 group.addTask { await refresh(item) }
             }
         }
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func refresh(_ item: WatchlistItem) async {
         refreshingIDs.insert(item.id)
         defer { refreshingIDs.remove(item.id) }
-
-        let previousPrice = store.snapshot(for: item)?.price
-        guard let series = try? await service.history(symbol: item.symbol, assetClass: item.assetClass),
-              series.isForecastable,
-              let snapshot = WatchlistIntelligence.snapshot(for: item, series: series) else { return }
-
-        // Honest movement alert (never a signal) if the asset moved since last check.
-        let pref = store.alertPreference(for: item)
-        if pref.enabled, let previousPrice,
-           let alert = AlertEngine.evaluate(item: item, previousPrice: previousPrice,
-                                            newPrice: snapshot.price, threshold: pref.thresholdPercent) {
-            await NotificationService.deliver(alert, id: item.id)
-        }
-
-        store.saveSnapshot(snapshot)
+        await WatchlistRefresh.refresh(item, store: store, service: service)
     }
 }
