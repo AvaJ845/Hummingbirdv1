@@ -21,6 +21,7 @@ struct ForecastResultsView: View {
                     activeModelID: forecast.model.id,
                     isPro: entitlements.isPro,
                     easyMode: viewModel.easyMode,
+                    bestRecentModelID: viewModel.bestRecentModelID,
                     onSelect: { model in _ = viewModel.selectModel(model) },
                     onUnlock: onUnlock
                 )

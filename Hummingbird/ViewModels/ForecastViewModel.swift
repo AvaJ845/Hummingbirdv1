@@ -101,9 +101,19 @@ final class ForecastViewModel {
                 targetPrice: target,
                 expectedChange: change,
                 macroBias: result.macro.horizonBias,
-                recentError: Forecaster.backtestMAPE(series: series, model: candidate)
+                recentError: Forecaster.walkForwardMAPE(series: series, model: candidate)
             )
         }
+    }
+
+    /// Model id with the lowest recent backtest error among entitlement-visible
+    /// methods. Nil unless at least two methods have a comparable score.
+    var bestRecentModelID: String? {
+        let scored = modelPreviews
+            .filter { entitlements.canUse(model: $0.model) }
+            .compactMap { preview in preview.recentError.map { (id: preview.model.id, error: $0) } }
+        guard scored.count >= 2 else { return nil }
+        return scored.min(by: { $0.error < $1.error })?.id
     }
 
     /// Spread across currently visible (entitlement-aware) model projections.

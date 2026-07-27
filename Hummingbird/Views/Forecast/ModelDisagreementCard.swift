@@ -6,6 +6,8 @@ struct ModelDisagreementCard: View {
     let activeModelID: String
     let isPro: Bool
     var easyMode: Bool = true
+    /// Model id with the lowest recent backtest error, if any.
+    var bestRecentModelID: String? = nil
     let onSelect: (ForecastModel) -> Void
     let onUnlock: () -> Void
 
@@ -43,6 +45,16 @@ struct ModelDisagreementCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
+                if !easyMode, let best = bestPreview, let error = best.recentError {
+                    Label(
+                        "Best recent: \(best.model.name) · \(error.asPercent()) error",
+                        systemImage: "checkmark.seal.fill"
+                    )
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.up)
+                    .accessibilityLabel("Lowest recent backtest error: \(best.model.name), \(error.asPercent())")
+                }
+
                 ForEach(visiblePreviews) { preview in
                     Button {
                         onSelect(preview.model)
@@ -65,10 +77,22 @@ struct ModelDisagreementCard: View {
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                 } else if let recentError = preview.recentError {
-                                    Text("Recent error \(recentError.asPercent())")
-                                        .font(.caption2.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                        .accessibilityLabel("Recent backtest error \(recentError.asPercent())")
+                                    let isBest = preview.model.id == bestRecentModelID
+                                    HStack(spacing: 4) {
+                                        if isBest {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .font(.caption2)
+                                                .foregroundStyle(Theme.up)
+                                        }
+                                        Text("Recent error \(recentError.asPercent())")
+                                            .font(.caption2.monospacedDigit())
+                                            .foregroundStyle(isBest ? Theme.up : .secondary)
+                                    }
+                                    .accessibilityLabel(
+                                        isBest
+                                        ? "Lowest recent backtest error, \(recentError.asPercent())"
+                                        : "Recent backtest error \(recentError.asPercent())"
+                                    )
                                 }
                             }
                             Spacer()
@@ -107,6 +131,11 @@ struct ModelDisagreementCard: View {
     private var visiblePreviews: [ModelForecastPreview] {
         if isPro { return previews }
         return previews.filter { !$0.model.requiresPro }
+    }
+
+    private var bestPreview: ModelForecastPreview? {
+        guard let bestRecentModelID else { return nil }
+        return visiblePreviews.first { $0.model.id == bestRecentModelID }
     }
 }
 

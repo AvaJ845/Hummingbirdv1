@@ -40,18 +40,60 @@ enum Forecaster {
 
     // MARK: - Backtest
 
-    /// Holdout backtest error: fit on all but the last `holdout` days, project
-    /// that many days, and return the Mean Absolute Percentage Error versus the
-    /// actual held-out closes. This measures how this method *would have* tracked
-    /// recent prices — a backtest of past behavior, NOT a guarantee of future
-    /// accuracy. Returns nil when there isn't enough history to fit and hold out.
+    /// Single-holdout backtest error: fit on all but the last `holdout` days,
+    /// project that many days, and return the Mean Absolute Percentage Error
+    /// versus the actual held-out closes. A backtest of past behavior, NOT a
+    /// guarantee of future accuracy. Nil when there isn't enough history.
     static func backtestMAPE(series: PriceSeries, model: ForecastModel, holdout: Int = 14) -> Double? {
         let points = series.points
         let h = max(1, holdout)
-        guard points.count >= minimumHistoryCount + h else { return nil }
+        return holdoutError(points: points, series: series, model: model,
+                            trainCount: points.count - h, horizon: h)
+    }
 
-        let train = Array(points.prefix(points.count - h))
-        let actual = Array(points.suffix(h))
+    /// Walk-forward backtest error: average MAPE across several rolling origins
+    /// for a sturdier accuracy read than a single window. Each fold fits on an
+    /// expanding history and scores the next `step` days. Averages as many folds
+    /// (up to `folds`) as the history allows; nil if none fit.
+    static func walkForwardMAPE(
+        series: PriceSeries,
+        model: ForecastModel,
+        step: Int = 7,
+        folds: Int = 4
+    ) -> Double? {
+        let points = series.points
+        let s = max(1, step)
+        var errors: [Double] = []
+
+        for fold in 0..<max(1, folds) {
+            let testEnd = points.count - s * fold
+            let trainCount = testEnd - s
+            guard trainCount >= minimumHistoryCount else { break }
+            if let error = holdoutError(points: points, series: series, model: model,
+                                        trainCount: trainCount, horizon: s) {
+                errors.append(error)
+            }
+        }
+
+        guard !errors.isEmpty else { return nil }
+        return errors.reduce(0, +) / Double(errors.count)
+    }
+
+    /// Fit on `prefix(trainCount)`, project `horizon` days, and return MAPE
+    /// versus the actual closes that follow. Shared by both backtest APIs.
+    private static func holdoutError(
+        points: [PricePoint],
+        series: PriceSeries,
+        model: ForecastModel,
+        trainCount: Int,
+        horizon: Int
+    ) -> Double? {
+        guard horizon > 0,
+              trainCount >= minimumHistoryCount,
+              trainCount + horizon <= points.count else { return nil }
+
+        let train = Array(points.prefix(trainCount))
+        let actual = Array(points[trainCount..<trainCount + horizon])
         let trainSeries = PriceSeries(
             symbol: series.symbol,
             assetClass: series.assetClass,
@@ -60,8 +102,8 @@ enum Forecaster {
         )
 
         // Backtest the raw method (no macro tilt) so it reflects the model itself.
-        let projected = forecast(series: trainSeries, model: model, horizon: h).points
-        guard projected.count == h else { return nil }
+        let projected = forecast(series: trainSeries, model: model, horizon: horizon).points
+        guard projected.count == horizon else { return nil }
 
         var errorSum = 0.0
         var counted = 0

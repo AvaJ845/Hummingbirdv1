@@ -53,12 +53,12 @@ struct ModelInsightCard: View {
                             labeledValue(title: "Applied nudge", value: "None")
                         }
                         if let recentError {
-                            labeledValue(title: "Recent error (14d)", value: recentError.asPercent())
+                            labeledValue(title: "Recent error", value: recentError.asPercent())
                         }
                     }
 
                     if recentError != nil {
-                        Text("Recent error = how far this method missed over the last 14 days when run 14 days ago. Backtest of the past, not a promise about the future.")
+                        Text("Recent error = average miss across several rolling walk-forward backtests on recent history. A test of the past, not a promise about the future.")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
