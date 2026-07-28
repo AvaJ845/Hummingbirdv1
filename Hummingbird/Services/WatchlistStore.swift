@@ -91,9 +91,11 @@ final class WatchlistStore {
     func saveSnapshot(_ snapshot: WatchlistSnapshot) {
         var all = allSnapshots()
         all[snapshot.id] = snapshot
-        if let data = try? JSONEncoder().encode(Array(all.values)) {
+        let values = Array(all.values)
+        if let data = try? JSONEncoder().encode(values) {
             defaults.set(data, forKey: snapshotsKey)
         }
+        WatchSync.shared.push(values)
     }
 
     // MARK: - Persistence
