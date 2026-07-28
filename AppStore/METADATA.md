@@ -1,8 +1,11 @@
 # App Store — Hummingbird
 
-## Identity
-- **Name:** Hummingbird
-- **Subtitle (≤30):** `Honest, on-device sketches`
+## Identity — Discovery (keyword-first, per the ASO playbook)
+- **App Store Name (≤30):** `Stock & Crypto - Hummingbird`  *(28 chars — primary keyword FIRST, brand second)*
+  - Alt: `Stocks & Crypto - Hummingbird` *(29)*
+  - Note: this is the **App Store listing name only.** The Home Screen name stays `Hummingbird` (CFBundleDisplayName) — same pattern as "Habit Tracker - Habit Kit" appearing as "Habit Kit" on device.
+- **Subtitle (≤30):** `Charts, watchlist & projection`  *(30 chars — all new words, none repeated from the Name)*
+  - Alts: `Price chart, watchlist, trend` *(29)* · `Tracker, charts & projections` *(29)*
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
@@ -11,8 +14,12 @@
 ## Promotional text (≤170)
 Sketch where a stock or crypto *could* drift from public prices — with plain-English reasoning and honest backtests. Educational only. Never buy/sell advice.
 
-## Keywords (≤100)
-`stocks,crypto,forecast,projection,chart,bitcoin,watchlist,markets,trend,backtest,educational,finance`
+## Keywords (≤100) — the hidden backend array
+`bitcoin,ethereum,ticker,portfolio,market,invest,finance,trend,widget,alert,tracker,price,etf,coin`  *(97 chars)*
+
+Rules applied (per the playbook): comma-separated, **no spaces**, ~all 100 chars used, **no word repeated** from the Name or Subtitle, **singulars only** (no `stocks`/`charts` here — they're covered above), and **no competitor names**. Because Apple indexes Name + Subtitle + Keywords as one string, these unique terms combine into phrases like `stock tracker`, `crypto chart`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker` — far more coverage than repeating words.
+
+> ⚠️ Deliberately omitted from the visible Name/Subtitle: **`forecast` / `prediction` / `signals`.** They're high-volume but invite App-Review scrutiny on a finance app and undercut the "not advice" brand. If you want one, add `forecast` to the *hidden* array only (swap out `coin`).
 
 ## Description
 Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency **could** drift over the coming days — built entirely from public prices, right on your device. It is a learning tool, not a crystal ball: it never tells you to buy or sell.
