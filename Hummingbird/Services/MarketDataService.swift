@@ -16,9 +16,24 @@ actor MarketDataService: MarketDataProviding {
         self.sampleProvider = sampleProvider
     }
 
+    /// Tickers and coin ids are letters, digits, `-` and `.` only (e.g. `BRK-B`,
+    /// `ethereum-classic`). Anything else can't be a real symbol.
+    private static let allowedSymbolCharacters = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
+    )
+
+    /// Security: the symbol is interpolated into the request path, so restrict it
+    /// to a strict allowlist. Blocks path manipulation (`/`, `..`, query/fragment
+    /// injection) from reaching the network layer.
+    static func isValidSymbol(_ symbol: String) -> Bool {
+        guard (1...32).contains(symbol.count) else { return false }
+        return symbol.unicodeScalars.allSatisfy { allowedSymbolCharacters.contains($0) }
+    }
+
     func history(symbol rawSymbol: String, assetClass: AssetClass, days: Int = 180) async throws -> PriceSeries {
         let symbol = rawSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !symbol.isEmpty else { throw MarketDataError.emptySymbol }
+        guard Self.isValidSymbol(symbol) else { throw MarketDataError.notFound(symbol) }
 
         do {
             let series: PriceSeries
