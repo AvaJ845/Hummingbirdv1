@@ -5,12 +5,14 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
   groupSortPosition: top
+configFiles:
+  Debug: Config/Base.xcconfig
+  Release: Config/Base.xcconfig
 settings:
   base:
     MARKETING_VERSION: "1.4.2"
     CURRENT_PROJECT_VERSION: "7"
     SWIFT_VERSION: "5.9"
-    DEVELOPMENT_TEAM: "3L683975L8"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
     ENABLE_PREVIEWS: YES

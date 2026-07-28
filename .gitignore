@@ -6,3 +6,4 @@ DerivedData/
 build-device/
 build-watch/
 build-rel/
+Config/Signing.xcconfig

@@ -7,7 +7,7 @@ tests, assets, and legal pages are done — the rest is account/config work
 **Key facts**
 - Bundle ID: `com.avaresearch.hummingbird`
 - Subscription (IAP) Product ID: `com.avaresearch.hummingbird.pro.yearly` · $19.99/yr · group `HummingbirdPro`
-- Team: `3L683975L8` (must be the **paid** Apple Developer Program, not a free personal team)
+- Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
 - Assets: `AppStore/` (five 1320×2868 screenshots, `AppIcon-1024.png`, `METADATA.md`)
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
 

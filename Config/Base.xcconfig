@@ -1,0 +1,5 @@
+// Hummingbird — base build configuration.
+// Per-developer signing (Apple Developer Team ID) lives in Signing.xcconfig,
+// which is gitignored. The optional include means fresh clones and CI still
+// generate/build (simulator builds don't need a team).
+#include? "Signing.xcconfig"

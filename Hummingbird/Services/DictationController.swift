@@ -133,11 +133,14 @@ final class DictationController {
     private func beginRecognition(with recognizer: SFSpeechRecognizer) throws {
         stopEngine()
 
+        // Privacy: only ever recognize on-device — refuse rather than stream audio
+        // to Apple's servers if on-device recognition isn't available.
+        guard recognizer.supportsOnDeviceRecognition else {
+            throw DictationError.onDeviceUnavailable
+        }
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        if recognizer.supportsOnDeviceRecognition {
-            request.requiresOnDeviceRecognition = true
-        }
+        request.requiresOnDeviceRecognition = true
         self.request = request
 
         let input = audioEngine.inputNode
@@ -191,6 +194,7 @@ final class DictationController {
 enum DictationError: LocalizedError {
     case speechDenied
     case microphoneDenied
+    case onDeviceUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -198,6 +202,8 @@ enum DictationError: LocalizedError {
             "Speech recognition access is required for dictation. Enable it in Settings."
         case .microphoneDenied:
             "Microphone access is required for dictation. Enable it in Settings."
+        case .onDeviceUnavailable:
+            "Dictation needs on-device speech recognition, which isn't available here. Type the symbol instead — your audio never leaves your device."
         }
     }
 }

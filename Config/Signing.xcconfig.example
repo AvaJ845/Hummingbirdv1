@@ -1,0 +1,4 @@
+// Copy this file to `Config/Signing.xcconfig` (gitignored) and set your
+// Apple Developer Team ID for device / release builds.
+// Simulator builds (CODE_SIGNING_ALLOWED=NO) don't need it.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
