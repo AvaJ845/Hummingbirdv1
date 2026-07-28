@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.hummingbird.app</string>
+		<string>group.com.avaresearch.hummingbird</string>
 	</array>
 </dict>
 </plist>

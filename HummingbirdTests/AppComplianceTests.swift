@@ -33,7 +33,7 @@ final class AppComplianceTests: XCTestCase {
     }
 
     func testProProductIDIsYearlyOnly() {
-        XCTAssertEqual(EntitlementStore.yearlyProductID, "com.hummingbird.app.pro.yearly")
+        XCTAssertEqual(EntitlementStore.yearlyProductID, "com.avaresearch.hummingbird.pro.yearly")
     }
 
     func testMethodNamesLeadNotBirdNicknames() {

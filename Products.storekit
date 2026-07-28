@@ -50,7 +50,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.hummingbird.app.pro.yearly",
+          "productID" : "com.avaresearch.hummingbird.pro.yearly",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Pro Yearly",
           "type" : "RecurringSubscription"

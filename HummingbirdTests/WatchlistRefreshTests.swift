@@ -31,7 +31,7 @@ final class WatchlistRefreshTests: XCTestCase {
 
     func testBackgroundTaskIdentifierMatchesInfoPlist() {
         // Guards against the scheduler identifier drifting from the Info.plist entry.
-        XCTAssertEqual(BackgroundRefresh.taskIdentifier, "com.hummingbird.app.refresh")
+        XCTAssertEqual(BackgroundRefresh.taskIdentifier, "com.avaresearch.hummingbird.refresh")
         let permitted = Bundle.main.object(forInfoDictionaryKey: "BGTaskSchedulerPermittedIdentifiers") as? [String]
         XCTAssertTrue(permitted?.contains(BackgroundRefresh.taskIdentifier) ?? false,
                       "Info.plist must permit the background refresh identifier")

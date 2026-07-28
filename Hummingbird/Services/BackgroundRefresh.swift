@@ -5,7 +5,7 @@ import BackgroundTasks
 /// widget stays fresh and movement alerts fire even when the app is closed.
 enum BackgroundRefresh {
     /// Must match `BGTaskSchedulerPermittedIdentifiers` in Info.plist.
-    static let taskIdentifier = "com.hummingbird.app.refresh"
+    static let taskIdentifier = "com.avaresearch.hummingbird.refresh"
 
     /// Ask the system to wake us in ~30 minutes (the OS decides the real timing).
     static func schedule() {

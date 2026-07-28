@@ -7,7 +7,7 @@ import StoreKit
 @MainActor
 @Observable
 final class EntitlementStore {
-    static let yearlyProductID = "com.hummingbird.app.pro.yearly"
+    static let yearlyProductID = "com.avaresearch.hummingbird.pro.yearly"
 
     #if DEBUG
     private static let debugUnlockKey = "hummingbird.debug.proUnlocked"

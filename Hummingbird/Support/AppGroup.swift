@@ -4,7 +4,7 @@ import Foundation
 /// Falls back to standard defaults if the App Group isn't provisioned so the
 /// in-app experience always works.
 enum AppGroup {
-    static let identifier = "group.com.hummingbird.app"
+    static let identifier = "group.com.avaresearch.hummingbird"
 
     static var defaults: UserDefaults {
         UserDefaults(suiteName: identifier) ?? .standard
