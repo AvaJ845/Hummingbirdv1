@@ -73,6 +73,11 @@ struct ForecastResultsView: View {
                 ForecastDetailList(forecast: forecast)
             }
 
+            WhySketchCard(drivers: SketchExplainer.drivers(
+                forecast: forecast,
+                disagreementSpread: viewModel.disagreementSpread
+            ))
+
             EasyModeToggle(isOn: $viewModel.easyMode)
 
             if let onCompareMethods {

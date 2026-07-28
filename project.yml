@@ -60,6 +60,18 @@ targets:
           - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.avaresearch.hummingbird.refresh
+        CFBundleIcons:
+          CFBundlePrimaryIcon:
+            CFBundleIconName: AppIcon
+          CFBundleAlternateIcons:
+            Midnight:
+              CFBundleIconFiles:
+                - AltIcon-Midnight
+              UIPrerenderedIcon: false
+            Mono:
+              CFBundleIconFiles:
+                - AltIcon-Mono
+              UIPrerenderedIcon: false
     settings:
       base:
         PRODUCT_NAME: Hummingbird

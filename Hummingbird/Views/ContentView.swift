@@ -6,6 +6,9 @@ struct ContentView: View {
     @State private var dictation = DictationController()
     @State private var watchlist = WatchlistStore()
     @State private var showWatchlist = false
+    @State private var showSettings = false
+    @State private var showOnboarding = false
+    @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
@@ -80,8 +83,20 @@ struct ContentView: View {
                 viewModel.load(item)
             }
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView {
+                hasOnboarded = true
+                showOnboarding = false
+            }
+        }
         .task {
             await entitlements.loadProducts()
+        }
+        .onAppear {
+            if !hasOnboarded { showOnboarding = true }
         }
     }
 
@@ -205,6 +220,15 @@ struct ContentView: View {
                     ? "Economic indicators, \(viewModel.selectedIndicatorCount) selected"
                     : "Economic indicators"
                 )
+
+                Button {
+                    symbolFocused = false
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .disabled(dictation.isActive)
+                .accessibilityLabel("Settings")
             }
         }
         .task {
