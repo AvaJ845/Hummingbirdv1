@@ -84,7 +84,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView()
+            SettingsView(entitlements: entitlements)
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {

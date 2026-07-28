@@ -5,3 +5,4 @@ DerivedData/
 .swiftpm
 build-device/
 build-watch/
+build-rel/

@@ -35,6 +35,7 @@ enum AppIconOption: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
+    @Bindable var entitlements: EntitlementStore
     @Environment(\.dismiss) private var dismiss
     @State private var currentAlternate = UIApplication.shared.alternateIconName
 
@@ -47,6 +48,31 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    NavigationLink {
+                        PaywallView(entitlements: entitlements)
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .font(.title3)
+                                .foregroundStyle(Theme.brandGradient)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Hummingbird Pro")
+                                Text(entitlements.isPro ? "Active — manage or restore" : "Compare every method · restore")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if entitlements.isPro {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundStyle(Theme.accent)
+                            }
+                        }
+                    }
+                    .accessibilityLabel(entitlements.isPro ? "Hummingbird Pro, active" : "Hummingbird Pro")
+                }
+
                 Section("App Icon") {
                     ForEach(AppIconOption.allCases) { option in
                         Button {
