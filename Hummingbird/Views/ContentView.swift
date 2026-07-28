@@ -1,6 +1,8 @@
 import SwiftUI
+import StoreKit
 
 struct ContentView: View {
+    @Environment(\.requestReview) private var requestReview
     @State private var entitlements: EntitlementStore
     @State private var viewModel: ForecastViewModel
     @State private var dictation = DictationController()
@@ -75,8 +77,15 @@ struct ContentView: View {
                 viewModel.pendingPaywallReason = nil
             }
         }
-        .onChange(of: viewModel.forecastGeneration) { _, _ in
+        .onChange(of: viewModel.forecastGeneration) { _, generation in
+            guard generation > 0 else { return }
             saveSnapshotIfWatched()
+            // Ask for a rating only at a "happy moment" — a completed projection,
+            // never at launch or after an error (forecastGeneration bumps only on
+            // a successful run).
+            if ReviewPrompt.registerSuccessAndShouldRequest() {
+                requestReview()
+            }
         }
         .sheet(isPresented: $showWatchlist) {
             WatchlistView(store: watchlist) { item in
