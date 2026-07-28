@@ -112,11 +112,6 @@ targets:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
         basedOnDependencyAnalysis: false
-  # HummingbirdWatch (companion Apple Watch app) — code is in HummingbirdWatch/.
-  # Not wired into the build here: this machine has the watchOS SDK but no
-  # watchOS Simulator runtime, and embedding the watch target breaks the iOS
-  # scheme's destinations. To finish: install a watchOS Simulator runtime (or use
-  # a real Apple Watch), re-add this target, and embed it in the Hummingbird app.
   HummingbirdTests:
     type: bundle.unit-test
     platform: iOS
