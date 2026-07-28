@@ -9,6 +9,7 @@ struct ForecastResultsView: View {
     let onUnlock: () -> Void
     var onCompareMethods: (() -> Void)? = nil
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var shareImage: Image?
 
     /// Two-up metric tiles side by side normally; stacked at accessibility sizes
     /// so each value keeps full width and stays legible.
@@ -24,7 +25,10 @@ struct ForecastResultsView: View {
                 SampleDataBanner()
             }
 
-            watchToggle
+            HStack(spacing: 10) {
+                watchToggle
+                shareButton
+            }
 
             // Hero beat — do the methods agree? (Fellow + DE ask)
             if !viewModel.modelPreviews.isEmpty {
@@ -82,6 +86,55 @@ struct ForecastResultsView: View {
                 .accessibilityHint("Opens the full method list")
             }
         }
+        .task(id: shareRenderKey) { shareImage = renderShareImage() }
+    }
+
+    // MARK: - Share
+
+    private var shareRenderKey: String {
+        "\(forecast.model.id)-\(viewModel.horizon)-\(forecast.targetPrice ?? 0)"
+    }
+
+    @ViewBuilder private var shareButton: some View {
+        if let shareImage {
+            ShareLink(item: shareImage,
+                      preview: SharePreview("Hummingbird sketch of \(viewModel.symbol.uppercased())", image: shareImage)) {
+                Label("Share", systemImage: "square.and.arrow.up")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.accentAlt)
+            .accessibilityHint("Shares this sketch as an image with the not-advice note included")
+        }
+    }
+
+    @MainActor private func renderShareImage() -> Image? {
+        let sparks = normalizedSparks(forecast)
+        let card = ProjectionShareCard(
+            symbol: viewModel.currentWatchItem?.symbol ?? viewModel.symbol,
+            price: forecast.lastClose ?? 0,
+            projectedChange: forecast.expectedChange ?? 0,
+            methodName: forecast.model.name,
+            horizonDays: viewModel.horizon,
+            historySpark: sparks.history,
+            projectionSpark: sparks.projection
+        )
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 3
+        guard let uiImage = renderer.uiImage else { return nil }
+        return Image(uiImage: uiImage)
+    }
+
+    private func normalizedSparks(_ forecast: Forecast) -> (history: [Double], projection: [Double]) {
+        let history = Array(forecast.history.suffix(24)).map(\.close)
+        let projection = forecast.points.map(\.mean)
+        let all = history + projection
+        guard let lo = all.min(), let hi = all.max(), hi > lo else {
+            return (history.map { _ in 0.5 }, projection.map { _ in 0.5 })
+        }
+        func normalize(_ values: [Double]) -> [Double] { values.map { ($0 - lo) / (hi - lo) } }
+        return (normalize(history), normalize(projection))
     }
 
     @ViewBuilder private var watchToggle: some View {
