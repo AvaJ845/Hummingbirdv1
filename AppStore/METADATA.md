@@ -1,8 +1,8 @@
 # App Store — Hummingbird
 
 ## Identity — Discovery (keyword-first, per the ASO playbook)
-- **App Store Name (≤30):** `Stock & Crypto - Hummingbird`  *(28 chars — primary keyword FIRST, brand second)*
-  - Alt: `Stocks & Crypto - Hummingbird` *(29)*
+- **App Store Name (≤30):** `Stocks & Crypto - Hummingbird`  *(29 chars — primary keyword FIRST, brand second)*
+  - **Decision:** plural `Stocks` — it's the higher-intent exact match users actually type, and Apple stems it to `stock` anyway, so nothing is lost. (Singular `Stock & Crypto - Hummingbird` was the alternative.)
   - Note: this is the **App Store listing name only.** The Home Screen name stays `Hummingbird` (CFBundleDisplayName) — same pattern as "Habit Tracker - Habit Kit" appearing as "Habit Kit" on device.
 - **Subtitle (≤30):** `Charts, watchlist & projection`  *(30 chars — all new words, none repeated from the Name)*
   - Alts: `Price chart, watchlist, trend` *(29)* · `Tracker, charts & projections` *(29)*
@@ -15,11 +15,11 @@
 Sketch where a stock or crypto *could* drift from public prices — with plain-English reasoning and honest backtests. Educational only. Never buy/sell advice.
 
 ## Keywords (≤100) — the hidden backend array
-`bitcoin,ethereum,ticker,portfolio,market,invest,finance,trend,widget,alert,tracker,price,etf,coin`  *(97 chars)*
+`bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast`  *(94 chars)*
 
-Rules applied (per the playbook): comma-separated, **no spaces**, ~all 100 chars used, **no word repeated** from the Name or Subtitle, **singulars only** (no `stocks`/`charts` here — they're covered above), and **no competitor names**. Because Apple indexes Name + Subtitle + Keywords as one string, these unique terms combine into phrases like `stock tracker`, `crypto chart`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker` — far more coverage than repeating words.
+Rules applied (per the playbook): comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only** (no `stocks`/`charts` here — they're covered above), and **no competitor names**. Because Apple indexes Name + Subtitle + Keywords as one string, these unique terms combine into phrases like `stock tracker`, `crypto chart`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget` — far more coverage than repeating words.
 
-> ⚠️ Deliberately omitted from the visible Name/Subtitle: **`forecast` / `prediction` / `signals`.** They're high-volume but invite App-Review scrutiny on a finance app and undercut the "not advice" brand. If you want one, add `forecast` to the *hidden* array only (swap out `coin`).
+> **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). Dropped `coin`/`invest` to make room — they're well covered by `bitcoin`/`portfolio`/`finance` via stemming.
 
 ## Description
 Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency **could** drift over the coming days — built entirely from public prices, right on your device. It is a learning tool, not a crystal ball: it never tells you to buy or sell.
