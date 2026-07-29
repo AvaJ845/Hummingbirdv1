@@ -70,27 +70,41 @@ struct PaywallView: View {
                 }
 
                 if let yearly = entitlements.yearlyProduct {
+                    let savings = entitlements.yearlySavingsPercent.map { " · save \($0)%" } ?? ""
                     purchaseButton(
                         yearly,
-                        badge: "$\(AppPricing.yearlyUSD)/year · cancel anytime"
+                        badge: "\(AppPricing.annualTrial), then \(yearly.displayPrice)/year\(savings)",
+                        highlighted: true
+                    )
+                }
+
+                if let monthly = entitlements.monthlyProduct {
+                    purchaseButton(
+                        monthly,
+                        badge: "\(monthly.displayPrice)/month · cancel anytime"
                     )
                 }
 
                 if entitlements.products.isEmpty && !entitlements.isLoading {
                     VStack(alignment: .leading, spacing: 8) {
                         fairPriceRow(
-                            label: "Hummingbird Pro",
+                            label: "Pro Yearly",
                             price: "$\(AppPricing.yearlyUSD)/year",
-                            note: "Compare every method · cancel anytime"
+                            note: "7-day free trial · best value"
                         )
-                        Text("Live purchase appears once the yearly product is created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
+                        fairPriceRow(
+                            label: "Pro Monthly",
+                            price: "$\(AppPricing.monthlyUSD)/month",
+                            note: "Lower commitment · cancel anytime"
+                        )
+                        Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
                 }
             } header: {
-                Text("Pro plan")
+                Text("Choose your plan")
             } footer: {
                 Text(subscriptionFooter)
             }
@@ -155,16 +169,17 @@ struct PaywallView: View {
 
     private var subscriptionFooter: String {
         """
-        Payment is charged to your Apple ID at purchase confirmation. \
-        Hummingbird Pro is a yearly auto-renewable subscription ($\(AppPricing.yearlyUSD)/year) \
-        unless cancelled at least 24 hours before the period ends. \
+        Hummingbird Pro is an auto-renewable subscription: \
+        Yearly ($\(AppPricing.yearlyUSD)/year, with a 7-day free trial) or Monthly ($\(AppPricing.monthlyUSD)/month). \
+        Payment is charged to your Apple ID at purchase confirmation; a free trial converts to a paid year unless cancelled \
+        at least 24 hours before it ends. Subscriptions renew unless cancelled at least 24 hours before the period ends. \
         Manage or cancel in Settings → Apple ID → Subscriptions. \
         Pro unlocks on-device comparison tools only — never financial advice, never better foresight, never premium data. \
         Free and Pro share the same key-less public APIs.
         """
     }
 
-    private func purchaseButton(_ product: Product, badge: String) -> some View {
+    private func purchaseButton(_ product: Product, badge: String, highlighted: Bool = false) -> some View {
         Button {
             Task {
                 let ok = await entitlements.purchase(product)
@@ -173,8 +188,17 @@ struct PaywallView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(product.displayName)
-                        .font(.headline)
+                    HStack(spacing: 8) {
+                        Text(product.displayName)
+                            .font(.headline)
+                        if highlighted {
+                            Text("BEST VALUE")
+                                .font(.caption2.weight(.bold))
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Theme.accent.opacity(0.18), in: Capsule())
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
                     Text(badge)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -186,6 +210,7 @@ struct PaywallView: View {
             }
         }
         .disabled(entitlements.isPro)
+        .accessibilityLabel("\(product.displayName)\(highlighted ? ", best value" : ""), \(badge)")
         .accessibilityHint(product.subscription != nil ? "Auto-renewable subscription" : "One-time purchase")
     }
 

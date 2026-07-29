@@ -9,7 +9,7 @@
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
-- **Price:** Free, with an optional auto-renewable subscription (Hummingbird Pro, $19.99/yr)
+- **Price:** Free. Optional **Hummingbird Pro** auto-renewable subscription — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%). Group `Hummingbird Pro`.
 
 ## Promotional text (≤170)
 Sketch where a stock or crypto *could* drift from public prices — with plain-English reasoning and honest backtests. Educational only. Never buy/sell advice.

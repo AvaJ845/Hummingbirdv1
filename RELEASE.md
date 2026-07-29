@@ -6,7 +6,7 @@ tests, assets, and legal pages are done — the rest is account/config work
 
 **Key facts**
 - Bundle ID: `com.avaresearch.hummingbird`
-- Subscription (IAP) Product ID: `com.avaresearch.hummingbird.pro.yearly` · $19.99/yr · group `HummingbirdPro`
+- Subscriptions (IAP), group `Hummingbird Pro`: `com.avaresearch.hummingbird.pro.yearly` ($19.99/yr, 7-day free trial) · `com.avaresearch.hummingbird.pro.monthly` ($2.99/mo)
 - Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
 - Assets: `AppStore/` (five 1320×2868 screenshots, `AppIcon-1024.png`, `METADATA.md`)
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
@@ -36,10 +36,11 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
 - [ ] Upload the **5 screenshots** from `AppStore/` to the **6.9″** slot + set the 1024 icon
 
-## 4 · Create the subscription
-Apps → Hummingbird → **Subscriptions** → new group **Hummingbird Pro**, then a subscription:
-- [ ] **Product ID:** `com.avaresearch.hummingbird.pro.yearly` *(must match exactly)*
-- [ ] Reference name `Pro Yearly` · Duration **1 Year** · Price **$19.99** (USD tier)
+## 4 · Create the subscriptions
+Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**, then two products:
+- [ ] **Yearly:** `com.avaresearch.hummingbird.pro.yearly` · ref `Pro Yearly` · **1 Year** · **$19.99** · add a **7-day free trial** (Introductory Offer → Free → 1 week)
+- [ ] **Monthly:** `com.avaresearch.hummingbird.pro.monthly` · ref `Pro Monthly` · **1 Month** · **$2.99**
+- [ ] Set both **Ready to Submit** (product IDs must match exactly)
 - [ ] Display name `Hummingbird Pro` + description (from `METADATA.md`)
 - [ ] Add a review screenshot + set to **Ready to Submit**
 - [ ] Set the app's EULA to Apple's Standard, or your Terms URL

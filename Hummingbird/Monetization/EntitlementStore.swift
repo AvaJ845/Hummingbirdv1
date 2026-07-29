@@ -8,6 +8,8 @@ import StoreKit
 @Observable
 final class EntitlementStore {
     static let yearlyProductID = "com.avaresearch.hummingbird.pro.yearly"
+    static let monthlyProductID = "com.avaresearch.hummingbird.pro.monthly"
+    nonisolated static var allProductIDs: [String] { [yearlyProductID, monthlyProductID] }
 
     #if DEBUG
     private static let debugUnlockKey = "hummingbird.debug.proUnlocked"
@@ -30,6 +32,25 @@ final class EntitlementStore {
 
     var yearlyProduct: Product? {
         products.first { $0.id == Self.yearlyProductID }
+    }
+
+    var monthlyProduct: Product? {
+        products.first { $0.id == Self.monthlyProductID }
+    }
+
+    /// How much cheaper (per month) the yearly plan is vs 12× the monthly plan.
+    /// Nil until both live products are loaded.
+    var yearlySavingsPercent: Int? {
+        guard let monthly = monthlyProduct, let yearly = yearlyProduct else { return nil }
+        return Self.savingsPercent(monthly: monthly.price, yearly: yearly.price)
+    }
+
+    /// Pure, testable savings calculation.
+    nonisolated static func savingsPercent(monthly: Decimal, yearly: Decimal) -> Int? {
+        let annualizedMonthly = monthly * 12
+        guard annualizedMonthly > 0, yearly < annualizedMonthly else { return nil }
+        let fraction = (annualizedMonthly - yearly) / annualizedMonthly
+        return Int((fraction as NSDecimalNumber).doubleValue * 100 + 0.5)
     }
 
     init() {
@@ -64,7 +85,7 @@ final class EntitlementStore {
         defer { isLoading = false }
 
         do {
-            products = try await Product.products(for: [Self.yearlyProductID])
+            products = try await Product.products(for: Self.allProductIDs)
             await refreshPurchases()
         } catch {
             lastError = error.localizedDescription
