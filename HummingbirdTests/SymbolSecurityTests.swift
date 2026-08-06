@@ -13,6 +13,8 @@ final class SymbolSecurityTests: XCTestCase {
         for bad in [
             "bitcoin/../global",       // path traversal
             "AAPL/quote",              // extra path segment
+            "..",                      // dot-run: path-segment collapse
+            "coin..gecko",             // dot-run inside allowlisted chars
             "AAPL?range=max",          // query injection
             "AAPL#frag",               // fragment injection
             "some symbol",             // space

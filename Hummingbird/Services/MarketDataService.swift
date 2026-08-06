@@ -27,6 +27,10 @@ actor MarketDataService: MarketDataProviding {
     /// injection) from reaching the network layer.
     static func isValidSymbol(_ symbol: String) -> Bool {
         guard (1...32).contains(symbol.count) else { return false }
+        // Defense-in-depth: even within the allowlist, "." is permitted (BRK.B),
+        // so reject any ".." run that could collapse a path segment on the API
+        // host. Real tickers/ids never contain it.
+        guard !symbol.contains("..") else { return false }
         return symbol.unicodeScalars.allSatisfy { allowedSymbolCharacters.contains($0) }
     }
 
