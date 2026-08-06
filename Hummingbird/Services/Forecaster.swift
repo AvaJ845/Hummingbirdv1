@@ -150,12 +150,20 @@ enum Forecaster {
         result.reserveCapacity(horizon)
         let bandScale = context.bandScale(for: strategy)
 
+        // Spot anchoring (t0 ≡ Pspot): re-center the whole projection so its
+        // step-0 value lands exactly on the last real price, then let each
+        // model's own trend/shape carry forward. Without this, smoothed or
+        // fitted models (Holt, linear, trend+seasonal) start on a lagging
+        // baseline and render a "ghost drop" from spot after a gap event.
+        let anchorOffset = context.lastClose
+            - context.baseline(strategy: strategy, step: 0, date: context.lastDate)
+
         for step in 1...horizon {
             guard let date = calendar.date(byAdding: .day, value: step, to: context.lastDate) else {
                 continue
             }
 
-            let baseline = context.baseline(strategy: strategy, step: step, date: date)
+            let baseline = context.baseline(strategy: strategy, step: step, date: date) + anchorOffset
             // Uncalibrated residual band — educational range, not a verified PI.
             let band = bandScale * sqrt(Double(step)) * 1.28
 
@@ -233,7 +241,9 @@ private struct TrendContext {
         let drift = diffs.isEmpty ? 0 : diffs.reduce(0, +) / Double(diffs.count)
         let diffStd = Math.standardDeviation(diffs)
 
-        let holt = Math.holtLinear(closes, alpha: 0.3, beta: 0.1)
+        // 3σ gap detection over a ~21-day lookback so an earnings breakout
+        // re-baselines the level instantly instead of lagging behind spot.
+        let holt = Math.holtLinear(closes, alpha: 0.3, beta: 0.1, gapSigmaThreshold: 3)
 
         self.closes = closes
         self.count = n
@@ -345,10 +355,20 @@ enum Math {
     }
 
     /// Holt’s linear (additive trend) exponential smoothing.
+    ///
+    /// When `gapSigmaThreshold` is set, a one-step change larger than
+    /// `threshold ×` the rolling standard deviation of recent changes (over
+    /// `gapLookback` steps) is treated as a **discontinuity** — an earnings
+    /// gap or overnight breakout. On such a step the level snaps straight to
+    /// the new price (equivalent to α→1 for that transition) and the trend is
+    /// held at its pre-gap value, so a one-off jump neither lags behind spot
+    /// nor inflates into a runaway trend.
     static func holtLinear(
         _ values: [Double],
         alpha: Double,
-        beta: Double
+        beta: Double,
+        gapSigmaThreshold: Double? = nil,
+        gapLookback: Int = 21
     ) -> (level: Double, trend: Double, residualStd: Double) {
         guard let first = values.first else { return (0, 0, 0) }
         guard values.count > 1 else { return (first, 0, 0) }
@@ -357,13 +377,29 @@ enum Math {
         var trend = values[1] - values[0]
         var residuals: [Double] = []
         residuals.reserveCapacity(values.count - 1)
+        var diffs: [Double] = []
 
         for value in values.dropFirst() {
             let forecast = level + trend
             residuals.append(value - forecast)
             let prevLevel = level
-            level = alpha * value + (1 - alpha) * (prevLevel + trend)
-            trend = beta * (level - prevLevel) + (1 - beta) * trend
+            let change = value - prevLevel
+
+            var isGap = false
+            if let threshold = gapSigmaThreshold, diffs.count >= 2 {
+                let window = Array(diffs.suffix(gapLookback))
+                let sd = standardDeviation(window)
+                if sd > 0, abs(change) > threshold * sd { isGap = true }
+            }
+
+            if isGap {
+                level = value            // accept the new baseline instantly (α→1)
+                // trend held: don't let a one-off gap become a runaway slope
+            } else {
+                level = alpha * value + (1 - alpha) * (prevLevel + trend)
+                trend = beta * (level - prevLevel) + (1 - beta) * trend
+            }
+            diffs.append(change)
         }
 
         return (level, trend, standardDeviation(residuals))
