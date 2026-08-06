@@ -83,6 +83,41 @@ final class GhostDropTests: XCTestCase {
         }
     }
 
+    /// Earnings cut both ways: a miss gaps the price DOWN. Anchoring must be
+    /// symmetric — no artificial jump UP from a lower spot either.
+    func testNoGhostSpikeOnEarningsMiss() {
+        let series = gapUpSeries(spot: 418.0, base: 450)  // −7% gap down
+        let spot = series.points.last!.close
+        for model in allModels {
+            guard let first = Forecaster.forecast(series: series, model: model, horizon: 14).points.first else {
+                XCTFail("\(model.name): no points"); continue
+            }
+            XCTAssertLessThan(abs(first.mean - spot) / spot, 0.05,
+                              "\(model.name): first node \(first.mean) diverges from a gap-down spot \(spot).")
+        }
+    }
+
+    /// Adversarial / degenerate inputs must never yield NaN, Inf, or negative
+    /// prices (a crash or garbage chart is both a UX and a robustness failure).
+    func testForecastStaysFiniteOnDegenerateInputs() {
+        let flat = (0..<20).map { PricePoint(date: Date(timeIntervalSince1970: Double($0) * 86_400), close: 100) }
+        let cases: [PriceSeries] = [
+            PriceSeries(symbol: "FLAT", assetClass: .stock, points: flat, isSample: true),
+            gapUpSeries(spot: 0.01, base: 450),     // near-zero spot
+            gapUpSeries(spot: 9_999, base: 1),      // extreme gap up
+        ]
+        for series in cases {
+            for model in allModels {
+                for point in Forecaster.forecast(series: series, model: model, horizon: 30).points {
+                    XCTAssertTrue(point.mean.isFinite && point.lower.isFinite && point.upper.isFinite,
+                                  "\(model.name): non-finite output")
+                    XCTAssertGreaterThanOrEqual(point.mean, 0, "\(model.name): negative price")
+                    XCTAssertLessThanOrEqual(point.lower, point.upper, "\(model.name): inverted band")
+                }
+            }
+        }
+    }
+
     /// Action 2: Holt snaps its level to a gap instead of lagging behind it.
     func testHoltSnapsLevelOnGap() {
         var values = (0..<40).map { 100.0 + sin(Double($0) * 0.6) * 0.8 }  // calm ~100
