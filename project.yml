@@ -10,8 +10,8 @@ configFiles:
   Release: Config/Base.xcconfig
 settings:
   base:
-    MARKETING_VERSION: "1.4.2"
-    CURRENT_PROJECT_VERSION: "7"
+    MARKETING_VERSION: "1.4.3"
+    CURRENT_PROJECT_VERSION: "8"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
@@ -50,6 +50,12 @@ targets:
       path: Hummingbird/Info.plist
       properties:
         CFBundleDisplayName: Hummingbird
+        # Drive version/build from the shared build settings so the app and
+        # the embedded widget always match. Without these, XcodeGen injects
+        # its defaults (1.0 / 1) and the MARKETING_VERSION/CURRENT_PROJECT_VERSION
+        # bumps never reach the app binary.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
