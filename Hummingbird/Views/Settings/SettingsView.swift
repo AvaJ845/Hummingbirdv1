@@ -36,8 +36,10 @@ enum AppIconOption: String, CaseIterable, Identifiable {
 
 struct SettingsView: View {
     @Bindable var entitlements: EntitlementStore
+    @Bindable var scorecard: SketchScorecardStore
     @Environment(\.dismiss) private var dismiss
     @State private var currentAlternate = UIApplication.shared.alternateIconName
+    @State private var showClearConfirm = false
 
     private var version: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -94,6 +96,31 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        ScorecardView(scorecard: scorecard)
+                    } label: {
+                        Label("Track record", systemImage: "checkmark.seal")
+                    }
+                    Picker(selection: $scorecard.retentionDays) {
+                        Text("Keep all").tag(Int?.none)
+                        Text("After 90 days").tag(Int?.some(90))
+                        Text("After 30 days").tag(Int?.some(30))
+                    } label: {
+                        Label("Auto-clear history", systemImage: "clock.arrow.circlepath")
+                    }
+                    Button(role: .destructive) {
+                        showClearConfirm = true
+                    } label: {
+                        Label("Clear sketch history now", systemImage: "trash")
+                    }
+                    .disabled(scorecard.records.isEmpty)
+                } header: {
+                    Text("Sketch history")
+                } footer: {
+                    Text("Your track record is stored only on this device. Clear it any time, or have Hummingbird auto-clear older sketches.")
+                }
+
+                Section {
                     LabeledContent("Version", value: version)
                 } footer: {
                     Text("Hummingbird runs entirely on your device. Educational projections only — not financial advice.")
@@ -105,6 +132,12 @@ struct SettingsView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .confirmationDialog("Clear all sketch history?", isPresented: $showClearConfirm, titleVisibility: .visible) {
+                Button("Clear history", role: .destructive) { scorecard.clearAll() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes your on-device track record. It can't be undone.")
             }
         }
     }

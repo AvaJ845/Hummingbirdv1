@@ -7,6 +7,8 @@ struct ContentView: View {
     @State private var viewModel: ForecastViewModel
     @State private var dictation = DictationController()
     @State private var watchlist = WatchlistStore()
+    @State private var scorecard = SketchScorecardStore()
+    @State private var currentRegime: VolatilityRegime?
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
@@ -80,6 +82,7 @@ struct ContentView: View {
         .onChange(of: viewModel.forecastGeneration) { _, generation in
             guard generation > 0 else { return }
             saveSnapshotIfWatched()
+            recordSketch()
             // Ask for a rating only at a "happy moment" — a completed projection,
             // never at launch or after an error (forecastGeneration bumps only on
             // a successful run).
@@ -87,13 +90,16 @@ struct ContentView: View {
                 requestReview()
             }
         }
+        .onChange(of: viewModel.hasResult) { _, hasResult in
+            if !hasResult { currentRegime = nil }
+        }
         .sheet(isPresented: $showWatchlist) {
             WatchlistView(store: watchlist) { item in
                 viewModel.load(item)
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(entitlements: entitlements)
+            SettingsView(entitlements: entitlements, scorecard: scorecard)
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
@@ -116,6 +122,15 @@ struct ContentView: View {
               let series = viewModel.loadedSeries,
               let snapshot = WatchlistIntelligence.snapshot(for: item, series: series) else { return }
         watchlist.saveSnapshot(snapshot)
+    }
+
+    /// Log the sketch to the on-device track record, resolve any past sketches
+    /// against the fresh prices, and note the current volatility regime.
+    private func recordSketch() {
+        guard let forecast = viewModel.forecast, let series = viewModel.loadedSeries else { return }
+        scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
+        scorecard.resolve(using: series)
+        currentRegime = RegimeClassifier.classify(series: series)
     }
 
     private var home: some View {
@@ -149,6 +164,11 @@ struct ContentView: View {
 
                 if let dictationError = dictation.errorMessage, !dictation.isActive {
                     ErrorBanner(message: dictationError)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
+                if viewModel.hasResult, let regime = currentRegime, regime.isNoteworthy {
+                    RegimeBanner(regime: regime)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
