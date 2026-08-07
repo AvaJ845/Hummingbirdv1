@@ -117,6 +117,17 @@ final class SketchScorecardStore {
         .sorted { $0.lastSketchedAt > $1.lastSketchedAt }
     }
 
+    /// Concrete, personalised "what Pro would do for you" highlights, drawn
+    /// from the user's own track record — best-tracking method per asset. Empty
+    /// until enough scored sketches exist. Powers the value-recap paywall.
+    var proValueHighlights: [ProValueHighlight] {
+        assets.compactMap { asset in
+            guard let best = bestModel(for: asset.symbol, assetClass: asset.assetClass) else { return nil }
+            return ProValueHighlight(symbol: asset.symbol, modelName: best.modelName, medianError: best.medianError)
+        }
+        .sorted { $0.medianError < $1.medianError }
+    }
+
     // MARK: - Clearing
 
     func clearAll() {
@@ -160,4 +171,12 @@ struct ScorecardAsset: Identifiable {
 private struct AssetKey: Hashable {
     let symbol: String
     let assetClass: AssetClass
+}
+
+/// A concrete, personalised Pro value point for the value-recap paywall.
+struct ProValueHighlight: Identifiable, Equatable {
+    let symbol: String
+    let modelName: String
+    let medianError: Double
+    var id: String { symbol.lowercased() }
 }

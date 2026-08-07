@@ -52,7 +52,7 @@ struct SettingsView: View {
             List {
                 Section {
                     NavigationLink {
-                        PaywallView(entitlements: entitlements)
+                        PaywallView(entitlements: entitlements, scorecard: scorecard)
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "sparkles")

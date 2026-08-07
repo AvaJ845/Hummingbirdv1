@@ -38,7 +38,7 @@ struct ContentView: View {
                         case .indicators:
                             EconomicIndicatorsSheet(viewModel: viewModel)
                         case .paywall(let reason):
-                            PaywallView(entitlements: entitlements, reason: reason)
+                            PaywallView(entitlements: entitlements, reason: reason, scorecard: scorecard)
                         }
                     }
             }

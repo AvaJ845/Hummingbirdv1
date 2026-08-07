@@ -6,6 +6,9 @@ struct PaywallView: View {
     @Bindable var entitlements: EntitlementStore
     /// Exact gate that opened the paywall — fair, contextual, retail-simple.
     var reason: String? = nil
+    /// Optional: powers a personalised "what Pro would do for you" recap from
+    /// the user's own on-device track record.
+    var scorecard: SketchScorecardStore? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var manageError: String?
     @State private var legalPath: LegalRoute?
@@ -34,6 +37,26 @@ struct PaywallView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+
+            if !entitlements.isPro, let highlights = scorecard?.proValueHighlights, !highlights.isEmpty {
+                Section {
+                    ForEach(highlights.prefix(3)) { highlight in
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Auto-pick the best method for \(highlight.symbol.uppercased())")
+                                Text("\(highlight.modelName) has tracked it closest — \(percent(highlight.medianError)) typical error")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "trophy").foregroundStyle(Theme.brandGradient)
+                        }
+                    }
+                } header: {
+                    Text("What Pro would do for you")
+                } footer: {
+                    Text("Personalised from your own on-device track record — a record of the past, not a promise.")
+                }
             }
 
             Section("Always free") {
@@ -228,6 +251,10 @@ struct PaywallView: View {
                 .font(.subheadline.monospacedDigit())
                 .foregroundStyle(Theme.accent)
         }
+    }
+
+    private func percent(_ fraction: Double) -> String {
+        String(format: "%.1f%%", fraction * 100)
     }
 
     private func manageSubscriptions() async {
