@@ -77,6 +77,31 @@ final class ScorecardEngineTests: XCTestCase {
         XCTAssertFalse(ScorecardEngine.resolve(future, against: futureSeries).isResolved)
     }
 
+    private func resolvedRecord(model: String, ape: Double) -> SketchRecord {
+        SketchRecord(id: UUID(), symbol: "AAPL", assetClass: .stock, modelId: model, modelName: model.capitalized,
+                     createdAt: Date(), spotAtCreation: 100,
+                     projections: [SketchProjection(targetDate: Date(timeIntervalSince1970: 1),
+                                                    projectedMean: 100, actualClose: 100 / (1 - ape), resolvedAt: Date())])
+    }
+
+    func testBestModelPicksLowestErrorAndRespectsMinResolved() {
+        let records =
+            [resolvedRecord(model: "holt", ape: 0.02), resolvedRecord(model: "holt", ape: 0.02), resolvedRecord(model: "holt", ape: 0.025)]
+            + [resolvedRecord(model: "drift", ape: 0.08), resolvedRecord(model: "drift", ape: 0.07), resolvedRecord(model: "drift", ape: 0.09)]
+            + [resolvedRecord(model: "linear", ape: 0.001)]   // only 1 → excluded
+
+        let perfs = ScorecardEngine.modelPerformances(records)
+        XCTAssertEqual(perfs.count, 2, "linear excluded for too few scored")
+        XCTAssertEqual(perfs.first?.modelId, "holt")
+        XCTAssertLessThan(perfs.first!.medianError, perfs.last!.medianError)
+        XCTAssertEqual(ScorecardEngine.bestModel(records)?.modelId, "holt")
+    }
+
+    func testBestModelNilWithoutEnoughResolved() {
+        let records = [resolvedRecord(model: "holt", ape: 0.02), resolvedRecord(model: "drift", ape: 0.03)]
+        XCTAssertNil(ScorecardEngine.bestModel(records), "one scored sketch per model isn't enough")
+    }
+
     func testSummaryAndMedian() {
         XCTAssertNil(ScorecardEngine.median(sorted: []))
         XCTAssertEqual(ScorecardEngine.median(sorted: [0.02, 0.04, 0.06])!, 0.04, accuracy: 1e-9)

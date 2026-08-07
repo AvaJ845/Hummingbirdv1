@@ -53,3 +53,12 @@ struct ScorecardSummary: Equatable, Sendable {
 
     static let empty = ScorecardSummary(totalSketches: 0, resolvedSketches: 0, medianError: nil)
 }
+
+/// One method's tracked accuracy for a single asset.
+struct ModelPerformance: Identifiable, Equatable, Sendable {
+    let modelId: String
+    let modelName: String
+    let resolvedCount: Int
+    let medianError: Double   // fraction, e.g. 0.021
+    var id: String { modelId }
+}

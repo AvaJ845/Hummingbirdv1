@@ -86,6 +86,17 @@ final class SketchScorecardStore {
         ScorecardEngine.summary(records(for: symbol, assetClass: assetClass))
     }
 
+    /// The method that has tracked this asset closest (nil until enough scored
+    /// sketches exist across at least two methods to be meaningful).
+    func bestModel(for symbol: String, assetClass: AssetClass) -> ModelPerformance? {
+        ScorecardEngine.bestModel(records(for: symbol, assetClass: assetClass))
+    }
+
+    /// Per-method track record for this asset, best first.
+    func modelPerformances(for symbol: String, assetClass: AssetClass) -> [ModelPerformance] {
+        ScorecardEngine.modelPerformances(records(for: symbol, assetClass: assetClass))
+    }
+
     func records(for symbol: String, assetClass: AssetClass) -> [SketchRecord] {
         records.filter {
             $0.assetClass == assetClass && $0.symbol.caseInsensitiveCompare(symbol) == .orderedSame

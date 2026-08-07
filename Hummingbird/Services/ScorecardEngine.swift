@@ -105,6 +105,28 @@ enum ScorecardEngine {
         )
     }
 
+    /// Per-model track record for one asset, best (lowest typical error) first.
+    /// Only models with at least `minResolved` scored sketches are included, so
+    /// a single lucky sketch never crowns a "best" method.
+    static func modelPerformances(_ records: [SketchRecord], minResolved: Int = 2) -> [ModelPerformance] {
+        let byModel = Dictionary(grouping: records.filter(\.isResolved)) { $0.modelId }
+        return byModel.compactMap { modelId, recs -> ModelPerformance? in
+            let errors = recs.compactMap(\.representativeError).sorted()
+            guard recs.count >= minResolved, let med = median(sorted: errors) else { return nil }
+            return ModelPerformance(modelId: modelId,
+                                    modelName: recs.first?.modelName ?? modelId,
+                                    resolvedCount: recs.count,
+                                    medianError: med)
+        }
+        .sorted { $0.medianError < $1.medianError }
+    }
+
+    /// The method that has tracked this asset closest (nil until enough scored
+    /// sketches exist).
+    static func bestModel(_ records: [SketchRecord], minResolved: Int = 2) -> ModelPerformance? {
+        modelPerformances(records, minResolved: minResolved).first
+    }
+
     /// Median of an already-sorted array.
     static func median(sorted values: [Double]) -> Double? {
         guard !values.isEmpty else { return nil }

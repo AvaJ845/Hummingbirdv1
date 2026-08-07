@@ -10,6 +10,8 @@ struct ContentView: View {
     @State private var scorecard = SketchScorecardStore()
     @State private var currentRegime: VolatilityRegime?
     @State private var currentReliability: ReliabilityScore?
+    @State private var currentBestModel: ModelPerformance?
+    @State private var currentModelBreakdown: [ModelPerformance] = []
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
@@ -95,6 +97,8 @@ struct ContentView: View {
             if !hasResult {
                 currentRegime = nil
                 currentReliability = nil
+                currentBestModel = nil
+                currentModelBreakdown = []
             }
         }
         .sheet(isPresented: $showWatchlist) {
@@ -138,6 +142,14 @@ struct ContentView: View {
         scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
         scorecard.resolve(using: series)
         currentRegime = RegimeClassifier.classify(series: series)
+        currentBestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
+        currentModelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
+    }
+
+    /// Switch to a recommended method (respecting Pro gating) and re-project.
+    private func applyRecommendedModel(_ modelId: String) {
+        guard let model = ForecastModel.model(id: modelId) else { return }
+        if viewModel.selectModel(model) { viewModel.run() }
     }
 
     /// Compute the calibrated reliability score off the main thread (it runs a
@@ -232,6 +244,19 @@ struct ContentView: View {
                         score: reliability,
                         isPro: entitlements.isPro,
                         onUnlock: { open(.paywall(reason: "Pro shows exactly what's driving each sketch's reliability score.")) }
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+
+                if viewModel.hasResult, let best = currentBestModel, let series = viewModel.loadedSeries {
+                    BestModelCard(
+                        assetSymbol: series.symbol,
+                        best: best,
+                        breakdown: currentModelBreakdown,
+                        isPro: entitlements.isPro,
+                        currentModelId: viewModel.model.strategy.rawValue,
+                        onUse: { applyRecommendedModel($0) },
+                        onUnlock: { open(.paywall(reason: "Pro recommends the method that has tracked this asset closest.")) }
                     )
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
