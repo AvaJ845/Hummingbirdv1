@@ -115,6 +115,22 @@ enum Forecaster {
         return errorSum / Double(counted)
     }
 
+    // MARK: - Model agreement
+
+    /// How much the base methods disagree about the horizon outcome — the
+    /// standard deviation of their expected % change. Higher = less agreement
+    /// = a less reliable read. Nil when fewer than two methods produce a result.
+    /// (Excludes the ensemble, which is itself a blend of the others.)
+    static func modelDisagreement(series: PriceSeries, horizon: Int) -> Double? {
+        let strategies: [ForecastStrategy] = [.drift, .trendSeasonal, .linear, .holt, .momentum, .reversion]
+        let changes = strategies.compactMap { strategy -> Double? in
+            guard let model = ForecastModel.model(id: strategy.rawValue) else { return nil }
+            return forecast(series: series, model: model, horizon: horizon).expectedChange
+        }
+        guard changes.count >= 2 else { return nil }
+        return Math.standardDeviation(changes)
+    }
+
     // MARK: - Macro tilt
 
     /// Scales each step toward `horizonBias` by step/horizon and widens bands.

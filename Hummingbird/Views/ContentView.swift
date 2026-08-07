@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var watchlist = WatchlistStore()
     @State private var scorecard = SketchScorecardStore()
     @State private var currentRegime: VolatilityRegime?
+    @State private var currentReliability: ReliabilityScore?
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
@@ -91,7 +92,10 @@ struct ContentView: View {
             }
         }
         .onChange(of: viewModel.hasResult) { _, hasResult in
-            if !hasResult { currentRegime = nil }
+            if !hasResult {
+                currentRegime = nil
+                currentReliability = nil
+            }
         }
         .sheet(isPresented: $showWatchlist) {
             WatchlistView(store: watchlist) { item in
@@ -109,6 +113,9 @@ struct ContentView: View {
         }
         .task {
             await entitlements.loadProducts()
+        }
+        .task(id: viewModel.forecastGeneration) {
+            await refreshReliability()
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
@@ -131,6 +138,33 @@ struct ContentView: View {
         scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
         scorecard.resolve(using: series)
         currentRegime = RegimeClassifier.classify(series: series)
+    }
+
+    /// Compute the calibrated reliability score off the main thread (it runs a
+    /// handful of backtests), then publish it. Driven by `.task(id:)` so a new
+    /// sketch cancels any in-flight computation — no stale results, no work on
+    /// the render path.
+    @MainActor private func refreshReliability() async {
+        guard viewModel.forecastGeneration > 0,
+              let series = viewModel.loadedSeries,
+              let forecast = viewModel.forecast else {
+            currentReliability = nil
+            return
+        }
+        let model = forecast.model
+        let horizon = forecast.points.count
+        let score = await Task.detached(priority: .utility) {
+            let inputs = ReliabilityInputs(
+                backtestMAPE: Forecaster.walkForwardMAPE(series: series, model: model),
+                regime: RegimeClassifier.classify(series: series),
+                modelDisagreement: Forecaster.modelDisagreement(series: series, horizon: horizon),
+                horizon: horizon,
+                historyCount: series.points.count
+            )
+            return ReliabilityEngine.score(inputs)
+        }.value
+        guard !Task.isCancelled else { return }
+        currentReliability = score
     }
 
     private var home: some View {
@@ -191,6 +225,15 @@ struct ContentView: View {
                 } else {
                     ForecastEmptyState()
                         .transition(.opacity)
+                }
+
+                if viewModel.hasResult, let reliability = currentReliability {
+                    ReliabilityMeter(
+                        score: reliability,
+                        isPro: entitlements.isPro,
+                        onUnlock: { open(.paywall(reason: "Pro shows exactly what's driving each sketch's reliability score.")) }
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
                 if !viewModel.hasResult {
