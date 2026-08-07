@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Shows how much to trust a sketch, as a calibrated meter + plain-English
-/// read. The meter and headline are free; the factor-by-factor breakdown is a
-/// Pro depth feature.
+/// A thin, always-visible reliability strip that sits directly under the sketch
+/// (Option A hierarchy). Collapsed it's one glanceable line — "Reliability 78 ·
+/// Good · Why". Tap to reveal the meter, the plain-English read, and the
+/// factor breakdown (Pro). Keeps the sketch the hero and the chrome minimal.
 struct ReliabilityMeter: View {
     let score: ReliabilityScore
     let isPro: Bool
@@ -12,34 +13,51 @@ struct ReliabilityMeter: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            strip
+            if expanded {
+                expandedContent.padding(.top, 12)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var strip: some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .snappy) { expanded.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: score.tier.symbol)
+                    .foregroundStyle(score.tier.color)
+                Text("Reliability \(score.value)")
+                    .font(.subheadline.weight(.semibold))
+                Text("· \(score.tier.title)")
+                    .font(.subheadline)
+                    .foregroundStyle(score.tier.color)
+                Spacer(minLength: 6)
+                Text(expanded ? "Hide" : "Why")
+                    .font(.caption).foregroundStyle(.secondary)
+                Image(systemName: "chevron.down")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(expanded ? 180 : 0))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reliability \(score.value) out of 100, \(score.tier.title)")
+        .accessibilityHint(expanded ? "Hide details" : "Show what's driving this score")
+    }
+
+    private var expandedContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            header
             meterBar
             Text(score.headline)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             breakdown
-        }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Reliability \(score.value) out of 100. \(score.tier.title). \(score.headline)")
-    }
-
-    private var header: some View {
-        HStack(spacing: 8) {
-            Image(systemName: score.tier.symbol)
-                .foregroundStyle(score.tier.color)
-            Text("Reliability")
-                .font(.subheadline.weight(.semibold))
-            Spacer()
-            Text("\(score.value)")
-                .font(.title3.weight(.bold)).monospacedDigit()
-                .foregroundStyle(score.tier.color)
-            Text("/ 100")
-                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -58,35 +76,28 @@ struct ReliabilityMeter: View {
 
     @ViewBuilder private var breakdown: some View {
         if isPro {
-            DisclosureGroup(isExpanded: $expanded) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Baseline").font(.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Baseline").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("50").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
+                }
+                ForEach(score.factors) { factor in
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(factor.name).font(.caption.weight(.medium))
+                            Text(factor.detail).font(.caption2).foregroundStyle(.secondary)
+                        }
                         Spacer()
-                        Text("50").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
-                    }
-                    ForEach(score.factors) { factor in
-                        HStack(alignment: .firstTextBaseline) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(factor.name).font(.caption.weight(.medium))
-                                Text(factor.detail).font(.caption2).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if factor.impact != 0 {
-                                Text(factor.impact > 0 ? "+\(factor.impact)" : "\(factor.impact)")
-                                    .font(.caption.weight(.semibold)).monospacedDigit()
-                                    .foregroundStyle(factor.impact >= 0 ? Theme.up : Theme.down)
-                            }
+                        if factor.impact != 0 {
+                            Text(factor.impact > 0 ? "+\(factor.impact)" : "\(factor.impact)")
+                                .font(.caption.weight(.semibold)).monospacedDigit()
+                                .foregroundStyle(factor.impact >= 0 ? Theme.up : Theme.down)
                         }
                     }
-                    Text("Starts from a neutral 50, then adjusts for each factor.")
-                        .font(.caption2).foregroundStyle(.tertiary)
                 }
-                .padding(.top, 6)
-            } label: {
-                Text("Why this score")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                Text("Starts from a neutral 50, then adjusts for each factor.")
+                    .font(.caption2).foregroundStyle(.tertiary)
             }
         } else {
             Button(action: onUnlock) {
