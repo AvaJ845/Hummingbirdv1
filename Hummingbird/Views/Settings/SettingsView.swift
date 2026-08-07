@@ -120,6 +120,19 @@ struct SettingsView: View {
                     Text("Your track record is stored only on this device. Clear it any time, or have Hummingbird auto-clear older sketches.")
                 }
 
+                #if DEBUG
+                Section {
+                    Toggle("Unlock Pro (testing)", isOn: Binding(
+                        get: { entitlements.debugUnlocked },
+                        set: { entitlements.setDebugUnlocked($0) }
+                    ))
+                } header: {
+                    Text("Developer")
+                } footer: {
+                    Text("Testing only — unlocks all Pro models and features on this dev build. Compiled out of the App Store build.")
+                }
+                #endif
+
                 Section {
                     LabeledContent("Version", value: version)
                 } footer: {
