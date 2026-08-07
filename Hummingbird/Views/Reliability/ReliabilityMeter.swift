@@ -9,6 +9,7 @@ struct ReliabilityMeter: View {
     var onUnlock: () -> Void = {}
 
     @State private var expanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -48,7 +49,7 @@ struct ReliabilityMeter: View {
                 Capsule().fill(Color(.tertiarySystemFill)).frame(height: 8)
                 Capsule().fill(score.tier.color)
                     .frame(width: max(6, geo.size.width * CGFloat(score.value) / 100), height: 8)
-                    .animation(.easeOut(duration: 0.5), value: score.value)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.5), value: score.value)
             }
         }
         .frame(height: 8)

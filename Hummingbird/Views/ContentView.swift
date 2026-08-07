@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showOnboarding = false
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
@@ -270,15 +271,20 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
+                if viewModel.hasResult, sketch.bestModel == nil, scorecard.records.count < 2 {
+                    dayOneHint
+                        .transition(.opacity)
+                }
+
                 if !viewModel.hasResult {
                     ForecastDisclaimer()
                 }
             }
             .padding(.horizontal)
             .padding(.bottom, 32)
-            .animation(NavigationMotion.page, value: viewModel.hasResult)
-            .animation(NavigationMotion.page, value: viewModel.isLoading)
-            .animation(NavigationMotion.page, value: viewModel.forecastGeneration)
+            .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.hasResult)
+            .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.isLoading)
+            .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.forecastGeneration)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Hummingbird")
@@ -382,6 +388,25 @@ struct ContentView: View {
         if next != micCenter {
             micCenter = next
         }
+    }
+
+    /// First-run nudge: sets the honest expectation that the accuracy track
+    /// record and method recommendations grow with use.
+    private var dayOneHint: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .foregroundStyle(Theme.accent)
+                .accessibilityHidden(true)
+            Text("Your track record starts now. As real prices catch up to your sketches, Hummingbird learns which method tracks each asset best — and shows you how reliable each sketch has been.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private var header: some View {
