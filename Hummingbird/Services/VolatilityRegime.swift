@@ -42,7 +42,7 @@ enum VolatilityRegime: String, Sendable {
     var tint: Color {
         switch self {
         case .calm, .normal: Theme.accent
-        case .elevated: Color(red: 0.95, green: 0.68, blue: 0.20)
+        case .elevated: Theme.warning
         case .high: Theme.down
         }
     }

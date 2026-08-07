@@ -219,8 +219,11 @@ struct ContentView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                if viewModel.hasResult, let regime = sketch.regime, regime.isNoteworthy {
-                    RegimeBanner(regime: regime)
+                // High-volatility is a genuine interrupt; "elevated" stays a
+                // quiet factor inside the reliability meter, not its own card —
+                // keeps the results stack from becoming an avalanche.
+                if viewModel.hasResult, sketch.regime == .high {
+                    RegimeBanner(regime: .high)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 

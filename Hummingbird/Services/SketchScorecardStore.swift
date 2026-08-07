@@ -25,7 +25,7 @@ final class SketchScorecardStore {
     }
 
     static let maxRecords = 300
-    private let dedupeWindow: TimeInterval = 12 * 3600
+    private let dedupeWindow: TimeInterval
 
     private let defaults: UserDefaults
     private enum Keys {
@@ -33,8 +33,11 @@ final class SketchScorecardStore {
         static let retention = "hummingbird.scorecard.retentionDays"
     }
 
-    init(defaults: UserDefaults = AppGroup.defaults) {
+    /// `dedupeHours` is injectable so tests can record multiple sketches for the
+    /// same asset+model without waiting out the real 12-hour window.
+    init(defaults: UserDefaults = AppGroup.defaults, dedupeHours: Double = 12) {
         self.defaults = defaults
+        self.dedupeWindow = dedupeHours * 3600
         let stored = defaults.integer(forKey: Keys.retention)
         self.retentionDays = stored > 0 ? stored : nil
         load()
@@ -46,8 +49,8 @@ final class SketchScorecardStore {
 
     /// Record a freshly completed sketch (deduped to ~one per asset+model per
     /// 12 h so auto-refresh doesn't spam the ledger).
-    func record(forecast: Forecast, symbol: String, assetClass: AssetClass) {
-        guard let new = ScorecardEngine.makeRecord(forecast: forecast, symbol: symbol, assetClass: assetClass)
+    func record(forecast: Forecast, symbol: String, assetClass: AssetClass, now: Date = Date()) {
+        guard let new = ScorecardEngine.makeRecord(forecast: forecast, symbol: symbol, assetClass: assetClass, now: now)
         else { return }
 
         let duplicate = records.contains { existing in

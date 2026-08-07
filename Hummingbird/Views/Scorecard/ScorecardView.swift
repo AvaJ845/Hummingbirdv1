@@ -117,7 +117,7 @@ struct ScorecardView: View {
         guard let error else { return .secondary }
         switch error {
         case ..<0.03: return Theme.up
-        case ..<0.08: return Color(red: 0.95, green: 0.68, blue: 0.20)
+        case ..<0.08: return Theme.warning
         default: return Theme.down
         }
     }

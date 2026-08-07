@@ -19,7 +19,7 @@ enum ReliabilityTier: String, Sendable {
     var color: Color {
         switch self {
         case .good: Theme.up
-        case .moderate: Color(red: 0.95, green: 0.68, blue: 0.20)
+        case .moderate: Theme.warning
         case .low: Theme.down
         }
     }

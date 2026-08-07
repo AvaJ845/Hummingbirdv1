@@ -4,10 +4,10 @@ import XCTest
 @MainActor
 final class SketchScorecardStoreTests: XCTestCase {
 
-    private func makeStore() -> (SketchScorecardStore, UserDefaults) {
+    private func makeStore(dedupeHours: Double = 12) -> (SketchScorecardStore, UserDefaults) {
         let suite = "test.scorecard.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
-        return (SketchScorecardStore(defaults: defaults), defaults)
+        return (SketchScorecardStore(defaults: defaults, dedupeHours: dedupeHours), defaults)
     }
 
     private func forecast(now: Date) -> Forecast {
@@ -66,6 +66,24 @@ final class SketchScorecardStoreTests: XCTestCase {
         store.record(forecast: forecast(now: Date()), symbol: "AAPL", assetClass: .stock)
         store.retentionDays = 30
         XCTAssertEqual(store.records.count, 1, "Recent sketch should survive a 30-day window")
+    }
+
+    func testSurfacesBestModelAndProValueHighlights() {
+        // Regression for the recommender + value-recap paywall path (#2/#4).
+        let (store, _) = makeStore(dedupeHours: 0)  // allow multiple same asset+model
+        let base = Date().addingTimeInterval(-45 * 86_400)
+        store.record(forecast: forecast(now: base), symbol: "AAPL", assetClass: .stock, now: base)
+        store.record(forecast: forecast(now: base.addingTimeInterval(3 * 86_400)),
+                     symbol: "AAPL", assetClass: .stock, now: base.addingTimeInterval(3 * 86_400))
+        XCTAssertEqual(store.records.count, 2)
+
+        var pts: [PricePoint] = []
+        for off in 0...40 { pts.append(PricePoint(date: base.addingTimeInterval(Double(off) * 86_400), close: 100 + Double(off))) }
+        store.resolve(using: PriceSeries(symbol: "AAPL", assetClass: .stock, points: pts, isSample: false))
+
+        XCTAssertNotNil(store.bestModel(for: "AAPL", assetClass: .stock), "two scored drift sketches → a best model")
+        XCTAssertFalse(store.proValueHighlights.isEmpty, "highlights power the value-recap paywall")
+        XCTAssertEqual(store.proValueHighlights.first?.symbol.lowercased(), "aapl")
     }
 
     func testPersistsAcrossReopen() {
