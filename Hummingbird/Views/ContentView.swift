@@ -8,10 +8,7 @@ struct ContentView: View {
     @State private var dictation = DictationController()
     @State private var watchlist = WatchlistStore()
     @State private var scorecard = SketchScorecardStore()
-    @State private var currentRegime: VolatilityRegime?
-    @State private var currentReliability: ReliabilityScore?
-    @State private var currentBestModel: ModelPerformance?
-    @State private var currentModelBreakdown: [ModelPerformance] = []
+    @State private var sketch = SketchContext()
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
@@ -95,10 +92,7 @@ struct ContentView: View {
         }
         .onChange(of: viewModel.hasResult) { _, hasResult in
             if !hasResult {
-                currentRegime = nil
-                currentReliability = nil
-                currentBestModel = nil
-                currentModelBreakdown = []
+                sketch = SketchContext()
             }
         }
         .sheet(isPresented: $showWatchlist) {
@@ -141,9 +135,9 @@ struct ContentView: View {
         guard let forecast = viewModel.forecast, let series = viewModel.loadedSeries else { return }
         scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
         scorecard.resolve(using: series)
-        currentRegime = RegimeClassifier.classify(series: series)
-        currentBestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
-        currentModelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
+        sketch.regime = RegimeClassifier.classify(series: series)
+        sketch.bestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
+        sketch.modelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
     }
 
     /// Switch to a recommended method (respecting Pro gating) and re-project.
@@ -172,7 +166,7 @@ struct ContentView: View {
         guard viewModel.forecastGeneration > 0,
               let series = viewModel.loadedSeries,
               let forecast = viewModel.forecast else {
-            currentReliability = nil
+            sketch.reliability = nil
             return
         }
         let model = forecast.model
@@ -188,7 +182,7 @@ struct ContentView: View {
             return ReliabilityEngine.score(inputs)
         }.value
         guard !Task.isCancelled else { return }
-        currentReliability = score
+        sketch.reliability = score
     }
 
     private var home: some View {
@@ -225,7 +219,7 @@ struct ContentView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
-                if viewModel.hasResult, let regime = currentRegime, regime.isNoteworthy {
+                if viewModel.hasResult, let regime = sketch.regime, regime.isNoteworthy {
                     RegimeBanner(regime: regime)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
@@ -251,7 +245,7 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
 
-                if viewModel.hasResult, let reliability = currentReliability {
+                if viewModel.hasResult, let reliability = sketch.reliability {
                     ReliabilityMeter(
                         score: reliability,
                         isPro: entitlements.isPro,
@@ -260,11 +254,11 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
-                if viewModel.hasResult, let best = currentBestModel, let series = viewModel.loadedSeries {
+                if viewModel.hasResult, let best = sketch.bestModel, let series = viewModel.loadedSeries {
                     BestModelCard(
                         assetSymbol: series.symbol,
                         best: best,
-                        breakdown: currentModelBreakdown,
+                        breakdown: sketch.modelBreakdown,
                         isPro: entitlements.isPro,
                         currentModelId: viewModel.model.strategy.rawValue,
                         onUse: { applyRecommendedModel($0) },

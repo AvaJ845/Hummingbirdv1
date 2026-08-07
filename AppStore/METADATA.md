@@ -12,7 +12,7 @@
 - **Price:** Free. Optional **Hummingbird Pro** auto-renewable subscription — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%). Group `Hummingbird Pro`.
 
 ## Promotional text (≤170)
-Sketch where a stock or crypto *could* drift from public prices — with plain-English reasoning and honest backtests. Educational only. Never buy/sell advice.
+The rare forecast app that shows you how wrong it's been. Honest, on-device price sketches with a live accuracy track record. Educational only — never advice.  *(≈150 chars; leads with the radical-honesty differentiator per the Evangelism Fellow's note)*
 
 ## Keywords (≤100) — the hidden backend array
 `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast`  *(94 chars)*
