@@ -49,7 +49,12 @@ final class ForecastViewModel {
 
     // Outputs
     private(set) var series: PriceSeries?
-    private(set) var forecast: Forecast?
+    private(set) var forecast: Forecast? {
+        didSet { updateSketchContext() }
+    }
+    /// Derived, at-a-glance context around the current sketch (regime,
+    /// reliability, best-tracking method) — owned by the VM, rendered by the view.
+    private(set) var sketchContext = SketchContext()
     private(set) var isLoading = false
     private(set) var isLoadingIndicators = false
     private(set) var errorMessage: String?
@@ -175,14 +180,20 @@ final class ForecastViewModel {
     private var indicatorTask: Task<Void, Never>?
     private var autoRefreshTask: Task<Void, Never>?
 
+    let scorecard: SketchScorecardStore
+    private var reliabilityTask: Task<Void, Never>?
+    private var lastReliabilityKey: String?
+
     init(
         service: any MarketDataProviding = MarketDataService(),
         economicService: any EconomicDataProviding = EconomicDataService(),
-        entitlements: EntitlementStore
+        entitlements: EntitlementStore,
+        scorecard: SketchScorecardStore = SketchScorecardStore()
     ) {
         self.service = service
         self.economicService = economicService
         self.entitlements = entitlements
+        self.scorecard = scorecard
     }
 
     func run() {
@@ -261,6 +272,58 @@ final class ForecastViewModel {
             horizon: horizon,
             macro: activeMacro
         )
+    }
+
+    // MARK: - Sketch context (regime · reliability · best method)
+
+    /// Refresh the derived context whenever the forecast changes. Cheap parts
+    /// (record, resolve, regime, best method) run every time; the expensive
+    /// reliability backtests only recompute when the *configuration* changes
+    /// (asset · model · horizon) — so a silent price tick never re-runs them.
+    private func updateSketchContext() {
+        guard let forecast, let series, hasResult else {
+            sketchContext = SketchContext()
+            reliabilityTask?.cancel()
+            reliabilityTask = nil
+            lastReliabilityKey = nil
+            return
+        }
+
+        scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
+        scorecard.resolve(using: series)
+
+        var context = sketchContext          // preserve the current reliability
+        context.regime = RegimeClassifier.classify(series: series)
+        context.bestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
+        context.modelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
+        sketchContext = context
+
+        refreshReliabilityIfNeeded(series: series, forecast: forecast)
+    }
+
+    private func refreshReliabilityIfNeeded(series: PriceSeries, forecast: Forecast) {
+        let key = "\(series.symbol)|\(forecast.model.strategy.rawValue)|\(forecast.points.count)"
+        guard key != lastReliabilityKey else { return }   // P0: skip on price ticks / same config
+        lastReliabilityKey = key
+        sketchContext.reliability = nil                    // drop the stale read until recomputed
+
+        reliabilityTask?.cancel()
+        let model = forecast.model
+        let horizon = forecast.points.count
+        reliabilityTask = Task { [weak self] in
+            let score = await Task.detached(priority: .utility) {
+                let inputs = ReliabilityInputs(
+                    backtestMAPE: Forecaster.walkForwardMAPE(series: series, model: model),
+                    regime: RegimeClassifier.classify(series: series),
+                    modelDisagreement: Forecaster.modelDisagreement(series: series, horizon: horizon),
+                    horizon: horizon,
+                    historyCount: series.points.count
+                )
+                return ReliabilityEngine.score(inputs)
+            }.value
+            guard let self, !Task.isCancelled else { return }
+            self.sketchContext.reliability = score
+        }
     }
 
     func enforceEntitlementsAfterPurchaseChange() {

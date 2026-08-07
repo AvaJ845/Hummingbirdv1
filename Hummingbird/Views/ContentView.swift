@@ -7,8 +7,6 @@ struct ContentView: View {
     @State private var viewModel: ForecastViewModel
     @State private var dictation = DictationController()
     @State private var watchlist = WatchlistStore()
-    @State private var scorecard = SketchScorecardStore()
-    @State private var sketch = SketchContext()
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
@@ -21,8 +19,9 @@ struct ContentView: View {
 
     init() {
         let store = EntitlementStore()
+        let card = SketchScorecardStore()
         _entitlements = State(initialValue: store)
-        _viewModel = State(initialValue: ForecastViewModel(entitlements: store))
+        _viewModel = State(initialValue: ForecastViewModel(entitlements: store, scorecard: card))
     }
 
     var body: some View {
@@ -36,7 +35,7 @@ struct ContentView: View {
                         case .indicators:
                             EconomicIndicatorsSheet(viewModel: viewModel)
                         case .paywall(let reason):
-                            PaywallView(entitlements: entitlements, reason: reason, scorecard: scorecard)
+                            PaywallView(entitlements: entitlements, reason: reason, scorecard: viewModel.scorecard)
                         }
                     }
             }
@@ -83,17 +82,11 @@ struct ContentView: View {
         .onChange(of: viewModel.forecastGeneration) { _, generation in
             guard generation > 0 else { return }
             saveSnapshotIfWatched()
-            recordSketch()
             // Ask for a rating only at a "happy moment" — a completed projection,
             // never at launch or after an error (forecastGeneration bumps only on
             // a successful run).
             if ReviewPrompt.registerSuccessAndShouldRequest() {
                 requestReview()
-            }
-        }
-        .onChange(of: viewModel.hasResult) { _, hasResult in
-            if !hasResult {
-                sketch = SketchContext()
             }
         }
         .sheet(isPresented: $showWatchlist) {
@@ -102,7 +95,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(entitlements: entitlements, scorecard: scorecard)
+            SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard)
         }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
@@ -112,9 +105,6 @@ struct ContentView: View {
         }
         .task {
             await entitlements.loadProducts()
-        }
-        .task(id: reliabilityKey) {
-            await refreshReliability()
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
@@ -130,60 +120,10 @@ struct ContentView: View {
         watchlist.saveSnapshot(snapshot)
     }
 
-    /// Log the sketch to the on-device track record, resolve any past sketches
-    /// against the fresh prices, and note the current volatility regime.
-    private func recordSketch() {
-        guard let forecast = viewModel.forecast, let series = viewModel.loadedSeries else { return }
-        scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
-        scorecard.resolve(using: series)
-        sketch.regime = RegimeClassifier.classify(series: series)
-        sketch.bestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
-        sketch.modelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
-    }
-
     /// Switch to a recommended method (respecting Pro gating) and re-project.
     private func applyRecommendedModel(_ modelId: String) {
         guard let model = ForecastModel.model(id: modelId) else { return }
         if viewModel.selectModel(model) { viewModel.run() }
-    }
-
-    /// Identity of the *inputs that materially change reliability* — the asset,
-    /// the model, and the horizon. Deliberately NOT `forecastGeneration`, so a
-    /// silent price tick during auto-refresh does not re-run ~10 backtests every
-    /// minute (Fellows' P0 energy fix). Reliability is a coarse read of this
-    /// sketch's configuration; one new bar doesn't move it.
-    private var reliabilityKey: String? {
-        guard viewModel.hasResult,
-              let series = viewModel.loadedSeries,
-              let forecast = viewModel.forecast else { return nil }
-        return "\(series.symbol)|\(forecast.model.strategy.rawValue)|\(forecast.points.count)"
-    }
-
-    /// Compute the calibrated reliability score off the main thread (it runs a
-    /// handful of backtests), then publish it. Driven by `.task(id:)` so a new
-    /// sketch cancels any in-flight computation — no stale results, no work on
-    /// the render path.
-    @MainActor private func refreshReliability() async {
-        guard viewModel.forecastGeneration > 0,
-              let series = viewModel.loadedSeries,
-              let forecast = viewModel.forecast else {
-            sketch.reliability = nil
-            return
-        }
-        let model = forecast.model
-        let horizon = forecast.points.count
-        let score = await Task.detached(priority: .utility) {
-            let inputs = ReliabilityInputs(
-                backtestMAPE: Forecaster.walkForwardMAPE(series: series, model: model),
-                regime: RegimeClassifier.classify(series: series),
-                modelDisagreement: Forecaster.modelDisagreement(series: series, horizon: horizon),
-                horizon: horizon,
-                historyCount: series.points.count
-            )
-            return ReliabilityEngine.score(inputs)
-        }.value
-        guard !Task.isCancelled else { return }
-        sketch.reliability = score
     }
 
     private var home: some View {
@@ -223,7 +163,7 @@ struct ContentView: View {
                 // High-volatility is a genuine interrupt; "elevated" stays a
                 // quiet factor inside the reliability meter, not its own card —
                 // keeps the results stack from becoming an avalanche.
-                if viewModel.hasResult, sketch.regime == .high {
+                if viewModel.hasResult, viewModel.sketchContext.regime == .high {
                     RegimeBanner(regime: .high)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
@@ -249,7 +189,7 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
 
-                if viewModel.hasResult, let reliability = sketch.reliability {
+                if viewModel.hasResult, let reliability = viewModel.sketchContext.reliability {
                     ReliabilityMeter(
                         score: reliability,
                         isPro: entitlements.isPro,
@@ -258,11 +198,11 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
-                if viewModel.hasResult, let best = sketch.bestModel, let series = viewModel.loadedSeries {
+                if viewModel.hasResult, let best = viewModel.sketchContext.bestModel, let series = viewModel.loadedSeries {
                     BestModelCard(
                         assetSymbol: series.symbol,
                         best: best,
-                        breakdown: sketch.modelBreakdown,
+                        breakdown: viewModel.sketchContext.modelBreakdown,
                         isPro: entitlements.isPro,
                         currentModelId: viewModel.model.strategy.rawValue,
                         onUse: { applyRecommendedModel($0) },
@@ -271,7 +211,7 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
 
-                if viewModel.hasResult, sketch.bestModel == nil, scorecard.records.count < 2 {
+                if viewModel.hasResult, viewModel.sketchContext.bestModel == nil, viewModel.scorecard.records.count < 2 {
                     dayOneHint
                         .transition(.opacity)
                 }
