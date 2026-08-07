@@ -43,6 +43,7 @@ struct SettingsView: View {
     @AppStorage("hb.digest.enabled") private var digestEnabled = false
     @AppStorage("hb.digest.hour") private var digestHour = 8
     @AppStorage("hb.digest.minute") private var digestMinute = 0
+    @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
 
     private var version: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -135,6 +136,17 @@ struct SettingsView: View {
                     Text("Morning read")
                 } footer: {
                     Text("A once-a-day on-device summary of recent movement across your watchlist. Movement, not signals — never advice.")
+                }
+
+                Section {
+                    Toggle("Track on Lock Screen", isOn: Binding(
+                        get: { liveActivityEnabled },
+                        set: { liveActivityEnabled = $0; if !$0 { SketchLiveActivityManager.endAll() } }
+                    ))
+                } header: {
+                    Text("Live Activity")
+                } footer: {
+                    Text("When on, a “Track” button appears on a sketch so you can pin its live price and projected path to the Lock Screen and Dynamic Island. Educational sketch — never advice.")
                 }
 
                 #if DEBUG

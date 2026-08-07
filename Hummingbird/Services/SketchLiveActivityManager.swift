@@ -10,6 +10,11 @@ enum SketchLiveActivityManager {
         ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
+    /// True while at least one sketch activity is live on the Lock Screen / Island.
+    static var hasActive: Bool {
+        !Activity<SketchActivityAttributes>.activities.isEmpty
+    }
+
     /// Begin a fresh activity for the loaded asset (ends any existing one first).
     @discardableResult
     static func start(symbol: String, title: String, horizonDays: Int,

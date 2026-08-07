@@ -10,6 +10,8 @@ struct ForecastResultsView: View {
     var onCompareMethods: (() -> Void)? = nil
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var shareImage: Image?
+    @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
+    @State private var isTracking = false
 
     /// Two-up metric tiles side by side normally; stacked at accessibility sizes
     /// so each value keeps full width and stays legible.
@@ -28,6 +30,10 @@ struct ForecastResultsView: View {
             HStack(spacing: 10) {
                 watchToggle
                 shareButton
+            }
+
+            if liveActivityEnabled, SketchLiveActivityManager.isSupported {
+                trackButton
             }
 
             // Hero beat — do the methods agree? (Fellow + DE ask)
@@ -92,6 +98,47 @@ struct ForecastResultsView: View {
             }
         }
         .task(id: shareRenderKey) { shareImage = renderShareImage() }
+        .onAppear { isTracking = SketchLiveActivityManager.hasActive }
+        .onChange(of: viewModel.priceUpdateToken) { _, _ in
+            guard isTracking else { return }
+            SketchLiveActivityManager.update(
+                price: forecast.lastClose ?? 0,
+                projectedChange: forecast.expectedChange ?? 0
+            )
+        }
+    }
+
+    // MARK: - Live Activity
+
+    /// Pins this sketch's live price + projected path to the Lock Screen and
+    /// Dynamic Island (device-only). Gated behind the Settings master toggle;
+    /// re-tap to stop. Only pushes dynamic price/projection updates — changing
+    /// the horizon or method restarts fresh on the next tap.
+    @ViewBuilder private var trackButton: some View {
+        Button {
+            if isTracking {
+                SketchLiveActivityManager.endAll()
+                isTracking = false
+            } else {
+                isTracking = SketchLiveActivityManager.start(
+                    symbol: viewModel.currentWatchItem?.symbol ?? viewModel.symbol.uppercased(),
+                    title: viewModel.currentWatchItem?.title ?? viewModel.symbol.uppercased(),
+                    horizonDays: viewModel.horizon,
+                    price: forecast.lastClose ?? 0,
+                    projectedChange: forecast.expectedChange ?? 0
+                )
+            }
+        } label: {
+            Label(isTracking ? "Tracking on Lock Screen" : "Track on Lock Screen",
+                  systemImage: isTracking ? "bell.badge.fill" : "bell.badge")
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(isTracking ? Theme.accent : .secondary)
+        .accessibilityHint(isTracking
+            ? "Stops showing this sketch on the Lock Screen"
+            : "Pins this sketch's live price and projected path to the Lock Screen and Dynamic Island")
     }
 
     // MARK: - Share
