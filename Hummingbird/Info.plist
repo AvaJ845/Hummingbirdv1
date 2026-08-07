@@ -61,6 +61,8 @@
 	<string>Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
