@@ -18,6 +18,31 @@ enum NotificationService {
         return settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
     }
 
+    private static let digestIdentifier = "morning-digest"
+
+    /// Schedule (or replace) a repeating daily "morning read" at the given
+    /// hour/minute, with content composed from the latest local snapshots.
+    static func scheduleMorningDigest(_ digest: Digest, hour: Int, minute: Int) async {
+        let content = UNMutableNotificationContent()
+        content.title = digest.title
+        content.body = digest.body
+        content.sound = .default
+
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [digestIdentifier])
+        let request = UNNotificationRequest(identifier: digestIdentifier, content: content, trigger: trigger)
+        try? await center.add(request)
+    }
+
+    static func cancelMorningDigest() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [digestIdentifier])
+    }
+
     static func deliver(_ alert: MovementAlert, id: String) async {
         let content = UNMutableNotificationContent()
         content.title = alert.title

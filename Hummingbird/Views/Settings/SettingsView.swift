@@ -40,6 +40,9 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var currentAlternate = UIApplication.shared.alternateIconName
     @State private var showClearConfirm = false
+    @AppStorage("hb.digest.enabled") private var digestEnabled = false
+    @AppStorage("hb.digest.hour") private var digestHour = 8
+    @AppStorage("hb.digest.minute") private var digestMinute = 0
 
     private var version: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -120,6 +123,20 @@ struct SettingsView: View {
                     Text("Your track record is stored only on this device. Clear it any time, or have Hummingbird auto-clear older sketches.")
                 }
 
+                Section {
+                    Toggle("Morning read", isOn: Binding(
+                        get: { digestEnabled },
+                        set: { digestEnabled = $0; rescheduleDigest() }
+                    ))
+                    if digestEnabled {
+                        DatePicker("Time", selection: digestTime, displayedComponents: .hourAndMinute)
+                    }
+                } header: {
+                    Text("Morning read")
+                } footer: {
+                    Text("A once-a-day on-device summary of recent movement across your watchlist. Movement, not signals — never advice.")
+                }
+
                 #if DEBUG
                 Section {
                     Toggle("Unlock Pro (testing)", isOn: Binding(
@@ -173,6 +190,36 @@ struct SettingsView: View {
         guard UIApplication.shared.supportsAlternateIcons else { return }
         UIApplication.shared.setAlternateIconName(option.alternateName) { _ in
             currentAlternate = UIApplication.shared.alternateIconName
+        }
+    }
+
+    private var digestTime: Binding<Date> {
+        Binding(
+            get: { Calendar.current.date(from: DateComponents(hour: digestHour, minute: digestMinute)) ?? Date() },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                digestHour = comps.hour ?? 8
+                digestMinute = comps.minute ?? 0
+                rescheduleDigest()
+            }
+        )
+    }
+
+    /// (Re)schedule or cancel the daily digest, composing content from the
+    /// latest local snapshots. Requests permission the first time it's enabled.
+    private func rescheduleDigest() {
+        Task { @MainActor in
+            guard digestEnabled else {
+                NotificationService.cancelMorningDigest()
+                return
+            }
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                digestEnabled = false
+                return
+            }
+            await MorningDigest.rescheduleIfEnabled()
         }
     }
 }

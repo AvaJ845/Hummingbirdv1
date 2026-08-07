@@ -344,6 +344,10 @@ struct ContentView: View {
             } else if phase != .active {
                 viewModel.endAutoRefresh()
             }
+            if phase == .background {
+                // Refresh the morning-digest content so it never goes stale.
+                Task { await MorningDigest.rescheduleIfEnabled() }
+            }
         }
         .sensoryFeedback(.success, trigger: viewModel.forecastGeneration)
         .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.8), trigger: dictation.phase == .listening)
