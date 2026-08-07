@@ -25,7 +25,7 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Hummingbird Pro")
                         .font(.title2.weight(.bold))
-                    Text("Optional upgrade to compare every method in one place. Same free public data — not a better prediction.")
+                    Text("The honest forecast tool — it even shows you how wrong it's been. Pro adds breadth and depth, never better foresight, never advice.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     if let reason, !reason.isEmpty {
@@ -120,9 +120,11 @@ struct PaywallView: View {
                             price: "$\(AppPricing.monthlyUSD)/month",
                             note: "Lower commitment · cancel anytime"
                         )
+                        #if DEBUG
                         Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        #endif
                     }
                     .padding(.vertical, 4)
                 }

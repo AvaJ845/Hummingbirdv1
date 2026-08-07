@@ -17,19 +17,25 @@ struct ForecastChart: View {
         let isForecast: Bool
     }
 
-    private var historyTail: [PricePoint] {
-        let count = max(forecast.points.count * 2, 30)
-        return Array(forecast.history.suffix(count))
-    }
+    // Built once in init — not rebuilt on every render or scrub frame.
+    private let historyTail: [PricePoint]
+    private let plotPoints: [PlotPoint]
+    private let plotDates: [Date]
 
-    private var plotPoints: [PlotPoint] {
-        historyTail.map { PlotPoint(date: $0.date, value: $0.close, lower: nil, upper: nil, isForecast: false) }
-        + forecast.points.map { PlotPoint(date: $0.date, value: $0.mean, lower: $0.lower, upper: $0.upper, isForecast: true) }
+    init(forecast: Forecast) {
+        self.forecast = forecast
+        let count = max(forecast.points.count * 2, 30)
+        let tail = Array(forecast.history.suffix(count))
+        let points = tail.map { PlotPoint(date: $0.date, value: $0.close, lower: nil, upper: nil, isForecast: false) }
+            + forecast.points.map { PlotPoint(date: $0.date, value: $0.mean, lower: $0.lower, upper: $0.upper, isForecast: true) }
+        self.historyTail = tail
+        self.plotPoints = points
+        self.plotDates = points.map(\.date)
     }
 
     private var selected: PlotPoint? {
         guard let selectedDate,
-              let index = ChartScrub.nearestIndex(to: selectedDate, in: plotPoints.map(\.date)) else { return nil }
+              let index = ChartScrub.nearestIndex(to: selectedDate, in: plotDates) else { return nil }
         return plotPoints[index]
     }
 

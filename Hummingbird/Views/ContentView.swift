@@ -118,7 +118,7 @@ struct ContentView: View {
         .task {
             await entitlements.loadProducts()
         }
-        .task(id: viewModel.forecastGeneration) {
+        .task(id: reliabilityKey) {
             await refreshReliability()
         }
         .onAppear {
@@ -150,6 +150,18 @@ struct ContentView: View {
     private func applyRecommendedModel(_ modelId: String) {
         guard let model = ForecastModel.model(id: modelId) else { return }
         if viewModel.selectModel(model) { viewModel.run() }
+    }
+
+    /// Identity of the *inputs that materially change reliability* — the asset,
+    /// the model, and the horizon. Deliberately NOT `forecastGeneration`, so a
+    /// silent price tick during auto-refresh does not re-run ~10 backtests every
+    /// minute (Fellows' P0 energy fix). Reliability is a coarse read of this
+    /// sketch's configuration; one new bar doesn't move it.
+    private var reliabilityKey: String? {
+        guard viewModel.hasResult,
+              let series = viewModel.loadedSeries,
+              let forecast = viewModel.forecast else { return nil }
+        return "\(series.symbol)|\(forecast.model.strategy.rawValue)|\(forecast.points.count)"
     }
 
     /// Compute the calibrated reliability score off the main thread (it runs a
