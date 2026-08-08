@@ -175,8 +175,10 @@ struct ForecastInputCard: View {
 
     private var forecastButton: some View {
         VStack(spacing: 10) {
-            Button(action: onForecast) {
-                Text(viewModel.isLoading ? "Projecting…" : "Run projection")
+            // Loop-first: predicting your own call is the primary action; the
+            // plain sketch is the "skip the call" secondary.
+            Button(action: onCallIt) {
+                Label("Call it — predict first", systemImage: "hand.point.up.left")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
@@ -184,17 +186,17 @@ struct ForecastInputCard: View {
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
             .disabled(viewModel.isLoading || dictation.isActive)
-            .accessibilityHint("Fetches history and runs the selected statistical model on device")
+            .accessibilityHint("Log your own Higher or Lower call before the sketch reveals")
 
-            Button(action: onCallIt) {
-                Label("Call it first — predict before you peek", systemImage: "hand.point.up.left")
+            Button(action: onForecast) {
+                Text(viewModel.isLoading ? "Projecting…" : "Just show the sketch")
                     .font(.subheadline.weight(.medium))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
             .tint(Theme.accentAlt)
             .disabled(viewModel.isLoading || dictation.isActive)
-            .accessibilityHint("Log your own Higher or Lower call before the sketch reveals")
+            .accessibilityHint("Skips the call and just fetches history and runs the model")
         }
     }
 }

@@ -157,6 +157,14 @@ struct ContentView: View {
             VStack(spacing: 16) {
                 header
 
+                if !viewModel.userCalls.calls.isEmpty {
+                    YourCallsCard(
+                        report: viewModel.userCalls.report,
+                        pendingCount: viewModel.userCalls.pending.count
+                    ) { showYourCalls = true }
+                    .transition(.opacity)
+                }
+
                 ForecastInputCard(
                     viewModel: viewModel,
                     symbolFocused: $symbolFocused,
@@ -179,14 +187,6 @@ struct ContentView: View {
                         open(.paywall(reason: "Free includes horizons up to \(FreeTierLimits.maxHorizonDays) days. Pro stretches sketches to 90."))
                     }
                 )
-
-                if !viewModel.userCalls.calls.isEmpty {
-                    YourCallsCard(
-                        report: viewModel.userCalls.report,
-                        pendingCount: viewModel.userCalls.pending.count
-                    ) { showYourCalls = true }
-                    .transition(.opacity)
-                }
 
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error)

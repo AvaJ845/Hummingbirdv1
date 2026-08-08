@@ -12,12 +12,15 @@ struct OnboardingView: View {
     }
 
     private let pages: [Page] = [
+        Page(symbol: "hand.point.up.left.fill",
+             title: "Call it before you peek",
+             body: "Predict Higher or Lower — and how sure you are — before you see the sketch. Hummingbird keeps an honest score of your own calls over time."),
+        Page(symbol: "trophy.fill",
+             title: "See if you beat the methods",
+             body: "Once your calls resolve against real prices, see how you did — and whether you're beating the app's own methods on the same calls."),
         Page(symbol: "scribble.variable",
              title: "Sketches, not predictions",
-             body: "Hummingbird draws simple paths from public prices to help you learn. It never tells you to buy or sell."),
-        Page(symbol: "checkmark.seal.fill",
-             title: "Honest track record",
-             body: "See how each simple method would have tracked recent prices — the receipts, not a promise about the future."),
+             body: "It also draws simple paths from public prices and shows how wrong it's been. A record of the past — never advice, never a signal."),
         Page(symbol: "lock.shield.fill",
              title: "Private by design",
              body: "Everything runs on your device. No account, no tracking — just you and the math.")
