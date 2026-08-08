@@ -17,6 +17,7 @@ struct YourCallsView: View {
                 emptyState
             } else {
                 overallSection
+                vsMethodsSection
                 if !report.byConfidence.isEmpty { confidenceSection }
                 if !store.pending.isEmpty { pendingSection }
                 resolvedSection
@@ -59,6 +60,51 @@ struct YourCallsView: View {
         } footer: {
             if report.overall.decided == 0 {
                 Text("Your record fills in as your calls reach their dates. Pull to refresh.")
+            }
+        }
+    }
+
+    @ViewBuilder private var vsMethodsSection: some View {
+        if let vs = UserCallEngine.vsMethods(store.calls) {
+            Section {
+                if entitlements.isPro {
+                    HStack {
+                        Text("You").font(.body.weight(.bold))
+                        Spacer()
+                        Text(pct(vs.userHitRate)).font(.body.weight(.bold)).monospacedDigit()
+                            .foregroundStyle(Theme.accent)
+                        Text("·  \(vs.userDecided)").font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    ForEach(vs.methods) { method in
+                        HStack {
+                            Text(method.methodName).font(.body).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(pct(method.hitRate)).font(.body.weight(.medium)).monospacedDigit()
+                                .foregroundStyle(.secondary)
+                            Image(systemName: vs.userHitRate > method.hitRate ? "checkmark" : "minus")
+                                .font(.caption2)
+                                .foregroundStyle(vs.userHitRate > method.hitRate ? Theme.up : Color.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(method.methodName): right \(pct(method.hitRate)), you are \(vs.userHitRate > method.hitRate ? "ahead" : "not ahead")")
+                    }
+                } else {
+                    Button(action: onUnlock) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("You vs. the methods", systemImage: "sparkles")
+                                .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
+                            Text("See whether your own calls are beating the app's methods — scored on the very same calls. Pro.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            } header: {
+                Text("You vs. the methods")
+            } footer: {
+                if entitlements.isPro {
+                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; keep calling.")
+                }
             }
         }
     }
