@@ -10,6 +10,9 @@ enum WatchlistRefresh {
     /// on the free public APIs (avoids rate limits).
     static func refreshAll(store: WatchlistStore, service: any MarketDataProviding = MarketDataService()) async {
         for item in store.items {
+            // The background task has a strict time budget — stop early if the OS
+            // cancels us, and still reload widgets with whatever we refreshed.
+            if Task.isCancelled { break }
             await refresh(item, store: store, service: service)
         }
         WidgetCenter.shared.reloadAllTimelines()

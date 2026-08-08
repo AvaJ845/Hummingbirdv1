@@ -14,12 +14,20 @@ enum BackgroundRefresh {
         try? BGTaskScheduler.shared.submit(request)
     }
 
-    /// Run one background refresh cycle: reschedule, then update every asset.
+    /// Run one background refresh cycle: reschedule, refresh the watchlist (which
+    /// fires movement alerts + reloads widgets), then keep the morning read fresh
+    /// so it never goes stale between app opens.
     @MainActor
     static func perform() async {
         schedule() // always queue the next cycle first
+
         let store = WatchlistStore()
-        guard !store.items.isEmpty else { return }
-        await WatchlistRefresh.refreshAll(store: store)
+        if !store.items.isEmpty, !Task.isCancelled {
+            await WatchlistRefresh.refreshAll(store: store)
+        }
+
+        if !Task.isCancelled {
+            await MorningDigest.rescheduleIfEnabled()
+        }
     }
 }
