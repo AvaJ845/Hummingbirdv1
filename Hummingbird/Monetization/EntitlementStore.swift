@@ -53,13 +53,31 @@ final class EntitlementStore {
         return Int((fraction as NSDecimalNumber).doubleValue * 100 + 0.5)
     }
 
+    /// Long-lived `Transaction.updates` listener. Stored so it can be cancelled.
+    /// `nonisolated(unsafe)` so `deinit` can cancel it — safe because it's written
+    /// once in `init` and read only in `deinit`, when no other reference exists.
+    private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
+
     init() {
         #if DEBUG
         debugUnlocked = UserDefaults.standard.bool(forKey: Self.debugUnlockKey)
         #endif
-        Task { [weak self] in
-            await self?.listenForTransactions()
+        // Re-acquire self weakly *each iteration* so the listener never pins the
+        // store alive between transactions — the frame of a plain
+        // `for await … in Transaction.updates` would hold self strongly forever.
+        transactionListener = Task { [weak self] in
+            for await result in Transaction.updates {
+                guard let self else { return }
+                if let transaction = try? self.checkVerified(result) {
+                    await transaction.finish()
+                    await self.refreshPurchases()
+                }
+            }
         }
+    }
+
+    deinit {
+        transactionListener?.cancel()
     }
 
     func unlocks(_ feature: ProFeature) -> Bool {
@@ -141,15 +159,6 @@ final class EntitlementStore {
             }
         }
         purchasedProductIDs = owned
-    }
-
-    private func listenForTransactions() async {
-        for await result in Transaction.updates {
-            if let transaction = try? checkVerified(result) {
-                await transaction.finish()
-                await refreshPurchases()
-            }
-        }
     }
 
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
