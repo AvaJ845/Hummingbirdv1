@@ -45,7 +45,7 @@ struct PaywallView: View {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Auto-pick the best method for \(highlight.symbol.uppercased())")
-                                Text("\(highlight.modelName) has tracked it closest — \(percent(highlight.medianError)) typical error")
+                                Text("\(highlight.modelName) has tracked it closest — usually off \(percent(highlight.medianError))")
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         } icon: {

@@ -14,9 +14,9 @@ enum VolatilityRegime: String, Sendable {
     var title: String {
         switch self {
         case .calm: "Calm stretch"
-        case .normal: "Normal volatility"
-        case .elevated: "Elevated volatility"
-        case .high: "High volatility"
+        case .normal: "Moving normally"
+        case .elevated: "Choppier than usual"
+        case .high: "Very choppy right now"
         }
     }
 
@@ -25,7 +25,7 @@ enum VolatilityRegime: String, Sendable {
         case .calm, .normal:
             return "Recent moves are within this asset's usual range."
         case .elevated:
-            return "This asset is moving more than usual lately — read this sketch with wider error."
+            return "This asset is moving more than usual lately — read this sketch with a wider range in mind."
         case .high:
             return "This asset is unusually turbulent right now. Sketches are far less reliable in conditions like this."
         }

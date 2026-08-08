@@ -83,7 +83,7 @@ struct ModelDisagreementCard: View {
                                                 .font(.caption2)
                                                 .foregroundStyle(Theme.up)
                                         }
-                                        Text("Recent error \(recentError.asPercent())")
+                                        Text("Usually off \(recentError.asPercent())")
                                             .font(.caption2.monospacedDigit())
                                             .foregroundStyle(isBest ? Theme.up : .secondary)
                                     }
