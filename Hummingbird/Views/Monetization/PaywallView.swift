@@ -108,6 +108,13 @@ struct PaywallView: View {
                     )
                 }
 
+                if let lifetime = entitlements.lifetimeProduct {
+                    purchaseButton(
+                        lifetime,
+                        badge: "Pay once · yours forever"
+                    )
+                }
+
                 if entitlements.products.isEmpty && !entitlements.isLoading {
                     VStack(alignment: .leading, spacing: 8) {
                         fairPriceRow(
@@ -119,6 +126,11 @@ struct PaywallView: View {
                             label: "Pro Monthly",
                             price: "$\(AppPricing.monthlyUSD)/month",
                             note: "Lower commitment · cancel anytime"
+                        )
+                        fairPriceRow(
+                            label: "Pro Lifetime",
+                            price: "$\(AppPricing.lifetimeUSD)",
+                            note: "Pay once · yours forever"
                         )
                         #if DEBUG
                         Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
@@ -194,8 +206,9 @@ struct PaywallView: View {
 
     private var subscriptionFooter: String {
         """
-        Hummingbird Pro is an auto-renewable subscription: \
-        Yearly ($\(AppPricing.yearlyUSD)/year, with a 7-day free trial) or Monthly ($\(AppPricing.monthlyUSD)/month). \
+        Hummingbird Pro is available as an auto-renewable subscription — \
+        Yearly ($\(AppPricing.yearlyUSD)/year, with a 7-day free trial) or Monthly ($\(AppPricing.monthlyUSD)/month) — \
+        or as a one-time Lifetime purchase ($\(AppPricing.lifetimeUSD), non-renewing). \
         Payment is charged to your Apple ID at purchase confirmation; a free trial converts to a paid year unless cancelled \
         at least 24 hours before it ends. Subscriptions renew unless cancelled at least 24 hours before the period ends. \
         Manage or cancel in Settings → Apple ID → Subscriptions. \
