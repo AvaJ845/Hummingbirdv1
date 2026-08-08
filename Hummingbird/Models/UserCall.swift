@@ -39,6 +39,11 @@ struct UserCall: Codable, Identifiable, Hashable, Sendable {
     let spotAtCall: Double
     let direction: CallDirection
     let confidence: CallConfidence
+    /// What each method predicted for this asset over this call's horizon,
+    /// snapshotted at call time (method id → Higher/Lower). Lets us score you
+    /// head-to-head against the methods on the very same calls. Optional so
+    /// older calls decode cleanly.
+    var methodDirections: [String: CallDirection]?
     var actualClose: Double?
     var resolvedAt: Date?
 
@@ -61,6 +66,14 @@ struct UserCall: Codable, Identifiable, Hashable, Sendable {
         guard let actual = actualClose, spotAtCall != 0 else { return nil }
         return (actual - spotAtCall) / spotAtCall
     }
+
+    /// Whether a given method's snapshotted call was right. Nil if unresolved,
+    /// flat (a push), or the method wasn't recorded for this call.
+    func methodWasCorrect(_ methodId: String) -> Bool? {
+        guard let actual = actualClose, actual != spotAtCall,
+              let dir = methodDirections?[methodId] else { return nil }
+        return (dir == .higher) == (actual > spotAtCall)
+    }
 }
 
 // MARK: - Aggregates
@@ -78,6 +91,26 @@ struct ConfidenceCalibration: Identifiable, Equatable, Sendable {
     let decided: Int
     let hitRate: Double
     var id: String { confidence.rawValue }
+}
+
+/// One method's head-to-head record against the user, over the same calls.
+struct MethodTally: Identifiable, Equatable, Sendable {
+    let methodId: String
+    let methodName: String
+    let decided: Int
+    let hitRate: Double
+    var id: String { methodId }
+}
+
+/// You vs. the methods: your directional hit rate against each method's, scored
+/// on the very same calls. A record of the past — never advice.
+struct VsMethods: Equatable, Sendable {
+    let userHitRate: Double
+    let userDecided: Int
+    let methods: [MethodTally]   // best hit rate first
+
+    /// How many methods you're beating (strictly higher hit rate).
+    var methodsBeaten: Int { methods.filter { userHitRate > $0.hitRate }.count }
 }
 
 /// The user's own accountability record.

@@ -374,6 +374,20 @@ final class ForecastViewModel {
         }
     }
 
+    /// Each method's directional prediction over the call's horizon, snapshotted
+    /// at call time — the basis for the honest "you vs. the methods" comparison.
+    private func methodDirectionSnapshot(series: PriceSeries, horizon: Int) -> [String: CallDirection] {
+        var result: [String: CallDirection] = [:]
+        for candidate in ForecastModel.available {
+            let projection = Forecaster.forecast(series: series, model: candidate, horizon: horizon,
+                                                 macro: macro(for: candidate))
+            if let change = projection.expectedChange, change != 0 {
+                result[candidate.strategy.rawValue] = change > 0 ? .higher : .lower
+            }
+        }
+        return result
+    }
+
     /// Resolve any calls whose horizon has passed against fresh prices, and clear
     /// their reminders. Cheap when nothing is due (no fetch). Called on launch /
     /// foreground so the record fills in without the user opening "Your calls".
@@ -506,7 +520,8 @@ final class ForecastViewModel {
             if let loggingCall, let spot = forecast?.lastClose {
                 let call = userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
                                             direction: loggingCall.direction, confidence: loggingCall.confidence,
-                                            horizonDays: loggingCall.horizonDays, spot: spot)
+                                            horizonDays: loggingCall.horizonDays, spot: spot,
+                                            methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))
                 Task { await scheduleCallReminder(call) }
             }
         } catch is CancellationError {

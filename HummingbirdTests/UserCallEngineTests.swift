@@ -69,4 +69,39 @@ final class UserCallEngineTests: XCTestCase {
         XCTAssertEqual(report.byConfidence.first { $0.confidence == .hunch }?.hitRate ?? 0, 0.5, accuracy: 1e-9)
         XCTAssertEqual(report.byConfidence.first { $0.confidence == .fairlySure }?.hitRate ?? 0, 1.0, accuracy: 1e-9)
     }
+
+    private func snapshotCall(actual: Double) -> UserCall {
+        UserCall(id: UUID(), symbol: "AAPL", assetClass: .stock, createdAt: created,
+                 horizonDays: 7, spotAtCall: 100, direction: .higher, confidence: .fairlySure,
+                 methodDirections: ["drift": .higher, "holt": .lower],
+                 actualClose: actual, resolvedAt: created)
+    }
+
+    func testMethodWasCorrectVsSpot() {
+        let call = snapshotCall(actual: 110)
+        XCTAssertEqual(call.methodWasCorrect("drift"), true)    // higher, 110 > 100
+        XCTAssertEqual(call.methodWasCorrect("holt"), false)    // lower, but went up
+        XCTAssertNil(call.methodWasCorrect("missing"))          // not recorded
+    }
+
+    func testVsMethodsHeadToHead() {
+        // spot 100, user always "higher". Actuals: 110,110,90,110,90 → user right 3/5.
+        // drift always higher → 3/5; holt always lower → 2/5.
+        let calls = [110.0, 110, 90, 110, 90].map(snapshotCall(actual:))
+        let vs = UserCallEngine.vsMethods(calls)
+
+        XCTAssertEqual(vs?.userDecided, 5)
+        XCTAssertEqual(vs?.userHitRate ?? 0, 0.6, accuracy: 1e-9)
+        XCTAssertEqual(vs?.methods.first { $0.methodId == "drift" }?.hitRate ?? 0, 0.6, accuracy: 1e-9)
+        XCTAssertEqual(vs?.methods.first { $0.methodId == "holt" }?.hitRate ?? 0, 0.4, accuracy: 1e-9)
+        XCTAssertEqual(vs?.methodsBeaten, 1)                        // beats holt, ties drift
+        XCTAssertEqual(vs?.methods.map(\.methodId), ["drift", "holt"])   // best hit rate first
+    }
+
+    func testVsMethodsNilWithoutSnapshots() {
+        let bare = UserCall(id: UUID(), symbol: "AAPL", assetClass: .stock, createdAt: created,
+                            horizonDays: 7, spotAtCall: 100, direction: .higher, confidence: .hunch,
+                            methodDirections: nil, actualClose: 110, resolvedAt: created)
+        XCTAssertNil(UserCallEngine.vsMethods([bare]))
+    }
 }

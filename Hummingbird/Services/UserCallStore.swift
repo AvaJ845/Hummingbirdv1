@@ -44,11 +44,13 @@ final class UserCallStore {
     @discardableResult
     func record(symbol: String, assetClass: AssetClass, direction: CallDirection,
                 confidence: CallConfidence, horizonDays: Int, spot: Double,
+                methodDirections: [String: CallDirection]? = nil,
                 now: Date = Date()) -> UserCall {
         let call = UserCall(
             id: UUID(), symbol: symbol, assetClass: assetClass, createdAt: now,
             horizonDays: horizonDays, spotAtCall: spot, direction: direction,
-            confidence: confidence, actualClose: nil, resolvedAt: nil
+            confidence: confidence, methodDirections: methodDirections,
+            actualClose: nil, resolvedAt: nil
         )
         calls.append(call)
         prune()

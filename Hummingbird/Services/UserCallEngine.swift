@@ -57,4 +57,33 @@ enum UserCallEngine {
         return UserCallReport(total: calls.count, resolved: resolved.count,
                               overall: overall, byConfidence: byConfidence)
     }
+
+    /// You vs. the methods — your directional hit rate against each method's, on
+    /// the same resolved calls that snapshotted method predictions. Nil until at
+    /// least `minResolved` such calls exist.
+    static func vsMethods(_ calls: [UserCall], minResolved: Int = 5) -> VsMethods? {
+        // Resolved, decidable calls that carry a method snapshot.
+        let eligible = calls.filter { $0.wasCorrect != nil && $0.methodDirections != nil }
+        guard eligible.count >= minResolved else { return nil }
+
+        let userHits = eligible.filter { $0.wasCorrect == true }.count
+        let userRate = Double(userHits) / Double(eligible.count)
+
+        var ids = Set<String>()
+        for call in eligible { if let dirs = call.methodDirections { ids.formUnion(dirs.keys) } }
+
+        let methods: [MethodTally] = ids.compactMap { id in
+            let flags = eligible.compactMap { $0.methodWasCorrect(id) }
+            guard !flags.isEmpty else { return nil }
+            return MethodTally(
+                methodId: id,
+                methodName: ForecastModel.model(id: id)?.name ?? id,
+                decided: flags.count,
+                hitRate: Double(flags.filter { $0 }.count) / Double(flags.count)
+            )
+        }
+        .sorted { $0.hitRate > $1.hitRate }
+
+        return VsMethods(userHitRate: userRate, userDecided: eligible.count, methods: methods)
+    }
 }
