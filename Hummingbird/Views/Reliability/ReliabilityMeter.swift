@@ -78,7 +78,7 @@ struct ReliabilityMeter: View {
         if isPro {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Baseline").font(.caption).foregroundStyle(.secondary)
+                    Text("Starting point").font(.caption).foregroundStyle(.secondary)
                     Spacer()
                     Text("50").font(.caption.weight(.semibold)).monospacedDigit().foregroundStyle(.secondary)
                 }
@@ -96,7 +96,7 @@ struct ReliabilityMeter: View {
                         }
                     }
                 }
-                Text("Starts from a neutral 50, then adjusts for each factor.")
+                Text("Starts at 50, then moves up or down for each thing below.")
                     .font(.caption2).foregroundStyle(.tertiary)
             }
         } else {

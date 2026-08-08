@@ -223,7 +223,7 @@ struct ForecastResultsView: View {
                         lastUpdated: viewModel.lastUpdated,
                         isRefreshing: viewModel.isRefreshing
                     )
-                    Text("\(forecast.model.name) · \(viewModel.horizon)d")
+                    Text("\(forecast.model.name) · \(viewModel.horizon) days")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
@@ -286,7 +286,7 @@ struct ForecastResultsView: View {
                 MetricTile(
                     title: "Projected change",
                     value: change?.asSignedPercent() ?? "—",
-                    subtitle: "Uncalibrated path · \(viewModel.horizon)d",
+                    subtitle: "A rough sketch · \(viewModel.horizon) days",
                     valueColor: Theme.changeColor(change)
                 )
                 MetricTile(
@@ -431,7 +431,7 @@ struct ChartLegend: View {
                     .fill(Theme.accent.opacity(0.18))
                     .frame(width: 16, height: 10)
                     .accessibilityHidden(true)
-                Text(easyMode ? "Possible range" : "Projection band")
+                Text(easyMode ? "Possible range" : "Likely range")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

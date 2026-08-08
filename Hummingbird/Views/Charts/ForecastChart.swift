@@ -53,7 +53,7 @@ struct ForecastChart: View {
         let current = forecast.lastClose?.asCurrency() ?? "unknown"
         let target = forecast.targetPrice?.asCurrency() ?? "unknown"
         let change = forecast.expectedChange?.asSignedPercent() ?? "unknown"
-        return "Price sketch. Current \(current), projected \(target), change \(change), with an uncalibrated guess range — not a real probability."
+        return "Price sketch. Current \(current), projected \(target), change \(change), with a rough guess range — not a real probability."
     }
 
     var body: some View {

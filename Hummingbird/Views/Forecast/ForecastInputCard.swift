@@ -115,7 +115,7 @@ struct ForecastInputCard: View {
     }
 
     @ViewBuilder private var horizonTitle: some View {
-        Text("Projection horizon")
+        Text("How far ahead")
             .font(.subheadline.weight(.medium))
     }
 

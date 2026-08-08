@@ -38,7 +38,7 @@ final class ReliabilityEngineTests: XCTestCase {
 
     func testNilBacktestFallsBackToNeutralBase() {
         let s = ReliabilityEngine.score(inputs(mape: nil, regime: .calm, disagreement: 0.0, horizon: 7, history: 400))
-        XCTAssertTrue(s.factors.contains { $0.name == "Backtest accuracy" && $0.detail.contains("Not enough") })
+        XCTAssertTrue(s.factors.contains { $0.name == "How well it's tracked" && $0.detail.contains("Not enough") })
         // With no penalties, neutral base 50 → moderate.
         XCTAssertEqual(s.tier, .moderate)
     }

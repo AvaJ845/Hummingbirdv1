@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The Accuracy Report Card — the honesty pledge made tangible: how Hummingbird's
-/// past sketches *actually* tracked once real prices caught up. A record of the
-/// past, never a promise. Free sees the headline; Pro unlocks the full breakdown.
+/// past sketches *actually* tracked once real prices caught up. Written in plain
+/// language for everyone. A record of the past, never a promise. Free sees the
+/// headline; Pro unlocks the full breakdown.
 struct ScorecardView: View {
     @Bindable var scorecard: SketchScorecardStore
     @Bindable var entitlements: EntitlementStore
@@ -36,22 +37,24 @@ struct ScorecardView: View {
         Section {
             if let cal = report.calibration {
                 VStack(spacing: 4) {
-                    Text("Ranges held \(pct(cal.inRangeRate))")
+                    Text("In range \(pct(cal.inRangeRate)) of the time")
                         .font(.title2.weight(.bold)).monospacedDigit()
                         .foregroundStyle(calibrationColor(cal.inRangeRate))
-                    Text("of the time · aiming for ~80%")
+                        .multilineTextAlignment(.center)
+                    Text("the real price landed inside our range · we aim for about 8 in 10")
                         .font(.caption).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("The real price landed inside the sketch's range \(pct(cal.inRangeRate)) of the time, aiming for about 80 percent")
+                .accessibilityLabel("The real price landed inside our range \(pct(cal.inRangeRate)) of the time. We aim for about 8 in 10.")
             }
 
             HStack(spacing: 18) {
-                stat(value: errorText(report.summary.medianError), caption: "Typical error")
+                stat(value: errorText(report.summary.medianError), caption: "Usual gap")
                 Divider().frame(height: 40)
-                stat(value: "\(report.summary.resolvedSketches)", caption: "Scored")
+                stat(value: "\(report.summary.resolvedSketches)", caption: "Checked")
                 Divider().frame(height: 40)
                 stat(value: "\(report.summary.totalSketches)", caption: "Total")
             }
@@ -59,7 +62,7 @@ struct ScorecardView: View {
             .padding(.vertical, 6)
 
             if let directional = report.directional {
-                Text("Called the direction \(pct(directional.hitRate)) of the time — a record of the past, never advice.")
+                Text("Pointed the right way \(pct(directional.hitRate)) of the time — a look back, never advice.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -68,7 +71,7 @@ struct ScorecardView: View {
         } footer: {
             if report.calibration == nil {
                 if report.summary.hasResolved {
-                    Text("Range calibration appears once a few more sketches resolve against real prices.")
+                    Text("Once a few more sketches catch up to real prices, you'll also see how often the real price landed inside our range.")
                 } else {
                     Text("Your sketches are still waiting for real prices to catch up. Check back in a few days.")
                 }
@@ -82,7 +85,7 @@ struct ScorecardView: View {
         Section {
             ForEach(report.horizons) { horizon in
                 HStack {
-                    Text("\(horizon.daysAhead)-day sketches")
+                    Text("\(horizon.daysAhead) day\(horizon.daysAhead == 1 ? "" : "s") ahead")
                         .font(.body)
                     Spacer()
                     Text(errorText(horizon.medianError))
@@ -92,12 +95,12 @@ struct ScorecardView: View {
                         .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(horizon.daysAhead) day sketches, typical error \(errorText(horizon.medianError)), \(horizon.resolvedCount) scored")
+                .accessibilityLabel("\(horizon.daysAhead) days ahead, usual gap \(errorText(horizon.medianError)), \(horizon.resolvedCount) checked")
             }
         } header: {
-            Text("Typical error by horizon")
+            Text("How close, by how far ahead")
         } footer: {
-            Text("Further-out sketches are naturally less accurate — that's expected, not a flaw.")
+            Text("Sketches further out are naturally less accurate — that's expected, not a flaw.")
         }
     }
 
@@ -114,7 +117,7 @@ struct ScorecardView: View {
                         .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(model.modelName), typical error \(errorText(model.medianError)), \(model.resolvedCount) scored")
+                .accessibilityLabel("\(model.modelName), usual gap \(errorText(model.medianError)), \(model.resolvedCount) checked")
             }
         }
     }
@@ -125,7 +128,7 @@ struct ScorecardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(asset.symbol.uppercased()).font(.body.weight(.semibold))
-                        Text("\(asset.summary.resolvedSketches) scored · \(asset.summary.totalSketches) total")
+                        Text("\(asset.summary.resolvedSketches) checked · \(asset.summary.totalSketches) total")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -133,11 +136,11 @@ struct ScorecardView: View {
                         Text(errorText(asset.summary.medianError))
                             .font(.body.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(errorColor(asset.summary.medianError))
-                        Text("typical error").font(.caption2).foregroundStyle(.secondary)
+                        Text("usual gap").font(.caption2).foregroundStyle(.secondary)
                     }
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(asset.symbol), \(asset.summary.resolvedSketches) scored sketches, typical error \(errorText(asset.summary.medianError))")
+                .accessibilityLabel("\(asset.symbol), \(asset.summary.resolvedSketches) checked, usual gap \(errorText(asset.summary.medianError))")
             }
         }
     }
@@ -159,13 +162,13 @@ struct ScorecardView: View {
                 PaywallView(entitlements: entitlements, scorecard: scorecard)
             } label: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Unlock the full report", systemImage: "sparkles")
+                    Label("See the full report", systemImage: "sparkles")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Theme.brandGradient)
                     ForEach([
-                        "Typical error by horizon (1 / 7 / 14 / 30 days)",
+                        "How close it's been, by how far ahead",
                         "Which method has tracked each asset best",
-                        "Accuracy per asset, and a shareable report",
+                        "How each asset has done — and a shareable report",
                     ], id: \.self) { line in
                         Label(line, systemImage: "checkmark")
                             .font(.caption).foregroundStyle(.secondary)
@@ -181,7 +184,7 @@ struct ScorecardView: View {
 
     private var aboutSection: some View {
         Section {
-            Text("“Typical error” is the median gap between a past sketch and the price that actually happened; “ranges held” is how often the real price landed inside a sketch's stated range. It's a record of the past — not a prediction, and never financial advice.")
+            Text("“Usual gap” is how far a past sketch typically landed from the price that actually happened. “In range” is how often the real price fell inside a sketch's range. It's a record of the past — not a prediction, and never financial advice.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
@@ -191,7 +194,7 @@ struct ScorecardView: View {
             VStack(spacing: 10) {
                 Image(systemName: "checkmark.seal")
                     .font(.system(size: 40)).foregroundStyle(Theme.accent)
-                Text("No scored sketches yet").font(.headline)
+                Text("No sketches checked yet").font(.headline)
                 Text("Run a few projections. Once real prices catch up to their dates, you'll see how honest each sketch turned out to be.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -204,16 +207,16 @@ struct ScorecardView: View {
 
     private var reportText: String {
         var lines = ["Hummingbird accuracy report — a record of the past, not advice.",
-                     "\(report.summary.totalSketches) sketches · \(report.summary.resolvedSketches) scored",
-                     "Typical error: \(errorText(report.summary.medianError))"]
+                     "\(report.summary.totalSketches) sketches · \(report.summary.resolvedSketches) checked",
+                     "Usual gap: \(errorText(report.summary.medianError))"]
         if let cal = report.calibration {
-            lines.append("Ranges held: \(pct(cal.inRangeRate)) of the time (aiming ~80%)")
+            lines.append("In range: \(pct(cal.inRangeRate)) of the time (we aim for ~8 in 10)")
         }
         if let directional = report.directional {
-            lines.append("Called the direction: \(pct(directional.hitRate)) of the time")
+            lines.append("Pointed the right way: \(pct(directional.hitRate)) of the time")
         }
         for horizon in report.horizons {
-            lines.append("• \(horizon.daysAhead)d: \(errorText(horizon.medianError)) typical error (\(horizon.resolvedCount) scored)")
+            lines.append("• \(horizon.daysAhead) day\(horizon.daysAhead == 1 ? "" : "s") ahead: \(errorText(horizon.medianError)) usual gap (\(horizon.resolvedCount) checked)")
         }
         return lines.joined(separator: "\n")
     }
@@ -242,8 +245,8 @@ struct ScorecardView: View {
         }
     }
 
-    /// Green when the stated range is holding near/above its ~80% design; amber
-    /// when it's running too narrow (real prices escaping the band).
+    /// Green when the range is holding near/above its ~8-in-10 aim; amber when
+    /// it's running too narrow (real prices escaping the range).
     private func calibrationColor(_ rate: Double) -> Color {
         rate >= 0.70 ? Theme.up : Theme.warning
     }

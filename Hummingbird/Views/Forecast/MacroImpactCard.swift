@@ -24,7 +24,7 @@ struct MacroImpactCard: View {
                     if easyMode {
                         Text(RetailExplainer.scenarioNudgePlain(macro, horizon: horizon))
                     } else {
-                        Text("Selected series apply a capped scenario nudge of \(macro.displayBias) over \(horizon) days. Not an econometric beta estimate.")
+                        Text("These economy what-ifs nudge the sketch by about \(macro.displayBias) over \(horizon) days — a simple scenario, not a precise estimate.")
                     }
                 }
                 .font(.caption)

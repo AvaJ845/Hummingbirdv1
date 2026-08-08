@@ -66,12 +66,12 @@ enum ReliabilityEngine {
         if let mape = inputs.backtestMAPE {
             let level = min(98, max(5, 100 - mape * 500))   // 5% error → 75, 10% → 50
             factors.append(ReliabilityFactor(
-                name: "Backtest accuracy",
-                detail: String(format: "Typical backtest error %.1f%%", mape * 100),
+                name: "How well it's tracked",
+                detail: String(format: "Usually off by about %.1f%% in past checks", mape * 100),
                 impact: Int(level.rounded()) - 50))
         } else {
-            factors.append(ReliabilityFactor(name: "Backtest accuracy",
-                                             detail: "Not enough history to backtest", impact: 0))
+            factors.append(ReliabilityFactor(name: "How well it's tracked",
+                                             detail: "Not enough history to check yet", impact: 0))
         }
 
         // Volatility regime.
@@ -102,14 +102,14 @@ enum ReliabilityEngine {
         // Longer horizons are less reliable.
         let horizonImpact = -Int(min(15, max(0, Double(inputs.horizon - 14) * 0.3)).rounded())
         if horizonImpact != 0 {
-            factors.append(ReliabilityFactor(name: "Horizon",
-                                             detail: "\(inputs.horizon)-day projection", impact: horizonImpact))
+            factors.append(ReliabilityFactor(name: "How far ahead",
+                                             detail: "\(inputs.horizon) days ahead", impact: horizonImpact))
         }
 
         // Thin history is less reliable.
         let historyImpact = -Int(min(10, max(0, Double(30 - inputs.historyCount) * 0.5)).rounded())
         if historyImpact != 0 {
-            factors.append(ReliabilityFactor(name: "History depth",
+            factors.append(ReliabilityFactor(name: "How much history",
                                              detail: "\(inputs.historyCount) days of history", impact: historyImpact))
         }
 
