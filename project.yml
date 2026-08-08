@@ -10,8 +10,8 @@ configFiles:
   Release: Config/Base.xcconfig
 settings:
   base:
-    MARKETING_VERSION: "1.7.0"
-    CURRENT_PROJECT_VERSION: "11"
+    MARKETING_VERSION: "1.8.0"
+    CURRENT_PROJECT_VERSION: "12"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
