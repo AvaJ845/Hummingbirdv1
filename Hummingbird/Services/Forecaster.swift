@@ -26,9 +26,9 @@ enum Forecaster {
 
         var forecastPoints: [ForecastPoint]
         if strategy == .ensemble {
-            forecastPoints = ensemblePoints(context: context, horizon: clampedHorizon)
+            forecastPoints = ensemblePoints(context: context, horizon: clampedHorizon, assetClass: series.assetClass)
         } else {
-            forecastPoints = project(context: context, strategy: strategy, horizon: clampedHorizon)
+            forecastPoints = project(context: context, strategy: strategy, horizon: clampedHorizon, assetClass: series.assetClass)
         }
 
         if macro.isActive {
@@ -159,11 +159,10 @@ enum Forecaster {
     private static func project(
         context: TrendContext,
         strategy: ForecastStrategy,
-        horizon: Int
+        horizon: Int,
+        assetClass: AssetClass
     ) -> [ForecastPoint] {
-        let calendar = Calendar(identifier: .gregorian)
         var result: [ForecastPoint] = []
-        result.reserveCapacity(horizon)
         let bandScale = context.bandScale(for: strategy)
 
         // Spot anchoring (t0 ≡ Pspot): re-center the whole projection so its
@@ -174,11 +173,16 @@ enum Forecaster {
         let anchorOffset = context.lastClose
             - context.baseline(strategy: strategy, step: 0, date: context.lastDate)
 
-        for step in 1...horizon {
-            guard let date = calendar.date(byAdding: .day, value: step, to: context.lastDate) else {
-                continue
-            }
+        // Each step is one *trading day* ahead — the unit every model is fit in
+        // (drift = mean per-trading-day change, Holt trend per step, etc.). The
+        // dates come from the asset's trading calendar so a stock sketch never
+        // lands a point on a weekend/holiday (crypto trades every day), and the
+        // date each value is shown on matches the step it was computed for.
+        let dates = MarketCalendar.tradingDates(after: context.lastDate, count: horizon, assetClass: assetClass)
+        result.reserveCapacity(dates.count)
 
+        for (index, date) in dates.enumerated() {
+            let step = index + 1
             let baseline = context.baseline(strategy: strategy, step: step, date: date) + anchorOffset
             // Uncalibrated residual band — educational range, not a verified PI.
             let band = bandScale * sqrt(Double(step)) * 1.28
@@ -197,9 +201,9 @@ enum Forecaster {
     }
 
     /// Phoenix: equal-weight blend of Skylark, Meadowlark, and Peregrine.
-    private static func ensemblePoints(context: TrendContext, horizon: Int) -> [ForecastPoint] {
+    private static func ensemblePoints(context: TrendContext, horizon: Int, assetClass: AssetClass) -> [ForecastPoint] {
         let constituents: [ForecastStrategy] = [.trendSeasonal, .linear, .momentum]
-        let series = constituents.map { project(context: context, strategy: $0, horizon: horizon) }
+        let series = constituents.map { project(context: context, strategy: $0, horizon: horizon, assetClass: assetClass) }
         guard let first = series.first, !first.isEmpty else { return [] }
 
         return first.indices.map { index in
