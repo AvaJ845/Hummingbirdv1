@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showOnboarding = false
     @State private var showCallSheet = false
+    @State private var showYourCalls = false
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
@@ -104,6 +105,16 @@ struct ContentView: View {
                 viewModel.run(loggingCall: (direction, confidence))
             }
         }
+        .sheet(isPresented: $showYourCalls) {
+            NavigationStack {
+                YourCallsView(store: viewModel.userCalls)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showYourCalls = false }
+                        }
+                    }
+            }
+        }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 hasOnboarded = true
@@ -160,6 +171,14 @@ struct ContentView: View {
                         open(.paywall(reason: "Free includes horizons up to \(FreeTierLimits.maxHorizonDays) days. Pro stretches sketches to 90."))
                     }
                 )
+
+                if !viewModel.userCalls.calls.isEmpty {
+                    YourCallsCard(
+                        report: viewModel.userCalls.report,
+                        pendingCount: viewModel.userCalls.pending.count
+                    ) { showYourCalls = true }
+                    .transition(.opacity)
+                }
 
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error)

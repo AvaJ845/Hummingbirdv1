@@ -45,6 +45,35 @@ final class UserCallStoreTests: XCTestCase {
         XCTAssertEqual(reopened.calls.first?.confidence, .hunch)
     }
 
+    func testResolveReturnsNewlyResolvedIDsOnce() {
+        let (store, _) = freshStore()
+        let made = Date(timeIntervalSince1970: 1_700_000_000)
+        let call = store.record(symbol: "AAPL", assetClass: .stock, direction: .lower,
+                                confidence: .confident, horizonDays: 7, spot: 100, now: made)
+        let target = made.addingTimeInterval(7 * 86_400)
+        let series = PriceSeries(symbol: "AAPL", assetClass: .stock,
+                                 points: [PricePoint(date: target, close: 90)], isSample: true)
+
+        XCTAssertEqual(store.resolve(using: series), [call.id])
+        XCTAssertTrue(store.resolve(using: series).isEmpty)   // already resolved
+        XCTAssertEqual(store.report.overall.correct, 1)       // lower call, went down
+    }
+
+    func testResolveDueFetchesEachDueAsset() async {
+        let (store, _) = freshStore()
+        let made = Date(timeIntervalSince1970: 1_700_000_000)
+        store.record(symbol: "AAPL", assetClass: .stock, direction: .higher,
+                     confidence: .hunch, horizonDays: 7, spot: 100, now: made)
+        let now = made.addingTimeInterval(20 * 86_400)
+
+        XCTAssertEqual(store.dueAssets(now: now).count, 1)
+        let resolved = await store.resolveDue(using: StubCallService(close: 115, offsetDays: 7, base: made), now: now)
+
+        XCTAssertEqual(resolved.count, 1)
+        XCTAssertTrue(store.pending.isEmpty)
+        XCTAssertEqual(store.report.overall.correct, 1)
+    }
+
     func testClearAllWipes() {
         let (store, _) = freshStore()
         store.record(symbol: "AAPL", assetClass: .stock, direction: .higher,
@@ -52,5 +81,18 @@ final class UserCallStoreTests: XCTestCase {
         store.clearAll()
         XCTAssertTrue(store.calls.isEmpty)
         XCTAssertEqual(store.report.total, 0)
+    }
+}
+
+/// Returns a one-point series with a close `offsetDays` after `base` — enough to
+/// resolve a call whose target lands there.
+private struct StubCallService: MarketDataProviding {
+    let close: Double
+    let offsetDays: Int
+    let base: Date
+    func history(symbol: String, assetClass: AssetClass, days: Int) async throws -> PriceSeries {
+        PriceSeries(symbol: symbol, assetClass: assetClass,
+                    points: [PricePoint(date: base.addingTimeInterval(Double(offsetDays) * 86_400), close: close)],
+                    isSample: true)
     }
 }

@@ -56,15 +56,44 @@ final class UserCallStore {
         return call
     }
 
-    /// Resolve any pending calls for this asset against a fresh series.
-    func resolve(using series: PriceSeries) {
-        var changed = false
+    /// Resolve any pending calls for this asset against a fresh series. Returns
+    /// the IDs that newly resolved (so callers can clear their reminders).
+    @discardableResult
+    func resolve(using series: PriceSeries) -> [UUID] {
+        var resolvedIDs: [UUID] = []
         calls = calls.map { call in
             let updated = UserCallEngine.resolve(call, against: series)
-            if updated != call { changed = true }
+            if updated != call { resolvedIDs.append(updated.id) }
             return updated
         }
-        if changed { save() }
+        if !resolvedIDs.isEmpty { save() }
+        return resolvedIDs
+    }
+
+    /// Distinct assets that have an unresolved call whose horizon has passed.
+    func dueAssets(now: Date = Date()) -> [WatchlistItem] {
+        var seen = Set<String>()
+        var result: [WatchlistItem] = []
+        for call in calls where !call.isResolved && call.targetDate <= now {
+            let key = "\(call.assetClass.rawValue):\(call.symbol.lowercased())"
+            if seen.insert(key).inserted {
+                result.append(WatchlistItem(symbol: call.symbol, assetClass: call.assetClass))
+            }
+        }
+        return result
+    }
+
+    /// Fetch fresh prices for each due asset and resolve its calls. Returns the
+    /// IDs that newly resolved.
+    @discardableResult
+    func resolveDue(using service: any MarketDataProviding, now: Date = Date()) async -> [UUID] {
+        var resolved: [UUID] = []
+        for item in dueAssets(now: now) {
+            if let series = try? await service.history(symbol: item.symbol, assetClass: item.assetClass) {
+                resolved.append(contentsOf: resolve(using: series))
+            }
+        }
+        return resolved
     }
 
     // MARK: - Reads

@@ -372,6 +372,15 @@ final class ForecastViewModel {
         }
     }
 
+    /// Ask (once) for notification permission and schedule the "your call is
+    /// ready" nudge at the call's horizon.
+    private func scheduleCallReminder(_ call: UserCall) async {
+        var authorized = await NotificationService.isAuthorized()
+        if !authorized { authorized = await NotificationService.requestAuthorization() }
+        guard authorized else { return }
+        await NotificationService.scheduleCallResolution(callID: call.id, symbol: call.symbol, at: call.targetDate)
+    }
+
     func enforceEntitlementsAfterPurchaseChange() {
         horizon = entitlements.maxHorizon(requested: horizon)
         if !entitlements.canUse(model: model), let fallback = ForecastModel.available.first(where: { entitlements.canUse(model: $0) }) {
@@ -478,13 +487,16 @@ final class ForecastViewModel {
             priceDirection = .unchanged
             refreshModelPreviewsIfNeeded()
 
-            // Fill in any past calls now that we have fresh prices for this asset,
-            // then log the user's pre-sketch call if they made one.
-            userCalls.resolve(using: fetched)
+            // Fill in any past calls now that we have fresh prices for this asset
+            // (clearing their reminders), then log the user's pre-sketch call.
+            for id in userCalls.resolve(using: fetched) {
+                NotificationService.cancelCallResolution(callID: id)
+            }
             if let loggingCall, let spot = forecast?.lastClose {
-                userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
-                                 direction: loggingCall.direction, confidence: loggingCall.confidence,
-                                 horizonDays: horizon, spot: spot)
+                let call = userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
+                                            direction: loggingCall.direction, confidence: loggingCall.confidence,
+                                            horizonDays: horizon, spot: spot)
+                Task { await scheduleCallReminder(call) }
             }
         } catch is CancellationError {
             return

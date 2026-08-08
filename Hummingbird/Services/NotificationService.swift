@@ -43,6 +43,27 @@ enum NotificationService {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [digestIdentifier])
     }
 
+    private static func callIdentifier(_ id: UUID) -> String { "call-\(id.uuidString)" }
+
+    /// Nudge the user to come back when a call's horizon is up. One-shot.
+    static func scheduleCallResolution(callID: UUID, symbol: String, at date: Date) async {
+        let interval = date.timeIntervalSinceNow
+        guard interval > 0 else { return }   // already due — nothing to schedule
+
+        let content = UNMutableNotificationContent()
+        content.title = "Your \(symbol.uppercased()) call is ready to check"
+        content.body = "See how it turned out — a record of the past, never advice."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        let request = UNNotificationRequest(identifier: callIdentifier(callID), content: content, trigger: trigger)
+        try? await UNUserNotificationCenter.current().add(request)
+    }
+
+    static func cancelCallResolution(callID: UUID) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [callIdentifier(callID)])
+    }
+
     static func deliver(_ alert: MovementAlert, id: String) async {
         let content = UNMutableNotificationContent()
         content.title = alert.title
