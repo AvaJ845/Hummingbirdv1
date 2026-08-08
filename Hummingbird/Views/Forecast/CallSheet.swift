@@ -5,12 +5,13 @@ import SwiftUI
 /// advice, never a promise.
 struct CallSheet: View {
     let symbol: String
-    let horizon: Int
-    let onCommit: (CallDirection, CallConfidence) -> Void
+    let onCommit: (CallDirection, CallConfidence, Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var direction: CallDirection?
     @State private var confidence: CallConfidence = .fairlySure
+    /// A short window keeps the loop tight — independent of the sketch horizon.
+    @State private var callHorizon = 7
 
     var body: some View {
         NavigationStack {
@@ -19,7 +20,7 @@ struct CallSheet: View {
                     VStack(spacing: 8) {
                         Text("Call it")
                             .font(.largeTitle.weight(.bold))
-                        Text("Before you see the sketch — which way do you think \(symbol.uppercased()) goes over the next \(horizon) days?")
+                        Text("Before you see the sketch — which way do you think \(symbol.uppercased()) goes?")
                             .font(.subheadline).foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -29,6 +30,16 @@ struct CallSheet: View {
                     HStack(spacing: 12) {
                         directionButton(.higher, "Higher", "arrow.up.right")
                         directionButton(.lower, "Lower", "arrow.down.right")
+                    }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("By when?").font(.subheadline.weight(.semibold))
+                        Picker("By when?", selection: $callHorizon) {
+                            Text("3 days").tag(3)
+                            Text("1 week").tag(7)
+                            Text("2 weeks").tag(14)
+                        }
+                        .pickerStyle(.segmented)
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -48,7 +59,7 @@ struct CallSheet: View {
 
                     Button {
                         guard let direction else { return }
-                        onCommit(direction, confidence)
+                        onCommit(direction, confidence, callHorizon)
                         dismiss()
                     } label: {
                         Text("Lock in call · see the sketch")

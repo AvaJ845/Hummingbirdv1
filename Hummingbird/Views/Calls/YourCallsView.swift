@@ -4,9 +4,12 @@ import SwiftUI
 /// any due calls when opened. A record of the past — never advice.
 struct YourCallsView: View {
     @Bindable var store: UserCallStore
+    @Bindable var entitlements: EntitlementStore
     var service: any MarketDataProviding = MarketDataService()
+    var onUnlock: () -> Void = {}
 
     private var report: UserCallReport { store.report }
+    private var freeResolvedLimit: Int { 5 }
 
     var body: some View {
         List {
@@ -17,6 +20,11 @@ struct YourCallsView: View {
                 if !report.byConfidence.isEmpty { confidenceSection }
                 if !store.pending.isEmpty { pendingSection }
                 resolvedSection
+                if entitlements.isPro {
+                    shareSection
+                } else if report.resolved > 0 {
+                    proTeaser
+                }
             }
             aboutSection
         }
@@ -93,12 +101,14 @@ struct YourCallsView: View {
 
     private var resolvedSection: some View {
         let resolved = store.calls.filter(\.isResolved).sorted { ($0.resolvedAt ?? .distantPast) > ($1.resolvedAt ?? .distantPast) }
-        return Section("Resolved") {
+        let limit = entitlements.isPro ? 60 : freeResolvedLimit
+        let shown = Array(resolved.prefix(limit))
+        return Section {
             if resolved.isEmpty {
                 Text("None yet — check back when your calls reach their dates.")
                     .font(.footnote).foregroundStyle(.secondary)
             } else {
-                ForEach(resolved.prefix(30)) { call in
+                ForEach(shown) { call in
                     HStack {
                         directionChip(call.direction)
                         VStack(alignment: .leading, spacing: 2) {
@@ -111,8 +121,55 @@ struct YourCallsView: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+                if !entitlements.isPro, resolved.count > shown.count {
+                    Button(action: onUnlock) {
+                        Label("See all \(resolved.count) with Pro", systemImage: "sparkles")
+                            .font(.subheadline).foregroundStyle(Theme.brandGradient)
+                    }
+                }
             }
+        } header: {
+            Text("Resolved")
         }
+    }
+
+    private var shareSection: some View {
+        Section {
+            ShareLink(item: recordText) {
+                Label("Share your record", systemImage: "square.and.arrow.up")
+            }
+            .tint(Theme.accentAlt)
+        }
+    }
+
+    private var proTeaser: some View {
+        Section {
+            Button(action: onUnlock) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Keep your full record", systemImage: "sparkles")
+                        .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
+                    ForEach([
+                        "Every resolved call, not just the last \(freeResolvedLimit)",
+                        "A shareable summary of how calibrated you've been",
+                    ], id: \.self) { line in
+                        Label(line, systemImage: "checkmark")
+                            .font(.caption).foregroundStyle(.secondary).labelStyle(.titleAndIcon)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        } footer: {
+            Text("Your headline record and confidence breakdown are always free — Pro just keeps the full history.")
+        }
+    }
+
+    private var recordText: String {
+        var lines = ["My Hummingbird call record — a record of the past, not advice.",
+                     "Overall: \(report.overall.hitRate.map(pct) ?? "—") right (\(report.overall.correct) of \(report.overall.decided))"]
+        for row in report.byConfidence {
+            lines.append("• \(row.confidence.title): \(pct(row.hitRate)) (\(row.decided))")
+        }
+        return lines.joined(separator: "\n")
     }
 
     private var aboutSection: some View {

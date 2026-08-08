@@ -112,8 +112,8 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
             entitlements: entitlements,
             userCalls: calls
         )
-        viewModel.horizon = 14
-        viewModel.run(loggingCall: (.higher, .confident))
+        viewModel.horizon = 30                       // sketch horizon
+        viewModel.run(loggingCall: (.higher, .confident, 7))  // call's own short window
         try? await Task.sleep(nanoseconds: 120_000_000)
 
         XCTAssertTrue(viewModel.hasResult)
@@ -121,7 +121,7 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
         let call = calls.calls.first
         XCTAssertEqual(call?.direction, .higher)
         XCTAssertEqual(call?.confidence, .confident)
-        XCTAssertEqual(call?.horizonDays, 14)
+        XCTAssertEqual(call?.horizonDays, 7)          // call horizon, not the sketch's 30
         XCTAssertEqual(call?.spotAtCall, viewModel.forecast?.lastClose)
     }
 

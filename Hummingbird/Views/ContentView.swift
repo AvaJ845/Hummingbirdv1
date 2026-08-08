@@ -101,18 +101,25 @@ struct ContentView: View {
             SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard)
         }
         .sheet(isPresented: $showCallSheet) {
-            CallSheet(symbol: viewModel.symbol, horizon: viewModel.horizon) { direction, confidence in
-                viewModel.run(loggingCall: (direction, confidence))
+            CallSheet(symbol: viewModel.symbol) { direction, confidence, horizonDays in
+                viewModel.run(loggingCall: (direction, confidence, horizonDays))
             }
         }
         .sheet(isPresented: $showYourCalls) {
             NavigationStack {
-                YourCallsView(store: viewModel.userCalls)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showYourCalls = false }
-                        }
+                YourCallsView(
+                    store: viewModel.userCalls,
+                    entitlements: entitlements,
+                    onUnlock: {
+                        showYourCalls = false
+                        viewModel.pendingPaywallReason = "Pro keeps your full call record and a shareable summary of how calibrated you've been."
                     }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { showYourCalls = false }
+                    }
+                }
             }
         }
         .fullScreenCover(isPresented: $showOnboarding) {

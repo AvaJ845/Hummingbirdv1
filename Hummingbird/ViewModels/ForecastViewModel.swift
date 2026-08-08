@@ -187,8 +187,10 @@ final class ForecastViewModel {
         self.userCalls = userCalls
     }
 
-    /// A direction + confidence the user committed *before* the sketch reveals.
-    typealias PendingCall = (direction: CallDirection, confidence: CallConfidence)
+    /// A direction + confidence + horizon the user committed *before* the sketch
+    /// reveals. The call horizon is its own short window (a tight return loop),
+    /// independent of the sketch's display horizon.
+    typealias PendingCall = (direction: CallDirection, confidence: CallConfidence, horizonDays: Int)
 
     func run(loggingCall: PendingCall? = nil) {
         let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -495,7 +497,7 @@ final class ForecastViewModel {
             if let loggingCall, let spot = forecast?.lastClose {
                 let call = userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
                                             direction: loggingCall.direction, confidence: loggingCall.confidence,
-                                            horizonDays: horizon, spot: spot)
+                                            horizonDays: loggingCall.horizonDays, spot: spot)
                 Task { await scheduleCallReminder(call) }
             }
         } catch is CancellationError {
