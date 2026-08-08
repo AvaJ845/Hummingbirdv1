@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var showWatchlist = false
     @State private var showSettings = false
     @State private var showOnboarding = false
+    @State private var showCallSheet = false
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
@@ -20,8 +21,9 @@ struct ContentView: View {
     init() {
         let store = EntitlementStore()
         let card = SketchScorecardStore()
+        let calls = UserCallStore()
         _entitlements = State(initialValue: store)
-        _viewModel = State(initialValue: ForecastViewModel(entitlements: store, scorecard: card))
+        _viewModel = State(initialValue: ForecastViewModel(entitlements: store, scorecard: card, userCalls: calls))
     }
 
     var body: some View {
@@ -97,6 +99,11 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard)
         }
+        .sheet(isPresented: $showCallSheet) {
+            CallSheet(symbol: viewModel.symbol, horizon: viewModel.horizon) { direction, confidence in
+                viewModel.run(loggingCall: (direction, confidence))
+            }
+        }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView {
                 hasOnboarded = true
@@ -140,6 +147,10 @@ struct ContentView: View {
                     onForecast: {
                         symbolFocused = false
                         viewModel.run()
+                    },
+                    onCallIt: {
+                        symbolFocused = false
+                        showCallSheet = true
                     },
                     onStartDictation: {
                         symbolFocused = false

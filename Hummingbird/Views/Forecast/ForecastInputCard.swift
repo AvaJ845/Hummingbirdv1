@@ -7,6 +7,7 @@ struct ForecastInputCard: View {
     let entitlements: EntitlementStore
     let onSelectModel: () -> Void
     let onForecast: () -> Void
+    let onCallIt: () -> Void
     let onStartDictation: () -> Void
     let onUnlock: () -> Void
 
@@ -173,15 +174,27 @@ struct ForecastInputCard: View {
     }
 
     private var forecastButton: some View {
-        Button(action: onForecast) {
-            Text(viewModel.isLoading ? "Projecting…" : "Run projection")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+        VStack(spacing: 10) {
+            Button(action: onForecast) {
+                Text(viewModel.isLoading ? "Projecting…" : "Run projection")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            .disabled(viewModel.isLoading || dictation.isActive)
+            .accessibilityHint("Fetches history and runs the selected statistical model on device")
+
+            Button(action: onCallIt) {
+                Label("Call it first — predict before you peek", systemImage: "hand.point.up.left")
+                    .font(.subheadline.weight(.medium))
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(Theme.accentAlt)
+            .disabled(viewModel.isLoading || dictation.isActive)
+            .accessibilityHint("Log your own Higher or Lower call before the sketch reveals")
         }
-        .buttonStyle(.borderedProminent)
-        .tint(Theme.accent)
-        .disabled(viewModel.isLoading || dictation.isActive)
-        .accessibilityHint("Fetches history and runs the selected statistical model on device")
     }
 }

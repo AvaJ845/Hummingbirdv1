@@ -102,6 +102,29 @@ final class ForecastModelWiringTests: XCTestCase {
 
 @MainActor
 final class ForecastViewModelModelWiringTests: XCTestCase {
+    func testRunLoggingCallRecordsTheUsersCall() async {
+        let entitlements = EntitlementStore()
+        entitlements.setDebugUnlocked(true)
+        let calls = UserCallStore(defaults: UserDefaults(suiteName: "test.vm.calls.\(UUID().uuidString)")!)
+        let viewModel = ForecastViewModel(
+            service: StubMarketData(),
+            economicService: StubEconomicData(),
+            entitlements: entitlements,
+            userCalls: calls
+        )
+        viewModel.horizon = 14
+        viewModel.run(loggingCall: (.higher, .confident))
+        try? await Task.sleep(nanoseconds: 120_000_000)
+
+        XCTAssertTrue(viewModel.hasResult)
+        XCTAssertEqual(calls.calls.count, 1)
+        let call = calls.calls.first
+        XCTAssertEqual(call?.direction, .higher)
+        XCTAssertEqual(call?.confidence, .confident)
+        XCTAssertEqual(call?.horizonDays, 14)
+        XCTAssertEqual(call?.spotAtCall, viewModel.forecast?.lastClose)
+    }
+
     func testSelectModelRecomputesForecast() async {
         let entitlements = EntitlementStore()
         entitlements.setDebugUnlocked(true)

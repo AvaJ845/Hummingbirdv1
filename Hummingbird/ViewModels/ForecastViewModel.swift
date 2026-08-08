@@ -167,6 +167,7 @@ final class ForecastViewModel {
     private var autoRefreshTask: Task<Void, Never>?
 
     let scorecard: SketchScorecardStore
+    let userCalls: UserCallStore
     private var reliabilityTask: Task<Void, Never>?
     private var lastReliabilityKey: String?
     private var previewTask: Task<Void, Never>?
@@ -176,15 +177,20 @@ final class ForecastViewModel {
         service: any MarketDataProviding = MarketDataService(),
         economicService: any EconomicDataProviding = EconomicDataService(),
         entitlements: EntitlementStore,
-        scorecard: SketchScorecardStore = SketchScorecardStore()
+        scorecard: SketchScorecardStore = SketchScorecardStore(),
+        userCalls: UserCallStore = UserCallStore()
     ) {
         self.service = service
         self.economicService = economicService
         self.entitlements = entitlements
         self.scorecard = scorecard
+        self.userCalls = userCalls
     }
 
-    func run() {
+    /// A direction + confidence the user committed *before* the sketch reveals.
+    typealias PendingCall = (direction: CallDirection, confidence: CallConfidence)
+
+    func run(loggingCall: PendingCall? = nil) {
         let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             errorMessage = MarketDataError.emptySymbol.errorDescription
@@ -201,7 +207,7 @@ final class ForecastViewModel {
 
         runTask?.cancel()
         runTask = Task { [weak self] in
-            await self?.performRun(symbol: trimmed)
+            await self?.performRun(symbol: trimmed, loggingCall: loggingCall)
         }
     }
 
@@ -432,7 +438,7 @@ final class ForecastViewModel {
         }
     }
 
-    private func performRun(symbol: String) async {
+    private func performRun(symbol: String, loggingCall: PendingCall? = nil) async {
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -471,6 +477,15 @@ final class ForecastViewModel {
             lastObservedClose = forecast?.lastClose
             priceDirection = .unchanged
             refreshModelPreviewsIfNeeded()
+
+            // Fill in any past calls now that we have fresh prices for this asset,
+            // then log the user's pre-sketch call if they made one.
+            userCalls.resolve(using: fetched)
+            if let loggingCall, let spot = forecast?.lastClose {
+                userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
+                                 direction: loggingCall.direction, confidence: loggingCall.confidence,
+                                 horizonDays: horizon, spot: spot)
+            }
         } catch is CancellationError {
             return
         } catch {
