@@ -302,6 +302,12 @@ struct ContentView: View {
             if phase == .background {
                 // Refresh the morning-digest content so it never goes stale.
                 Task { await MorningDigest.rescheduleIfEnabled() }
+                // Never leave the mic + audio engine running off-screen. Only on
+                // .background (not .inactive) so the first-run permission prompt,
+                // which briefly deactivates the scene, doesn't cancel listening.
+                if dictation.isActive {
+                    Task { await dictation.cancel() }
+                }
             }
         }
         .sensoryFeedback(.success, trigger: viewModel.forecastGeneration)
