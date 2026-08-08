@@ -282,13 +282,19 @@ private struct TrendContext {
         self.holtResidualStd = holt.residualStd
     }
 
+    /// Per-model uncertainty scale — each family's band reflects *its own* error,
+    /// not one borrowed from the linear fit.
     func bandScale(for strategy: ForecastStrategy) -> Double {
         switch strategy {
-        case .drift:
+        case .drift, .momentum, .reversion:
+            // Level extrapolations from spot — scale by one-step price-change
+            // volatility (the random-walk step size).
             return diffStd > 0 ? diffStd : residualStd
         case .holt:
+            // Holt's own one-step smoothing residuals.
             return holtResidualStd > 0 ? holtResidualStd : residualStd
-        default:
+        case .linear, .trendSeasonal, .ensemble:
+            // Trend fits — deviation from the fitted line.
             return residualStd
         }
     }
@@ -307,9 +313,12 @@ private struct TrendContext {
             return slope * futureX + intercept
 
         case .momentum:
+            // Extrapolate how far price sits above/below its EMA, per step. No
+            // amplifier — the raw recent slope, so momentum doesn't structurally
+            // exaggerate beyond what the data shows.
             let lookback = max(1, min(20, count / 2))
             let recentSlope = (lastClose - ema) / Double(lookback)
-            return lastClose + recentSlope * Double(step) * 1.5
+            return lastClose + recentSlope * Double(step)
 
         case .reversion:
             let decay = 1.0 - exp(-Double(step) / 10.0)

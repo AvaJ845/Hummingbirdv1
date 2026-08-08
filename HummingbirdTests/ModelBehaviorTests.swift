@@ -74,6 +74,22 @@ final class ModelBehaviorTests: XCTestCase {
         }
     }
 
+    // Momentum extrapolates the raw recent slope (price vs EMA) — no amplifier.
+    func testMomentumUsesRawRecentSlopeWithoutAmplifier() {
+        let closes = (0..<20).map { 100 + Double($0) * 0.5 }
+        let s = series(closes)
+        let n = closes.count
+        let lookback = max(1, min(20, n / 2))
+        let ema = Math.exponentialMovingAverage(closes, period: min(20, n / 2))
+        let recentSlope = (closes.last! - ema) / Double(lookback)
+
+        let f = Forecaster.forecast(series: s, model: model(.momentum), horizon: 3)
+        for (i, point) in f.points.enumerated() {
+            XCTAssertEqual(point.mean, closes.last! + recentSlope * Double(i + 1), accuracy: 1e-6,
+                           "Momentum step \(i + 1) must be spot + raw recent slope × h (no ×1.5)")
+        }
+    }
+
     // Blend = equal-weight average of Trend+weekday, Straight trend, and Momentum.
     func testBlendIsAverageOfItsThreeConstituents() {
         let s = series([100, 103, 102, 106, 108, 107, 110, 113, 112, 116])
