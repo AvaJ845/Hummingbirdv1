@@ -3,12 +3,13 @@ import SwiftUI
 @main
 struct HummingbirdApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .tint(Theme.accent)
-                .preferredColorScheme(nil)
+                .preferredColorScheme(appearance.colorScheme)
         }
         .backgroundTask(.appRefresh(BackgroundRefresh.taskIdentifier)) {
             await BackgroundRefresh.perform()

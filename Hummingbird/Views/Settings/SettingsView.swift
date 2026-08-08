@@ -44,6 +44,7 @@ struct SettingsView: View {
     @AppStorage("hb.digest.hour") private var digestHour = 8
     @AppStorage("hb.digest.minute") private var digestMinute = 0
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
+    @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
     private var version: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -77,6 +78,21 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityLabel(entitlements.isPro ? "Hummingbird Pro, active" : "Hummingbird Pro")
+                }
+
+                Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppAppearance.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    } label: {
+                        Label("Appearance", systemImage: "circle.lefthalf.filled")
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("System follows your iPhone's Light/Dark setting. Light or Dark override it just for Hummingbird.")
                 }
 
                 Section("App Icon") {
