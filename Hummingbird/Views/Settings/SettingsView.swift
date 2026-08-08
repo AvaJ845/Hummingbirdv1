@@ -117,9 +117,9 @@ struct SettingsView: View {
 
                 Section {
                     NavigationLink {
-                        ScorecardView(scorecard: scorecard)
+                        ScorecardView(scorecard: scorecard, entitlements: entitlements)
                     } label: {
-                        Label("Track record", systemImage: "checkmark.seal")
+                        Label("Accuracy report", systemImage: "checkmark.seal")
                     }
                     Picker(selection: $scorecard.retentionDays) {
                         Text("Keep all").tag(Int?.none)
