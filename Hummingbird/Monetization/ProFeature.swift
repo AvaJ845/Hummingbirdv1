@@ -2,36 +2,43 @@ import Foundation
 
 /// Paid capabilities. Free tier stays useful for literacy; Pro unlocks comparison depth.
 enum ProFeature: String, CaseIterable, Identifiable, Sendable {
-    case advancedModels
-    case longHorizon
-    case disagreementLab
+    // Self-knowledge first — the reason to pay is an honest mirror, not foresight.
+    case youVsMethods
+    case honestRecord
+    case keepEveryCall
+    // Breadth, quietly last.
+    case moreBreadth
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .advancedModels: "More methods to compare"
-        case .longHorizon: "Longer sketch windows"
-        case .disagreementLab: "Compare every method"
+        case .youVsMethods: "You vs. the methods"
+        case .honestRecord: "Your record, in depth"
+        case .keepEveryCall: "Keep every call — and share it"
+        case .moreBreadth: "More methods & longer windows"
         }
     }
 
     var detail: String {
         switch self {
-        case .advancedModels:
-            "Compare Momentum, Mean reversion, and Blend beside the free methods — same public data, more paths to compare."
-        case .longHorizon:
-            "Stretch sketches from 30 days up to 90 days. Wider window, same honesty."
-        case .disagreementLab:
-            "See every method’s path side by side — check whether they agree."
+        case .youVsMethods:
+            "See whether your own calls are beating the app’s methods — scored on the very same calls."
+        case .honestRecord:
+            "Your accuracy by confidence — did feeling sure mean being right? — and how calibrated you’ve been over time."
+        case .keepEveryCall:
+            "Your full call history, not just the recent handful, plus a shareable summary of your record."
+        case .moreBreadth:
+            "Momentum, Mean reversion, and Blend beside the free methods, and sketches up to 90 days — more paths to compare, never better foresight."
         }
     }
 
     var systemImage: String {
         switch self {
-        case .advancedModels: "arrow.left.arrow.right"
-        case .longHorizon: "calendar"
-        case .disagreementLab: "square.split.2x1"
+        case .youVsMethods: "trophy"
+        case .honestRecord: "checkmark.seal"
+        case .keepEveryCall: "tray.full"
+        case .moreBreadth: "arrow.left.arrow.right"
         }
     }
 }

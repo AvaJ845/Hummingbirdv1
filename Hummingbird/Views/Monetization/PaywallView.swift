@@ -25,7 +25,7 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Hummingbird Pro")
                         .font(.title2.weight(.bold))
-                    Text("The honest forecast tool — it even shows you how wrong it's been. Pro adds breadth and depth, never better foresight, never advice.")
+                    Text("The honest one — it scores your own calls and shows how wrong it's been. Pro goes deeper on your record, never better foresight, never advice.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     if let reason, !reason.isEmpty {
