@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hummingbird — Honest, on-device stock &amp; crypto sketches</title>
-<meta name="description" content="Hummingbird draws simple, honest price sketches for stocks and crypto — entirely on your iPhone. Compare methods, see which tracked best, keep a private watchlist. Educational, never advice.">
+<meta name="description" content="Hummingbird draws simple, honest price sketches for stocks and crypto — entirely on your iPhone. Each sketch gets a reliability score you can inspect. Compare methods, see which tracked best, keep a private watchlist. Educational, never advice.">
 <link rel="icon" type="image/png" href="img/icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hummingbird — honest, on-device price sketches">
@@ -54,8 +54,10 @@
     background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);font-size:20px}
 
   .shots{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:6px}
+  .shots figure{margin:0}
   .shots img{width:100%;border-radius:20px;display:block;
     box-shadow:0 14px 34px rgba(0,0,0,.18);border:1px solid var(--line)}
+  .shots figcaption{color:var(--muted);font-size:13px;text-align:center;margin-top:12px;line-height:1.4}
   @media (max-width:720px){ .shots{grid-template-columns:1fr;max-width:340px;margin:0 auto} }
 
   .pledge{background:var(--panel);border:1px solid var(--line);border-radius:22px;
@@ -84,27 +86,37 @@
 <section>
   <div class="wrap">
     <h2>Not another prediction app</h2>
-    <p class="lead">Most market apps sell certainty they don't have. Hummingbird does the opposite — it shows you simple, transparent “sketches” from public prices, and is honest about their limits.</p>
+    <p class="lead">Most market apps sell certainty they don't have. Hummingbird does the opposite — it draws simple, transparent “sketches” from public prices, scores how reliable each one is, and stays honest about the limits.</p>
     <div class="grid">
       <div class="card">
         <div class="ic">🔒</div>
         <h3>On-device &amp; private</h3>
-        <p>Everything runs on your iPhone. No account, no tracking, no data collected.</p>
+        <p>Everything runs on your iPhone. No account, no sign-in, no tracking, no data collected.</p>
       </div>
       <div class="card">
         <div class="ic">✎</div>
         <h3>Honest, not hype</h3>
-        <p>Simple methods sketch a possible path — clearly labeled educational, never buy/sell advice.</p>
+        <p>Simple methods sketch a possible path from public prices — clearly labeled educational, never buy/sell advice.</p>
+      </div>
+      <div class="card">
+        <div class="ic">◎</div>
+        <h3>Reliability, scored</h3>
+        <p>Every sketch gets a 0–100 read from its own backtest, current conditions, and how far ahead it reaches — with the math shown.</p>
       </div>
       <div class="card">
         <div class="ic">✓</div>
         <h3>Best-recent, with receipts</h3>
-        <p>See which method has actually tracked an asset closest lately — a track record, not a promise.</p>
+        <p>See which method has actually tracked an asset closest lately, and switch to it in a tap. A track record, not a promise.</p>
+      </div>
+      <div class="card">
+        <div class="ic">⤢</div>
+        <h3>Compare the methods</h3>
+        <p>Drag across an interactive chart and see whether the simple methods agree — differences are normal, and shown plainly.</p>
       </div>
       <div class="card">
         <div class="ic">◷</div>
-        <h3>Glanceable</h3>
-        <p>Watchlist, Home Screen widget, Siri, and honest movement alerts — never signals.</p>
+        <h3>Glanceable everywhere</h3>
+        <p>Private watchlist, Home &amp; Lock Screen widgets, a once-a-day morning read, and an optional Live Activity — movement, never signals.</p>
       </div>
     </div>
   </div>
@@ -113,11 +125,20 @@
 <section style="padding-top:0">
   <div class="wrap">
     <h2>A look inside</h2>
-    <p class="lead">Plain-English summaries, a comparison of methods, and a live watchlist.</p>
+    <p class="lead">A plain-English read of every sketch, a reliability score you can inspect, and simple methods you can compare.</p>
     <div class="shots">
-      <img src="img/shot1.jpg" alt="Plain-English projection summary and method comparison" loading="lazy">
-      <img src="img/shot2.jpg" alt="Watchlist with best-method sparklines" loading="lazy">
-      <img src="img/shot3.jpg" alt="Which method has tracked best recently" loading="lazy">
+      <figure>
+        <img src="img/shot1.jpg" alt="A plain-English summary of a 30-day Bitcoin sketch, with the possible-range chart below" loading="lazy">
+        <figcaption>Plain English first — with the possible range drawn in.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/shot2.jpg" alt="Reliability score of 83 with the factor-by-factor breakdown shown" loading="lazy">
+        <figcaption>A reliability score that shows its work, factor by factor.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/shot3.jpg" alt="The list of simple forecasting methods with plain descriptions" loading="lazy">
+        <figcaption>Pick from simple methods — each one explained plainly.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
