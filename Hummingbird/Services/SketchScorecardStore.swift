@@ -85,6 +85,9 @@ final class SketchScorecardStore {
 
     var overall: ScorecardSummary { ScorecardEngine.summary(records) }
 
+    /// The full Accuracy Report Card across every asset.
+    var report: ScorecardReport { ScorecardEngine.report(records) }
+
     func summary(for symbol: String, assetClass: AssetClass) -> ScorecardSummary {
         ScorecardEngine.summary(records(for: symbol, assetClass: assetClass))
     }
