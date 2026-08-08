@@ -122,6 +122,7 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
         XCTAssertEqual(viewModel.model.id, peregrine.id)
         XCTAssertEqual(viewModel.forecast?.model.id, peregrine.id)
         XCTAssertNotEqual(viewModel.forecast?.targetPrice ?? 0, firstTarget ?? 0, accuracy: 0.000_000_1)
+        await viewModel.awaitModelPreviews()
         XCTAssertEqual(viewModel.modelPreviews.count, ForecastModel.available.count)
     }
 

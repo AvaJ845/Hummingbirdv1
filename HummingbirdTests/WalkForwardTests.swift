@@ -50,6 +50,7 @@ final class BestRecentModelTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 150_000_000)
 
         XCTAssertTrue(vm.hasResult)
+        await vm.awaitModelPreviews()
         let scored = vm.modelPreviews
             .filter { entitlements.canUse(model: $0.model) }
             .compactMap { $0.recentError }

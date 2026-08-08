@@ -106,26 +106,12 @@ final class ForecastViewModel {
         entitlements.isPro ? 90 : FreeTierLimits.maxHorizonDays
     }
 
-    /// Side-by-side previews for every available model using the loaded series.
-    var modelPreviews: [ModelForecastPreview] {
-        guard let series, series.isForecastable else { return [] }
-        return ForecastModel.available.compactMap { candidate in
-            let result = Forecaster.forecast(
-                series: series,
-                model: candidate,
-                horizon: horizon,
-                macro: macro(for: candidate)
-            )
-            guard let target = result.targetPrice, let change = result.expectedChange else { return nil }
-            return ModelForecastPreview(
-                model: candidate,
-                targetPrice: target,
-                expectedChange: change,
-                macroBias: result.macro.horizonBias,
-                recentError: Forecaster.walkForwardMAPE(series: series, model: candidate)
-            )
-        }
-    }
+    /// Side-by-side previews for every available model. Cached, and recomputed
+    /// off the main actor only when the *configuration* changes (asset · horizon
+    /// · macro selection) — not on every SwiftUI read or silent price tick.
+    /// Previously a computed property that re-ran all-model forecasts *and*
+    /// walk-forward backtests on the main thread ~5× per results render.
+    private(set) var modelPreviews: [ModelForecastPreview] = []
 
     /// Model id with the lowest recent backtest error among entitlement-visible
     /// methods. Nil unless at least two methods have a comparable score.
@@ -183,6 +169,8 @@ final class ForecastViewModel {
     let scorecard: SketchScorecardStore
     private var reliabilityTask: Task<Void, Never>?
     private var lastReliabilityKey: String?
+    private var previewTask: Task<Void, Never>?
+    private var lastPreviewKey: String?
 
     init(
         service: any MarketDataProviding = MarketDataService(),
@@ -272,6 +260,58 @@ final class ForecastViewModel {
             horizon: horizon,
             macro: activeMacro
         )
+        refreshModelPreviewsIfNeeded()
+    }
+
+    // MARK: - Model previews (cached, off-main)
+
+    /// Recompute the all-model previews only when the configuration changes
+    /// (asset · horizon · macro inputs). The heavy work — a forecast plus a
+    /// walk-forward backtest for every model — runs on a detached utility task,
+    /// off the main actor. Macros are computed on-main first (cheap) so the
+    /// detached closure captures only value types.
+    private func refreshModelPreviewsIfNeeded() {
+        guard let series, series.isForecastable else {
+            modelPreviews = []
+            previewTask?.cancel(); previewTask = nil; lastPreviewKey = nil
+            return
+        }
+        let key = "\(series.symbol)|\(series.assetClass.rawValue)|\(horizon)|\(selectedIndicatorIDs.sorted().joined(separator: ","))|\(indicatorSnapshots.count)"
+        guard key != lastPreviewKey else { return }
+        lastPreviewKey = key
+
+        previewTask?.cancel()
+        let candidates = ForecastModel.available
+        let macros = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, macro(for: $0)) })
+        let loaded = series
+        let h = horizon
+
+        previewTask = Task { [weak self] in
+            let previews = await Task.detached(priority: .userInitiated) {
+                candidates.compactMap { candidate -> ModelForecastPreview? in
+                    let result = Forecaster.forecast(
+                        series: loaded, model: candidate, horizon: h,
+                        macro: macros[candidate.id] ?? .none
+                    )
+                    guard let target = result.targetPrice, let change = result.expectedChange else { return nil }
+                    return ModelForecastPreview(
+                        model: candidate,
+                        targetPrice: target,
+                        expectedChange: change,
+                        macroBias: result.macro.horizonBias,
+                        recentError: Forecaster.walkForwardMAPE(series: loaded, model: candidate)
+                    )
+                }
+            }.value
+            guard let self, !Task.isCancelled else { return }
+            self.modelPreviews = previews
+        }
+    }
+
+    /// Suspends until the in-flight model-preview recompute (if any) has landed.
+    /// A test seam — harmless in the app.
+    func awaitModelPreviews() async {
+        await previewTask?.value
     }
 
     // MARK: - Sketch context (regime · reliability · best method)
@@ -430,6 +470,7 @@ final class ForecastViewModel {
             // Reset the flash baseline — a fresh run is not a "price move".
             lastObservedClose = forecast?.lastClose
             priceDirection = .unchanged
+            refreshModelPreviewsIfNeeded()
         } catch is CancellationError {
             return
         } catch {
