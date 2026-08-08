@@ -125,6 +125,24 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
         XCTAssertEqual(call?.spotAtCall, viewModel.forecast?.lastClose)
     }
 
+    func testResolveDueCallsFillsInPastCalls() async {
+        let made = Date(timeIntervalSince1970: 1_700_000_000)   // long past → due now
+        let calls = UserCallStore(defaults: UserDefaults(suiteName: "test.vm.due.\(UUID().uuidString)")!)
+        calls.record(symbol: "AAPL", assetClass: .stock, direction: .higher,
+                     confidence: .hunch, horizonDays: 7, spot: 100, now: made)
+
+        let viewModel = ForecastViewModel(
+            service: DueCallStub(date: made.addingTimeInterval(7 * 86_400), close: 120),
+            economicService: StubEconomicData(),
+            entitlements: EntitlementStore(),
+            userCalls: calls
+        )
+        await viewModel.resolveDueCalls()
+
+        XCTAssertTrue(calls.pending.isEmpty)
+        XCTAssertEqual(calls.report.overall.correct, 1)   // higher, 120 > 100
+    }
+
     func testSelectModelRecomputesForecast() async {
         let entitlements = EntitlementStore()
         entitlements.setDebugUnlocked(true)
@@ -171,6 +189,16 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
 
         viewModel.horizon = 90
         XCTAssertEqual(viewModel.horizon, FreeTierLimits.maxHorizonDays)
+    }
+}
+
+/// Returns a one-point series at a fixed date — enough to resolve a due call.
+private struct DueCallStub: MarketDataProviding {
+    let date: Date
+    let close: Double
+    func history(symbol: String, assetClass: AssetClass, days: Int) async throws -> PriceSeries {
+        PriceSeries(symbol: symbol, assetClass: assetClass,
+                    points: [PricePoint(date: date, close: close)], isSample: true)
     }
 }
 

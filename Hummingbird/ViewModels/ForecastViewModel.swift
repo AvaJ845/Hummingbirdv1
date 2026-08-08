@@ -374,6 +374,15 @@ final class ForecastViewModel {
         }
     }
 
+    /// Resolve any calls whose horizon has passed against fresh prices, and clear
+    /// their reminders. Cheap when nothing is due (no fetch). Called on launch /
+    /// foreground so the record fills in without the user opening "Your calls".
+    func resolveDueCalls() async {
+        for id in await userCalls.resolveDue(using: service) {
+            NotificationService.cancelCallResolution(callID: id)
+        }
+    }
+
     /// Ask (once) for notification permission and schedule the "your call is
     /// ready" nudge at the call's horizon.
     private func scheduleCallReminder(_ call: UserCall) async {

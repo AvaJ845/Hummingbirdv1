@@ -29,5 +29,14 @@ enum BackgroundRefresh {
         if !Task.isCancelled {
             await MorningDigest.rescheduleIfEnabled()
         }
+
+        // Fill in any user calls whose horizon has passed, and clear their
+        // reminders — so the record stays trustworthy without opening the app.
+        if !Task.isCancelled {
+            let callStore = UserCallStore()
+            for id in await callStore.resolveDue(using: MarketDataService()) {
+                NotificationService.cancelCallResolution(callID: id)
+            }
+        }
     }
 }

@@ -130,6 +130,7 @@ struct ContentView: View {
         }
         .task {
             await entitlements.loadProducts()
+            await viewModel.resolveDueCalls()
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
@@ -331,8 +332,9 @@ struct ContentView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active, viewModel.hasResult {
-                viewModel.beginAutoRefresh()
+            if phase == .active {
+                if viewModel.hasResult { viewModel.beginAutoRefresh() }
+                Task { await viewModel.resolveDueCalls() }
             } else if phase != .active {
                 viewModel.endAutoRefresh()
             }
