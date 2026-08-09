@@ -4,14 +4,14 @@ struct ForecastEmptyState: View {
     var body: some View {
         Card {
             VStack(spacing: 10) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
+                Image(systemName: "hand.point.up.left")
                     .font(.largeTitle)
                     .foregroundStyle(Theme.brandGradient)
                     .symbolEffect(.pulse, options: .repeating.speed(0.4))
                     .accessibilityHidden(true)
-                Text("Pick a symbol and tap Run projection")
+                Text("Pick a symbol, then call it")
                     .font(.headline)
-                Text("We’ll pull recent public prices and sketch a path. After Run, you’ll see whether the simple methods agree.")
+                Text("Predict Higher or Lower before you see the sketch, and keep an honest score of your own calls. Or just show the sketch — up to you.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
