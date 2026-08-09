@@ -167,7 +167,10 @@ final class ForecastViewModel {
     private var autoRefreshTask: Task<Void, Never>?
 
     let scorecard: SketchScorecardStore
-    let userCalls: UserCallStore
+    /// The user's "call" lifecycle lives in its own coordinator; `userCalls`
+    /// stays as a passthrough so views keep reading the store directly.
+    let calls: CallsCoordinator
+    var userCalls: UserCallStore { calls.store }
     private var reliabilityTask: Task<Void, Never>?
     private var lastReliabilityKey: String?
     private var previewTask: Task<Void, Never>?
@@ -184,7 +187,7 @@ final class ForecastViewModel {
         self.economicService = economicService
         self.entitlements = entitlements
         self.scorecard = scorecard
-        self.userCalls = userCalls
+        self.calls = CallsCoordinator(store: userCalls, service: service)
     }
 
     /// A direction + confidence + horizon the user committed *before* the sketch
@@ -388,22 +391,11 @@ final class ForecastViewModel {
         return result
     }
 
-    /// Resolve any calls whose horizon has passed against fresh prices, and clear
-    /// their reminders. Cheap when nothing is due (no fetch). Called on launch /
-    /// foreground so the record fills in without the user opening "Your calls".
+    /// Resolve any calls whose horizon has passed. Cheap when nothing is due.
+    /// Called on launch / foreground so the record fills in without opening
+    /// "Your calls".
     func resolveDueCalls() async {
-        for id in await userCalls.resolveDue(using: service) {
-            NotificationService.cancelCallResolution(callID: id)
-        }
-    }
-
-    /// Ask (once) for notification permission and schedule the "your call is
-    /// ready" nudge at the call's horizon.
-    private func scheduleCallReminder(_ call: UserCall) async {
-        var authorized = await NotificationService.isAuthorized()
-        if !authorized { authorized = await NotificationService.requestAuthorization() }
-        guard authorized else { return }
-        await NotificationService.scheduleCallResolution(callID: call.id, symbol: call.symbol, at: call.targetDate)
+        await calls.resolveDue()
     }
 
     func enforceEntitlementsAfterPurchaseChange() {
@@ -514,15 +506,12 @@ final class ForecastViewModel {
 
             // Fill in any past calls now that we have fresh prices for this asset
             // (clearing their reminders), then log the user's pre-sketch call.
-            for id in userCalls.resolve(using: fetched) {
-                NotificationService.cancelCallResolution(callID: id)
-            }
+            calls.resolve(using: fetched)
             if let loggingCall, let spot = forecast?.lastClose {
-                let call = userCalls.record(symbol: fetched.symbol, assetClass: fetched.assetClass,
-                                            direction: loggingCall.direction, confidence: loggingCall.confidence,
-                                            horizonDays: loggingCall.horizonDays, spot: spot,
-                                            methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))
-                Task { await scheduleCallReminder(call) }
+                calls.record(direction: loggingCall.direction, confidence: loggingCall.confidence,
+                             horizonDays: loggingCall.horizonDays, symbol: fetched.symbol,
+                             assetClass: fetched.assetClass, spot: spot,
+                             methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))
             }
         } catch is CancellationError {
             return
