@@ -144,25 +144,16 @@ final class SketchScorecardStore {
     // MARK: - Persistence
 
     private func load() {
-        guard let data = defaults.data(forKey: Keys.records),
-              let decoded = try? JSONDecoder().decode([SketchRecord].self, from: data) else { return }
-        records = decoded
+        records = RecordDefaultsStore.load([SketchRecord].self, from: defaults, key: Keys.records)
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(records) {
-            defaults.set(data, forKey: Keys.records)
-        }
+        RecordDefaultsStore.save(records, to: defaults, key: Keys.records)
     }
 
     private func prune() {
-        if let days = retentionDays {
-            let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
-            records.removeAll { $0.createdAt < cutoff }
-        }
-        if records.count > Self.maxRecords {
-            records = Array(records.sorted { $0.createdAt > $1.createdAt }.prefix(Self.maxRecords))
-        }
+        records = RecordDefaultsStore.pruned(records, retentionDays: retentionDays,
+                                             maxCount: Self.maxRecords, date: \.createdAt)
     }
 }
 

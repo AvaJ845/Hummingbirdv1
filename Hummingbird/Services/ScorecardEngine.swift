@@ -80,24 +80,12 @@ enum ScorecardEngine {
         for index in updated.projections.indices where !updated.projections[index].isResolved {
             let target = updated.projections[index].targetDate
             guard target <= now else { continue }  // don't resolve the future
-            if let close = nearestClose(in: series, to: target, toleranceDays: toleranceDays) {
+            if let close = PriceResolution.nearestClose(in: series, to: target, toleranceDays: toleranceDays) {
                 updated.projections[index].actualClose = close
                 updated.projections[index].resolvedAt = now
             }
         }
         return updated
-    }
-
-    private static func nearestClose(in series: PriceSeries, to date: Date, toleranceDays: Int) -> Double? {
-        let tolerance = TimeInterval(toleranceDays * 86_400)
-        var best: (delta: TimeInterval, close: Double)?
-        for point in series.points {
-            let delta = abs(point.date.timeIntervalSince(date))
-            guard delta <= tolerance else { continue }
-            if let current = best, current.delta <= delta { continue }
-            best = (delta, point.close)
-        }
-        return best?.close
     }
 
     /// Aggregate a set of records into a display summary.

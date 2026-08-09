@@ -16,25 +16,13 @@ enum UserCallEngine {
               call.symbol.caseInsensitiveCompare(series.symbol) == .orderedSame,
               call.assetClass == series.assetClass,
               call.targetDate <= now,
-              let close = nearestClose(in: series, to: call.targetDate, toleranceDays: toleranceDays)
+              let close = PriceResolution.nearestClose(in: series, to: call.targetDate, toleranceDays: toleranceDays)
         else { return call }
 
         var updated = call
         updated.actualClose = close
         updated.resolvedAt = now
         return updated
-    }
-
-    private static func nearestClose(in series: PriceSeries, to date: Date, toleranceDays: Int) -> Double? {
-        let tolerance = TimeInterval(toleranceDays * 86_400)
-        var best: (delta: TimeInterval, close: Double)?
-        for point in series.points {
-            let delta = abs(point.date.timeIntervalSince(date))
-            guard delta <= tolerance else { continue }
-            if let current = best, current.delta <= delta { continue }
-            best = (delta, point.close)
-        }
-        return best?.close
     }
 
     /// Aggregate a set of calls into the user's honest record.

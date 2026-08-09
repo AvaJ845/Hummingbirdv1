@@ -115,24 +115,15 @@ final class UserCallStore {
     // MARK: - Persistence
 
     private func load() {
-        guard let data = defaults.data(forKey: Keys.calls),
-              let decoded = try? JSONDecoder().decode([UserCall].self, from: data) else { return }
-        calls = decoded
+        calls = RecordDefaultsStore.load([UserCall].self, from: defaults, key: Keys.calls)
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(calls) {
-            defaults.set(data, forKey: Keys.calls)
-        }
+        RecordDefaultsStore.save(calls, to: defaults, key: Keys.calls)
     }
 
     private func prune() {
-        if let days = retentionDays {
-            let cutoff = Date(timeIntervalSinceNow: -Double(days) * 86_400)
-            calls.removeAll { $0.createdAt < cutoff }
-        }
-        if calls.count > Self.maxCalls {
-            calls = Array(calls.sorted { $0.createdAt > $1.createdAt }.prefix(Self.maxCalls))
-        }
+        calls = RecordDefaultsStore.pruned(calls, retentionDays: retentionDays,
+                                           maxCount: Self.maxCalls, date: \.createdAt)
     }
 }
