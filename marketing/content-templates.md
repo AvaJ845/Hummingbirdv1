@@ -51,8 +51,71 @@ That's the whole point: a mirror, not a crystal ball. On-device, private, never 
 
 **Where:** X/fintwit (most authentic here), then Reddit, then a blog archive.
 
-**Your specific seed (Tuesday):** 4 calls waiting — 2 crypto on a 3-day window.
-Log the outcomes as soon as they resolve; the 3-day crypto pair is the post's spine.
+### FILLED — first 4 calls resolved (real data)
+
+**Record:** 2/4 right. **"Confident": 33%** (1/3). **"Fairly sure": 100%** (1/1).
+Confidence was inversely related to accuracy — the calibration trap, live.
+
+**X / fintwit thread:**
+```
+1/ I built a finance app that refuses to give buy/sell signals. Instead it makes you "call it" — Higher or Lower, and how sure you are — BEFORE you see anything. Then it scores you honestly.
+
+So I ate my own cooking. My first 4 calls just resolved. It went about how you'd hope: humblingly.
+
+2/ The scoreboard:
+• COST — I said Higher, Confident → −0.4% ❌
+• XRP — I said Lower, Confident → −1.2% ✅
+• BITCOIN — I said Higher, Confident → −1.6% ❌
+• MSFT — I said Higher, Fairly sure → +0.8% ✅
+
+2 of 4. A coin flip. Fine — 4 calls is noise.
+
+3/ But here's the part that got me. Split by how sure I *felt*:
+• "Confident": 1 of 3 right — 33%
+• "Fairly sure": 1 of 1 — 100%
+
+My confidence was upside down. I was most wrong exactly where I felt most sure.
+
+4/ That's the calibration trap, and it's the whole reason the app exists. It isn't here to tell you what happens next — nobody can. It's a mirror for whether your own gut is worth trusting.
+
+n=4 proves nothing. Ask me at n=40. That's the point: keep score.
+
+5/ On-device. Private. Never advice. Just an honest record of your own calls — including the ones I blew while feeling great about them.
+
+[link] [screenshot: the "Did feeling sure mean being right?" card]
+```
+
+**Blog version (SEO archive):**
+Title: *I ate my own cooking: my first 4 calls, and the confidence trap they exposed*
+
+I built Hummingbird because every market app sells certainty it doesn't have. Mine
+does the opposite: you "call it" — Higher or Lower, and how sure you are — before
+you see any sketch, and it keeps an honest score of your own calls over time.
+
+So I used it. My first four calls just resolved against real prices:
+
+| Asset | My call | Confidence | Result |
+|---|---|---|---|
+| COST | Higher | Confident | −0.4% ❌ |
+| XRP | Lower | Confident | −1.2% ✅ |
+| BITCOIN | Higher | Confident | −1.6% ❌ |
+| MSFT | Higher | Fairly sure | +0.8% ✅ |
+
+Two of four. A coin flip — and four calls is statistical noise, so the *directional*
+score means nothing yet. But the app doesn't just track whether I was right. It
+tracks whether feeling **sure** meant being right. And there the picture was brutal:
+
+- **"Confident": 1 of 3 (33%)**
+- **"Fairly sure": 1 of 1 (100%)**
+
+My confidence was inverted. I was most wrong exactly where I felt most certain.
+That's the calibration trap — the gap between how sure we feel and how right we
+are — and it's the entire reason this app exists. It's not a crystal ball. It's a
+mirror. On-device, private, never advice. n=4 proves nothing; that's why you keep
+score. Ask me at n=40.
+
+**Note:** attach the *second* screenshot's "Did feeling sure mean being right?" card
+(Confident 33% / Fairly sure 100%) — that one image is the whole argument.
 
 ---
 
