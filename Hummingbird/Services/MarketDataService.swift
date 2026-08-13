@@ -10,7 +10,7 @@ actor MarketDataService: MarketDataProviding {
 
     init(
         session: URLSession = .shared,
-        sampleProvider: @escaping @Sendable (String, AssetClass, Int) -> PriceSeries = SampleData.series
+        sampleProvider: @escaping @Sendable (String, AssetClass, Int) -> PriceSeries = { SampleData.series(symbol: $0, assetClass: $1, days: $2) }
     ) {
         self.session = session
         self.sampleProvider = sampleProvider
@@ -34,11 +34,23 @@ actor MarketDataService: MarketDataProviding {
         return symbol.unicodeScalars.allSatisfy { allowedSymbolCharacters.contains($0) }
     }
 
+    /// Coalesce redundant fetches through the shared cache (short TTL + in-flight
+    /// dedupe) so the several paths that want the same symbol at once don't each
+    /// hit the network. Kept below the auto-refresh cadence so refreshes stay live.
+    static let cacheTTL: TimeInterval = 20
+
     func history(symbol rawSymbol: String, assetClass: AssetClass, days: Int = 180) async throws -> PriceSeries {
         let symbol = rawSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !symbol.isEmpty else { throw MarketDataError.emptySymbol }
         guard Self.isValidSymbol(symbol) else { throw MarketDataError.notFound(symbol) }
 
+        let key = "\(assetClass.rawValue)|\(symbol.lowercased())|\(days)"
+        return try await PriceCache.shared.series(key: key, ttl: Self.cacheTTL) {
+            try await self.fetchFresh(symbol: symbol, assetClass: assetClass, days: days)
+        }
+    }
+
+    private func fetchFresh(symbol: String, assetClass: AssetClass, days: Int) async throws -> PriceSeries {
         do {
             let series: PriceSeries
             switch assetClass {
