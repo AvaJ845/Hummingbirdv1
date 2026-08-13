@@ -125,10 +125,23 @@ struct WatchlistView: View {
         Task { await NotificationService.requestAuthorization() }
     }
 
+    /// Cap on simultaneous in-flight refreshes. A large watchlist otherwise
+    /// bursts one network call per item on every pull-to-refresh and every
+    /// background tick — costly on cellular and unfriendly to rate limits.
+    private static let maxConcurrentRefreshes = 5
+
     private func refreshAll() async {
         await withTaskGroup(of: Void.self) { group in
-            for item in store.items {
+            var iterator = store.items.makeIterator()
+
+            for _ in 0..<Self.maxConcurrentRefreshes {
+                guard let item = iterator.next() else { break }
                 group.addTask { await refresh(item) }
+            }
+            while await group.next() != nil {
+                if let item = iterator.next() {
+                    group.addTask { await refresh(item) }
+                }
             }
         }
         WidgetCenter.shared.reloadAllTimelines()

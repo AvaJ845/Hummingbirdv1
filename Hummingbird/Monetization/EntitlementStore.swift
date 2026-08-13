@@ -87,10 +87,6 @@ final class EntitlementStore {
         transactionListener?.cancel()
     }
 
-    func unlocks(_ feature: ProFeature) -> Bool {
-        isPro
-    }
-
     func canUse(model: ForecastModel) -> Bool {
         !model.requiresPro || isPro
     }

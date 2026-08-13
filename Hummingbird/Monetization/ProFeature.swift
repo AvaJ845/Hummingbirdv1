@@ -1,6 +1,9 @@
 import Foundation
 
-/// Paid capabilities. Free tier stays useful for literacy; Pro unlocks comparison depth.
+/// Paid capabilities, for display only (the "Pro adds" list on `PaywallView`).
+/// Free tier stays useful for literacy; Pro unlocks comparison depth. There is
+/// a single price tier, so the actual gate everywhere is `EntitlementStore.isPro`
+/// — this enum doesn't (and shouldn't) drive gating itself.
 enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     // Self-knowledge first — the reason to pay is an honest mirror, not foresight.
     case youVsMethods

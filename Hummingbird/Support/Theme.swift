@@ -13,8 +13,10 @@ enum Theme {
     static let accentAlt = Color(red: 0.16, green: 0.55, blue: 0.90)
 
     /// Up / positive — deeper in light for contrast on white, brighter in dark.
+    /// Light value is tuned to clear 4.5:1 against white (WCAG AA body text) —
+    /// see `ThemeContrastTests`.
     static let up = adaptive(
-        light: UIColor(red: 0.11, green: 0.58, blue: 0.35, alpha: 1),
+        light: UIColor(red: 0.08, green: 0.50, blue: 0.30, alpha: 1),
         dark:  UIColor(red: 0.33, green: 0.86, blue: 0.56, alpha: 1)
     )
     /// Down / negative.
@@ -22,9 +24,10 @@ enum Theme {
         light: UIColor(red: 0.80, green: 0.20, blue: 0.22, alpha: 1),
         dark:  UIColor(red: 1.00, green: 0.46, blue: 0.48, alpha: 1)
     )
-    /// Caution / "read with care" — amber.
+    /// Caution / "read with care" — amber. Light value tuned to clear 4.5:1
+    /// against white (WCAG AA body text) — see `ThemeContrastTests`.
     static let warning = adaptive(
-        light: UIColor(red: 0.76, green: 0.50, blue: 0.02, alpha: 1),
+        light: UIColor(red: 0.62, green: 0.40, blue: 0.02, alpha: 1),
         dark:  UIColor(red: 1.00, green: 0.74, blue: 0.24, alpha: 1)
     )
 
