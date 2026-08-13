@@ -79,4 +79,22 @@ xcodebuild -project Hummingbird.xcodeproj -scheme Hummingbird \
 ## Optional after launch
 - [ ] Add a 6.5″ screenshot set (some older listings still ask) — I can generate it.
 - [ ] Push the CI workflow (`ci-workflow` branch) with a `workflow`-scoped token.
-- [ ] Apple Watch app (needs a watchOS Simulator runtime / real Watch to finish).
+- [ ] **Apple Watch app — one manual step left.** `HummingbirdWatch` (companion app) and
+      `HummingbirdWatchWidget` (watch face complication) both exist and build clean
+      standalone:
+      ```bash
+      xcodebuild build -project Hummingbird.xcodeproj -target HummingbirdWatch \
+        -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
+      ```
+      What's missing is embedding `HummingbirdWatch` as companion content inside the
+      `Hummingbird` iOS target, so it ships as one bundle. Two XcodeGen-level attempts
+      (`embed: true`, and the same with `platformFilter: ios`) both made the iOS scheme
+      try to compile the watchOS-only widget under the iPhone SDK — a hard build
+      failure. Fix it once, in Xcode itself: open `Hummingbird.xcodeproj`, select the
+      `Hummingbird` target → **General** → **Frameworks, Libraries, and Embedded
+      Content**, add `HummingbirdWatch.app`, and let Xcode wire the "Embed Watch
+      Content" phase and its `platformFilters` itself (this is exactly the piece
+      XcodeGen can't be told to do blind). Re-export `xcodegen dump` afterward isn't
+      needed — Xcode's edit lives in the `.xcodeproj`, which is gitignored, so redo
+      this step once per fresh `xcodegen generate` unless you move the wiring into
+      `project.yml` by hand once you've seen the working pbxproj diff.
