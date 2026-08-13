@@ -218,6 +218,11 @@ struct YourCallsView: View {
         for row in report.byConfidence {
             lines.append("• \(row.confidence.title): \(pct(row.hitRate)) (\(row.decided))")
         }
+        // Participation only, never correctness — a streak means "showed up
+        // and called it," not "was right." Keeping that framing here too.
+        if store.currentStreak >= 2 {
+            lines.append("\(store.currentStreak)-day streak of calls made — showing up, not always right.")
+        }
         return lines.joined(separator: "\n")
     }
 
