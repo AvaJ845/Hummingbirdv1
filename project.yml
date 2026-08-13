@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.avaresearch
   deploymentTarget:
     iOS: "17.0"
+    watchOS: "10.0"
   createIntermediateGroups: true
   groupSortPosition: top
 configFiles:
@@ -10,6 +11,10 @@ configFiles:
   Release: Config/Base.xcconfig
 settings:
   base:
+    # Explicit default so iOS targets keep resolving to iphoneos/iphonesimulator
+    # now that watchOS targets exist in the same project — each watchOS target
+    # overrides this with its own SDKROOT: watchos.
+    SDKROOT: iphoneos
     MARKETING_VERSION: "1.9.1"
     CURRENT_PROJECT_VERSION: "14"
     SWIFT_VERSION: "5.9"
@@ -134,6 +139,75 @@ targets:
           # Match the app's Debug identity so the embedded widget stays a valid
           # prefix (com.avaresearch.hummingbird.dev.widget).
           PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.widget
+    postBuildScripts:
+      - name: Strip extended attributes (codesign detritus)
+        script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
+        basedOnDependencyAnalysis: false
+  HummingbirdWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: HummingbirdWatch
+        excludes:
+          - "**/*.entitlements"
+          - "Info.plist"
+      - path: Hummingbird/Support/AppGroup.swift
+      - path: Hummingbird/Support/Formatters.swift
+      - path: Hummingbird/Models/Asset.swift
+      - path: Hummingbird/Models/WatchlistItem.swift
+      - path: Hummingbird/Services/SharedStorage.swift
+    dependencies:
+      - target: HummingbirdWatchWidget
+        embed: true
+    settings:
+      base:
+        PRODUCT_NAME: HummingbirdWatch
+        PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.watchkitapp
+        WK_COMPANION_BUNDLE_ID: com.avaresearch.hummingbird
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: HummingbirdWatch/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HummingbirdWatch/HummingbirdWatch.entitlements
+        TARGETED_DEVICE_FAMILY: "4"
+        SDKROOT: watchos
+      configs:
+        Debug:
+          # Mirror the iOS Debug identity so the pairing (WKCompanionAppBundleIdentifier)
+          # stays valid against the side-by-side dev install.
+          PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.watchkitapp
+          WK_COMPANION_BUNDLE_ID: com.avaresearch.hummingbird.dev
+    postBuildScripts:
+      - name: Strip extended attributes (codesign detritus)
+        script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
+        basedOnDependencyAnalysis: false
+  HummingbirdWatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: HummingbirdWatchWidget
+        excludes:
+          - "**/*.entitlements"
+          - "Info.plist"
+      - path: HummingbirdWatch/Shared/WatchTheme.swift
+      - path: HummingbirdWatch/Shared/WatchSparkline.swift
+      - path: HummingbirdWidget/SelectAssetIntent.swift
+      - path: Hummingbird/Support/AppGroup.swift
+      - path: Hummingbird/Support/Formatters.swift
+      - path: Hummingbird/Models/Asset.swift
+      - path: Hummingbird/Models/WatchlistItem.swift
+      - path: Hummingbird/Services/SharedStorage.swift
+    settings:
+      base:
+        PRODUCT_NAME: HummingbirdWatchWidget
+        PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.watchkitapp.widget
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: HummingbirdWatchWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: HummingbirdWatchWidget/HummingbirdWatchWidget.entitlements
+        TARGETED_DEVICE_FAMILY: "4"
+        SDKROOT: watchos
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.watchkitapp.widget
     postBuildScripts:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
