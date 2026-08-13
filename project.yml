@@ -15,8 +15,8 @@ settings:
     # now that watchOS targets exist in the same project — each watchOS target
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
-    MARKETING_VERSION: "1.9.1"
-    CURRENT_PROJECT_VERSION: "14"
+    MARKETING_VERSION: "1.10.0"
+    CURRENT_PROJECT_VERSION: "15"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
