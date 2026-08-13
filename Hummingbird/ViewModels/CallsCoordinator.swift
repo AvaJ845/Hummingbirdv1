@@ -7,6 +7,11 @@ import Foundation
 final class CallsCoordinator {
     let store: UserCallStore
     private let service: any MarketDataProviding
+    /// Throttle for the *automatic* resolve (launch/foreground) so re-opening the
+    /// app repeatedly can't re-fetch. User-initiated resolves (pull-to-refresh in
+    /// "Your calls") go straight to the store and are never throttled.
+    private var lastAutoResolve: Date?
+    private let autoResolveThrottle: TimeInterval = 10 * 60
 
     init(store: UserCallStore = UserCallStore(), service: any MarketDataProviding = MarketDataService()) {
         self.store = store
@@ -33,8 +38,12 @@ final class CallsCoordinator {
     }
 
     /// Resolve any calls whose horizon has passed by fetching fresh prices
-    /// (launch / foreground / background). Cheap when nothing is due.
+    /// (launch / foreground). Returns immediately when nothing is due (no fetch),
+    /// and is throttled so repeated foregrounding won't re-fetch.
     func resolveDue() async {
+        guard !store.dueAssets().isEmpty else { return }   // cheap in-memory check; no network
+        if let last = lastAutoResolve, Date().timeIntervalSince(last) < autoResolveThrottle { return }
+        lastAutoResolve = Date()
         for id in await store.resolveDue(using: service) {
             NotificationService.cancelCallResolution(callID: id)
         }

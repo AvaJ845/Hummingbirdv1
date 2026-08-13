@@ -85,12 +85,15 @@ final class UserCallStore {
         return result
     }
 
-    /// Fetch fresh prices for each due asset and resolve its calls. Returns the
-    /// IDs that newly resolved.
+    /// Fetch fresh prices for each due asset and resolve its calls. Capped at
+    /// `maxAssets` fetches per pass so a big backlog can't fire dozens of network
+    /// calls at once — the rest resolve on the next pass. Returns the IDs that
+    /// newly resolved.
     @discardableResult
-    func resolveDue(using service: any MarketDataProviding, now: Date = Date()) async -> [UUID] {
+    func resolveDue(using service: any MarketDataProviding, now: Date = Date(),
+                    maxAssets: Int = 12) async -> [UUID] {
         var resolved: [UUID] = []
-        for item in dueAssets(now: now) {
+        for item in dueAssets(now: now).prefix(maxAssets) {
             if let series = try? await service.history(symbol: item.symbol, assetClass: item.assetClass) {
                 resolved.append(contentsOf: resolve(using: series))
             }

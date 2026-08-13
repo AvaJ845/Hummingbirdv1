@@ -74,6 +74,22 @@ final class UserCallStoreTests: XCTestCase {
         XCTAssertEqual(store.report.overall.correct, 1)
     }
 
+    func testResolveDueIsCappedPerPass() async {
+        let (store, _) = freshStore()
+        let made = Date(timeIntervalSince1970: 1_700_000_000)
+        for sym in ["AAPL", "MSFT", "NVDA"] {
+            store.record(symbol: sym, assetClass: .stock, direction: .higher,
+                         confidence: .hunch, horizonDays: 7, spot: 100, now: made)
+        }
+        let now = made.addingTimeInterval(20 * 86_400)
+        XCTAssertEqual(store.dueAssets(now: now).count, 3)
+
+        let resolved = await store.resolveDue(using: StubCallService(close: 115, offsetDays: 7, base: made),
+                                              now: now, maxAssets: 2)
+        XCTAssertEqual(resolved.count, 2)        // only 2 of 3 assets fetched this pass
+        XCTAssertEqual(store.pending.count, 1)   // the third still waits for the next pass
+    }
+
     func testClearAllWipes() {
         let (store, _) = freshStore()
         store.record(symbol: "AAPL", assetClass: .stock, direction: .higher,
