@@ -137,12 +137,15 @@ final class ForecastViewModel {
     /// market is open, and slowly off-hours when the last close won't move.
     var autoRefreshInterval: TimeInterval {
         guard let series else { return 60 }
+        let base: TimeInterval
         switch series.assetClass {
         case .crypto:
-            return 30
+            base = 30
         case .stock:
-            return MarketCalendar.isUSMarketOpen() ? 45 : 300
+            base = MarketCalendar.isUSMarketOpen() ? 45 : 300
         }
+        // Back off hard on Low Power Mode — near-live prices aren't worth the drain.
+        return ProcessInfo.processInfo.isLowPowerModeEnabled ? max(base * 6, 300) : base
     }
 
     /// Whether the loaded asset's price is currently live (for the badge).

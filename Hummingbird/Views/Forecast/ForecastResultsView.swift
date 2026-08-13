@@ -344,7 +344,7 @@ struct LiveStatusBadge: View {
     }
 
     private func startPulseIfNeeded() {
-        if isLive, !reduceMotion {
+        if isLive, !reduceMotion, !ProcessInfo.processInfo.isLowPowerModeEnabled {
             withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) {
                 pulse = true
             }

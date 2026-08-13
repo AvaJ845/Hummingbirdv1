@@ -7,7 +7,8 @@ struct ForecastEmptyState: View {
                 Image(systemName: "hand.point.up.left")
                     .font(.largeTitle)
                     .foregroundStyle(Theme.brandGradient)
-                    .symbolEffect(.pulse, options: .repeating.speed(0.4))
+                    .symbolEffect(.pulse, options: .repeating.speed(0.4),
+                                  isActive: !ProcessInfo.processInfo.isLowPowerModeEnabled)
                     .accessibilityHidden(true)
                 Text("Pick a symbol, then call it")
                     .font(.headline)
