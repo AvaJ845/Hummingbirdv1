@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @Bindable var watchlist: WatchlistStore
     var onFinish: () -> Void
     @State private var page = 0
 
@@ -26,24 +27,29 @@ struct OnboardingView: View {
              body: "Everything runs on your device. No account, no tracking — just you and the math.")
     ]
 
+    /// Informational pages plus one interactive setup step at the end.
+    private var totalPages: Int { pages.count + 1 }
+    private var isLastPage: Bool { page == totalPages - 1 }
+
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $page) {
                 ForEach(Array(pages.enumerated()), id: \.element.id) { index, item in
                     pageView(item).tag(index)
                 }
+                setupPage.tag(pages.count)
             }
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
 
             Button {
-                if page < pages.count - 1 {
+                if page < totalPages - 1 {
                     withAnimation { page += 1 }
                 } else {
                     onFinish()
                 }
             } label: {
-                Text(page < pages.count - 1 ? "Continue" : "Get started")
+                Text(page < totalPages - 1 ? "Continue" : "Get started")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
@@ -57,8 +63,8 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .padding(.bottom, 16)
-                .opacity(page < pages.count - 1 ? 1 : 0)
-                .disabled(page == pages.count - 1)
+                .opacity(isLastPage ? 0 : 1)
+                .disabled(isLastPage)
         }
         .background(Color(.systemGroupedBackground))
     }
@@ -85,5 +91,181 @@ struct OnboardingView: View {
         }
         .padding()
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Setup page
+
+    private var setupPage: some View {
+        ScrollView {
+            VStack(spacing: 28) {
+                VStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 56, weight: .semibold))
+                        .foregroundStyle(Theme.brandGradient)
+                        .accessibilityHidden(true)
+                    Text("Get set up")
+                        .font(.title.weight(.bold))
+                    Text("Two optional things that make Hummingbird worth opening again tomorrow.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
+                .padding(.top, 24)
+
+                QuickAddSection(watchlist: watchlist)
+                DigestOptInSection()
+
+                VStack(spacing: 6) {
+                    Label("Try Siri", systemImage: "mic.fill")
+                        .font(.subheadline.weight(.semibold))
+                    Text("“Hey Siri, project Bitcoin in Hummingbird” — a spoken sketch, right from the Lock Screen.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .padding(.top, 4)
+
+                Spacer(minLength: 12)
+            }
+            .padding(.bottom, 8)
+        }
+    }
+}
+
+/// A row of one-tap, validated adds for a few popular assets — so a new user
+/// doesn't land on an empty watchlist after onboarding just taught them why
+/// one is worth having.
+private struct QuickAddSection: View {
+    @Bindable var watchlist: WatchlistStore
+
+    private struct Suggestion: Identifiable {
+        let id: String
+        let symbol: String
+        let assetClass: AssetClass
+        let title: String
+        let systemImage: String
+    }
+
+    private enum AddState: Equatable {
+        case idle, loading, added, failed
+    }
+
+    private let suggestions: [Suggestion] = [
+        Suggestion(id: "aapl", symbol: "AAPL", assetClass: .stock, title: "Apple", systemImage: "applelogo"),
+        Suggestion(id: "btc", symbol: "bitcoin", assetClass: .crypto, title: "Bitcoin", systemImage: "bitcoinsign.circle"),
+        Suggestion(id: "nvda", symbol: "NVDA", assetClass: .stock, title: "Nvidia", systemImage: "cpu"),
+        Suggestion(id: "eth", symbol: "ethereum", assetClass: .crypto, title: "Ethereum", systemImage: "diamond")
+    ]
+
+    @State private var states: [String: AddState] = [:]
+    private let service = MarketDataService()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Add one to your watchlist")
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 24)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(suggestions) { suggestion in
+                        chip(for: suggestion)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+    }
+
+    private func chip(for suggestion: Suggestion) -> some View {
+        let state = states[suggestion.id] ?? .idle
+        let alreadySaved = watchlist.contains(symbol: suggestion.symbol, assetClass: suggestion.assetClass)
+
+        return Button {
+            guard state != .loading, !alreadySaved else { return }
+            add(suggestion)
+        } label: {
+            HStack(spacing: 6) {
+                if state == .loading {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    Image(systemName: (alreadySaved || state == .added) ? "checkmark.circle.fill" : suggestion.systemImage)
+                }
+                Text(suggestion.title)
+                    .font(.subheadline.weight(.medium))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                (alreadySaved || state == .added) ? Theme.accent.opacity(0.16) : Color(.secondarySystemGroupedBackground),
+                in: Capsule()
+            )
+            .foregroundStyle((alreadySaved || state == .added) ? Theme.accent : .primary)
+        }
+        .disabled(alreadySaved || state == .loading)
+        .accessibilityLabel("\(suggestion.title)\(alreadySaved || state == .added ? ", added" : "")")
+    }
+
+    private func add(_ suggestion: Suggestion) {
+        states[suggestion.id] = .loading
+        Task {
+            guard let series = try? await service.history(symbol: suggestion.symbol, assetClass: suggestion.assetClass),
+                  series.isForecastable else {
+                states[suggestion.id] = .failed
+                return
+            }
+            watchlist.add(symbol: suggestion.symbol, assetClass: suggestion.assetClass, displayName: suggestion.title)
+            let item = WatchlistItem(symbol: suggestion.symbol, assetClass: suggestion.assetClass, displayName: suggestion.title)
+            if let snapshot = WatchlistIntelligence.snapshot(for: item, series: series) {
+                watchlist.saveSnapshot(snapshot)
+            }
+            states[suggestion.id] = .added
+        }
+    }
+}
+
+/// Digest opt-in, mirroring `SettingsView`'s toggle so the choice made here
+/// behaves identically to changing it later in Settings.
+private struct DigestOptInSection: View {
+    @AppStorage("hb.digest.enabled") private var digestEnabled = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: Binding(
+                get: { digestEnabled },
+                set: { digestEnabled = $0; reschedule() }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Morning read")
+                        .font(.subheadline.weight(.semibold))
+                    Text("A once-a-day on-device summary of your watchlist. Movement, not signals — never advice.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(Theme.accent)
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 24)
+    }
+
+    private func reschedule() {
+        Task { @MainActor in
+            guard digestEnabled else {
+                NotificationService.cancelMorningDigest()
+                return
+            }
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                digestEnabled = false
+                return
+            }
+            await MorningDigest.rescheduleIfEnabled()
+        }
     }
 }

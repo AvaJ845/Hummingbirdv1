@@ -15,8 +15,10 @@ enum BackgroundRefresh {
     }
 
     /// Run one background refresh cycle: reschedule, refresh the watchlist (which
-    /// fires movement alerts + reloads widgets), then keep the morning read fresh
-    /// so it never goes stale between app opens.
+    /// fires movement alerts + reloads widgets), then keep the morning read and
+    /// weekly recap fresh so neither ever goes stale between app opens. The
+    /// weekly recap piggybacks on this same wake-up rather than registering its
+    /// own BGTask — one background wakeup, multiple jobs.
     @MainActor
     static func perform() async {
         schedule() // always queue the next cycle first
@@ -32,11 +34,15 @@ enum BackgroundRefresh {
 
         // Fill in any user calls whose horizon has passed, and clear their
         // reminders — so the record stays trustworthy without opening the app.
+        let callStore = UserCallStore()
         if !Task.isCancelled {
-            let callStore = UserCallStore()
             for id in await callStore.resolveDue(using: MarketDataService()) {
                 NotificationService.cancelCallResolution(callID: id)
             }
+        }
+
+        if !Task.isCancelled {
+            await WeeklyRecap.rescheduleIfEnabled(calls: callStore.calls, streak: callStore.currentStreak)
         }
     }
 }

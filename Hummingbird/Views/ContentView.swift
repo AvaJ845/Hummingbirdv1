@@ -98,7 +98,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard)
+            SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard, userCalls: viewModel.userCalls)
         }
         .sheet(isPresented: $showCallSheet) {
             CallSheet(symbol: viewModel.symbol) { direction, confidence, horizonDays in
@@ -123,7 +123,7 @@ struct ContentView: View {
             }
         }
         .fullScreenCover(isPresented: $showOnboarding) {
-            OnboardingView {
+            OnboardingView(watchlist: watchlist) {
                 hasOnboarded = true
                 showOnboarding = false
             }
@@ -160,7 +160,8 @@ struct ContentView: View {
                 if !viewModel.userCalls.calls.isEmpty {
                     YourCallsCard(
                         report: viewModel.userCalls.report,
-                        pendingCount: viewModel.userCalls.pending.count
+                        pendingCount: viewModel.userCalls.pending.count,
+                        streak: viewModel.userCalls.currentStreak
                     ) { showYourCalls = true }
                     .transition(.opacity)
                 }
@@ -339,8 +340,15 @@ struct ContentView: View {
                 viewModel.endAutoRefresh()
             }
             if phase == .background {
-                // Refresh the morning-digest content so it never goes stale.
+                // Refresh the morning-digest and weekly-recap content so neither
+                // ever goes stale between app opens.
                 Task { await MorningDigest.rescheduleIfEnabled() }
+                Task {
+                    await WeeklyRecap.rescheduleIfEnabled(
+                        calls: viewModel.userCalls.calls,
+                        streak: viewModel.userCalls.currentStreak
+                    )
+                }
                 // Never leave the mic + audio engine running off-screen. Only on
                 // .background (not .inactive) so the first-run permission prompt,
                 // which briefly deactivates the scene, doesn't cancel listening.

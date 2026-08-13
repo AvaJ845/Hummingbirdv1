@@ -105,6 +105,9 @@ final class UserCallStore {
 
     var report: UserCallReport { UserCallEngine.report(calls) }
 
+    /// Consecutive days you've made a call — participation, never correctness.
+    var currentStreak: Int { StreakEngine.currentStreak(calls) }
+
     /// Pending (unresolved) calls, soonest to resolve first.
     var pending: [UserCall] {
         calls.filter { !$0.isResolved }.sorted { $0.targetDate < $1.targetDate }

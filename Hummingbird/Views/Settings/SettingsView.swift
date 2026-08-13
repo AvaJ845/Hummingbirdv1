@@ -37,12 +37,14 @@ enum AppIconOption: String, CaseIterable, Identifiable {
 struct SettingsView: View {
     @Bindable var entitlements: EntitlementStore
     @Bindable var scorecard: SketchScorecardStore
+    @Bindable var userCalls: UserCallStore
     @Environment(\.dismiss) private var dismiss
     @State private var currentAlternate = UIApplication.shared.alternateIconName
     @State private var showClearConfirm = false
     @AppStorage("hb.digest.enabled") private var digestEnabled = false
     @AppStorage("hb.digest.hour") private var digestHour = 8
     @AppStorage("hb.digest.minute") private var digestMinute = 0
+    @AppStorage("hb.weeklyRecap.enabled") private var weeklyRecapEnabled = false
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
@@ -116,6 +118,25 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Ask Siri")
+                            Text("“Hey Siri, project Bitcoin in Hummingbird” — a spoken sketch, right from the Lock Screen.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "mic.fill")
+                            .foregroundStyle(Theme.brandGradient)
+                    }
+                    .accessibilityElement(children: .combine)
+                } header: {
+                    Text("Siri")
+                } footer: {
+                    Text("Works with any stock ticker or crypto id you'd type into Hummingbird. Educational only — never advice.")
+                }
+
+                Section {
                     NavigationLink {
                         ScorecardView(scorecard: scorecard, entitlements: entitlements)
                     } label: {
@@ -152,6 +173,17 @@ struct SettingsView: View {
                     Text("Morning read")
                 } footer: {
                     Text("A once-a-day on-device summary of recent movement across your watchlist. Movement, not signals — never advice.")
+                }
+
+                Section {
+                    Toggle("Weekly recap", isOn: Binding(
+                        get: { weeklyRecapEnabled },
+                        set: { weeklyRecapEnabled = $0; rescheduleWeeklyRecap() }
+                    ))
+                } header: {
+                    Text("Weekly recap")
+                } footer: {
+                    Text("A once-a-week, Sunday-morning summary of calls you made and how your resolved calls turned out. Participation and honest accuracy — never a nudge to be “more right.”")
                 }
 
                 Section {
@@ -248,6 +280,24 @@ struct SettingsView: View {
                 return
             }
             await MorningDigest.rescheduleIfEnabled()
+        }
+    }
+
+    /// (Re)schedule or cancel the weekly recap, composing content from the
+    /// user's own call history. Requests permission the first time it's enabled.
+    private func rescheduleWeeklyRecap() {
+        Task { @MainActor in
+            guard weeklyRecapEnabled else {
+                NotificationService.cancelWeeklyRecap()
+                return
+            }
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                weeklyRecapEnabled = false
+                return
+            }
+            await WeeklyRecap.rescheduleIfEnabled(calls: userCalls.calls, streak: userCalls.currentStreak)
         }
     }
 }

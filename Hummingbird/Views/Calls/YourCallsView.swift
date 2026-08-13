@@ -60,6 +60,9 @@ struct YourCallsView: View {
         } footer: {
             if report.overall.decided == 0 {
                 Text("Your record fills in as your calls reach their dates. Pull to refresh.")
+            } else if store.currentStreak >= 2 {
+                Label("\(store.currentStreak)-day streak — you've called it \(store.currentStreak) days running.", systemImage: "flame.fill")
+                    .foregroundStyle(Theme.warning)
             }
         }
     }
@@ -285,6 +288,8 @@ struct YourCallsView: View {
 struct YourCallsCard: View {
     let report: UserCallReport
     let pendingCount: Int
+    /// Consecutive days with a call made — participation, never correctness.
+    var streak: Int = 0
     let onTap: () -> Void
 
     var body: some View {
@@ -304,6 +309,9 @@ struct YourCallsCard: View {
                     }
                 }
                 Spacer()
+                if streak >= 2 {
+                    streakBadge
+                }
                 if pendingCount > 0 {
                     Text("\(pendingCount) waiting")
                         .font(.caption2.weight(.semibold))
@@ -320,8 +328,21 @@ struct YourCallsCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Your calls\(pendingCount > 0 ? ", \(pendingCount) waiting" : "")")
+        .accessibilityLabel("Your calls\(streak >= 2 ? ", \(streak) day streak" : "")\(pendingCount > 0 ? ", \(pendingCount) waiting" : "")")
         .accessibilityHint("Opens your honest call record")
+    }
+
+    private var streakBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "flame.fill")
+            Text("\(streak)")
+        }
+        .font(.caption2.weight(.semibold))
+        .monospacedDigit()
+        .padding(.horizontal, 8).padding(.vertical, 4)
+        .background(Theme.warning.opacity(0.15), in: Capsule())
+        .foregroundStyle(Theme.warning)
+        .accessibilityHidden(true)
     }
 
     private func pct(_ fraction: Double) -> String { String(format: "%.0f%%", fraction * 100) }
