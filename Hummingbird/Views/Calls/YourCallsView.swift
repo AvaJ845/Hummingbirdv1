@@ -7,6 +7,7 @@ struct YourCallsView: View {
     @Bindable var entitlements: EntitlementStore
     var service: any MarketDataProviding = MarketDataService()
     var onUnlock: () -> Void = {}
+    @State private var shareImage: Image?
 
     private var report: UserCallReport { store.report }
     private var freeResolvedLimit: Int { 5 }
@@ -33,6 +34,19 @@ struct YourCallsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await resolveDue() }
         .refreshable { await resolveDue() }
+        .task(id: shareRenderKey) { shareImage = renderShareImage() }
+    }
+
+    private var shareRenderKey: String {
+        "\(report.overall.decided)-\(report.overall.correct)-\(store.currentStreak)"
+    }
+
+    @MainActor private func renderShareImage() -> Image? {
+        let card = ScorecardShareCard(report: report, streak: store.currentStreak)
+        let renderer = ImageRenderer(content: card)
+        renderer.scale = 3
+        guard let uiImage = renderer.uiImage else { return nil }
+        return Image(uiImage: uiImage)
     }
 
     private func resolveDue() async {
@@ -182,12 +196,16 @@ struct YourCallsView: View {
         }
     }
 
-    private var shareSection: some View {
-        Section {
-            ShareLink(item: recordText) {
-                Label("Share your record", systemImage: "square.and.arrow.up")
+    @ViewBuilder private var shareSection: some View {
+        if let shareImage {
+            Section {
+                ShareLink(item: shareImage,
+                          preview: SharePreview("My Hummingbird call record", image: shareImage)) {
+                    Label("Share your record", systemImage: "square.and.arrow.up")
+                }
+                .tint(Theme.accentAlt)
+                .accessibilityHint("Shares your call record as an image with the not-advice note included")
             }
-            .tint(Theme.accentAlt)
         }
     }
 
@@ -210,20 +228,6 @@ struct YourCallsView: View {
         } footer: {
             Text("Your headline record and confidence breakdown are always free — Pro just keeps the full history.")
         }
-    }
-
-    private var recordText: String {
-        var lines = ["My Hummingbird call record — a record of the past, not advice.",
-                     "Overall: \(report.overall.hitRate.map(pct) ?? "—") right (\(report.overall.correct) of \(report.overall.decided))"]
-        for row in report.byConfidence {
-            lines.append("• \(row.confidence.title): \(pct(row.hitRate)) (\(row.decided))")
-        }
-        // Participation only, never correctness — a streak means "showed up
-        // and called it," not "was right." Keeping that framing here too.
-        if store.currentStreak >= 2 {
-            lines.append("\(store.currentStreak)-day streak of calls made — showing up, not always right.")
-        }
-        return lines.joined(separator: "\n")
     }
 
     private var aboutSection: some View {
