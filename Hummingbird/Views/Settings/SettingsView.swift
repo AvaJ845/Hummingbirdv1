@@ -142,6 +142,11 @@ struct SettingsView: View {
                     } label: {
                         Label("Accuracy report", systemImage: "checkmark.seal")
                     }
+                    NavigationLink {
+                        SketchJournalView(scorecard: scorecard, entitlements: entitlements)
+                    } label: {
+                        Label("Your journal", systemImage: "book.closed")
+                    }
                     Picker(selection: $scorecard.retentionDays) {
                         Text("Keep all").tag(Int?.none)
                         Text("After 90 days").tag(Int?.some(90))
@@ -297,7 +302,11 @@ struct SettingsView: View {
                 weeklyRecapEnabled = false
                 return
             }
-            await WeeklyRecap.rescheduleIfEnabled(calls: userCalls.calls, streak: userCalls.currentStreak)
+            await WeeklyRecap.rescheduleIfEnabled(
+                calls: userCalls.calls,
+                streak: userCalls.currentStreak,
+                hasJournalActivity: !SharedStorage.snapshots().isEmpty
+            )
         }
     }
 }

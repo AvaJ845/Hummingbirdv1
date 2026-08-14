@@ -42,7 +42,11 @@ enum BackgroundRefresh {
         }
 
         if !Task.isCancelled {
-            await WeeklyRecap.rescheduleIfEnabled(calls: callStore.calls, streak: callStore.currentStreak)
+            await WeeklyRecap.rescheduleIfEnabled(
+                calls: callStore.calls,
+                streak: callStore.currentStreak,
+                hasJournalActivity: !SharedStorage.snapshots().isEmpty
+            )
         }
     }
 }

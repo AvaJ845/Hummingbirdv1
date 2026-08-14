@@ -6,9 +6,13 @@ import Foundation
 /// network call of its own).
 enum WeeklyRecapEngine {
     /// nil when there's nothing to report (no calls made in the trailing week).
+    /// `hasJournalActivity` just adds a one-line pointer to the separate Sketch
+    /// Journal (watchlist rollup) when there's something there too — reusing
+    /// this same notification rather than scheduling a second one.
     static func compose(
         calls: [UserCall],
         streak: Int,
+        hasJournalActivity: Bool = false,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> Digest? {
@@ -29,7 +33,10 @@ enum WeeklyRecapEngine {
             parts.append("a \(streak)-day streak going")
         }
 
-        let body = parts.joined(separator: ", ") + ". A record of the past — never advice."
+        var body = parts.joined(separator: ", ") + ". A record of the past — never advice."
+        if hasJournalActivity {
+            body += " Your watchlist journal is ready too."
+        }
         return Digest(title: "Your week in calls", body: body)
     }
 }
@@ -41,12 +48,12 @@ enum WeeklyRecapEngine {
 enum WeeklyRecap {
     static let enabledKey = "hb.weeklyRecap.enabled"
 
-    static func rescheduleIfEnabled(calls: [UserCall], streak: Int) async {
+    static func rescheduleIfEnabled(calls: [UserCall], streak: Int, hasJournalActivity: Bool = false) async {
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: enabledKey) else { return }
         guard await NotificationService.isAuthorized() else { return }
 
-        guard let digest = WeeklyRecapEngine.compose(calls: calls, streak: streak) else {
+        guard let digest = WeeklyRecapEngine.compose(calls: calls, streak: streak, hasJournalActivity: hasJournalActivity) else {
             NotificationService.cancelWeeklyRecap()
             return
         }

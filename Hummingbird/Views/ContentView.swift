@@ -346,7 +346,8 @@ struct ContentView: View {
                 Task {
                     await WeeklyRecap.rescheduleIfEnabled(
                         calls: viewModel.userCalls.calls,
-                        streak: viewModel.userCalls.currentStreak
+                        streak: viewModel.userCalls.currentStreak,
+                        hasJournalActivity: !SharedStorage.snapshots().isEmpty
                     )
                 }
                 // Never leave the mic + audio engine running off-screen. Only on

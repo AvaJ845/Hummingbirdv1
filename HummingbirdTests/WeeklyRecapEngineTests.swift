@@ -51,4 +51,17 @@ final class WeeklyRecapEngineTests: XCTestCase {
         let digest = WeeklyRecapEngine.compose(calls: [call(daysAgo: 0)], streak: 0, now: now, calendar: calendar)
         XCTAssertTrue(digest!.body.contains("never advice"))
     }
+
+    func testMentionsJournalOnlyWhenFlagged() {
+        let calls = [call(daysAgo: 0)]
+        XCTAssertFalse(WeeklyRecapEngine.compose(calls: calls, streak: 0, now: now, calendar: calendar)!.body.contains("journal"))
+        XCTAssertTrue(WeeklyRecapEngine.compose(calls: calls, streak: 0, hasJournalActivity: true, now: now, calendar: calendar)!.body.contains("journal"))
+    }
+
+    func testJournalFlagDoesNotConjureADigestOnItsOwn() {
+        // No calls this week — still nil even if journal activity exists,
+        // since this notification is anchored to the calls recap firing at all.
+        let calls = [call(daysAgo: 10)]
+        XCTAssertNil(WeeklyRecapEngine.compose(calls: calls, streak: 0, hasJournalActivity: true, now: now, calendar: calendar))
+    }
 }

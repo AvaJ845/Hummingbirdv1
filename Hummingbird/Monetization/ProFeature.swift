@@ -9,6 +9,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case youVsMethods
     case honestRecord
     case keepEveryCall
+    case weeklyJournal
     // Breadth, quietly last.
     case moreBreadth
 
@@ -19,6 +20,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
         case .youVsMethods: "You vs. the methods"
         case .honestRecord: "Your record, in depth"
         case .keepEveryCall: "Keep every call — and share it"
+        case .weeklyJournal: "Your weekly journal"
         case .moreBreadth: "More methods & longer windows"
         }
     }
@@ -31,6 +33,8 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
             "Your accuracy by confidence — did feeling sure mean being right? — and how calibrated you’ve been over time."
         case .keepEveryCall:
             "Your full call history, not just the recent handful, plus a shareable summary of your record."
+        case .weeklyJournal:
+            "A week's rollup of your watchlist's sketch activity — which assets moved most and how closely the app's own methods have tracked lately."
         case .moreBreadth:
             "Momentum, Mean reversion, and Blend beside the free methods, and sketches up to 90 days — more paths to compare, never better foresight."
         }
@@ -41,6 +45,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
         case .youVsMethods: "trophy"
         case .honestRecord: "checkmark.seal"
         case .keepEveryCall: "tray.full"
+        case .weeklyJournal: "book.closed"
         case .moreBreadth: "arrow.left.arrow.right"
         }
     }
