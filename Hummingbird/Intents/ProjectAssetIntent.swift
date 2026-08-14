@@ -58,5 +58,23 @@ struct HummingbirdShortcuts: AppShortcutsProvider {
             shortTitle: "Project asset",
             systemImageName: "chart.line.uptrend.xyaxis"
         )
+        AppShortcut(
+            intent: AddToWatchlistIntent(),
+            phrases: [
+                "Add to my watchlist in \(.applicationName)",
+                "Watch an asset in \(.applicationName)"
+            ],
+            shortTitle: "Add to watchlist",
+            systemImageName: "star"
+        )
+        AppShortcut(
+            intent: ReadDigestIntent(),
+            phrases: [
+                "Read my digest in \(.applicationName)",
+                "What's my \(.applicationName) digest"
+            ],
+            shortTitle: "Read digest",
+            systemImageName: "text.alignleft"
+        )
     }
 }

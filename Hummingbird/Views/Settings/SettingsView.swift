@@ -121,7 +121,7 @@ struct SettingsView: View {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Ask Siri")
-                            Text("“Hey Siri, project Bitcoin in Hummingbird” — a spoken sketch, right from the Lock Screen.")
+                            Text("“Hey Siri, project Bitcoin in Hummingbird” for a spoken sketch, “add to my watchlist,” or “read my digest” — all hands-free.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
