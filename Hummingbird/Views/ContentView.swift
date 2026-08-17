@@ -92,6 +92,25 @@ struct ContentView: View {
                 requestReview()
             }
         }
+        .alert(
+            "Keep your streak going?",
+            isPresented: Binding(
+                get: { viewModel.pendingStreakReminderOffer != nil },
+                set: { if !$0 { viewModel.pendingStreakReminderOffer = nil } }
+            )
+        ) {
+            Button("Remind Me") {
+                enableStreakReminder()
+                viewModel.pendingStreakReminderOffer = nil
+            }
+            Button("Not Now", role: .cancel) {
+                viewModel.pendingStreakReminderOffer = nil
+            }
+        } message: {
+            if let streak = viewModel.pendingStreakReminderOffer {
+                Text("You're on a \(streak)-day streak. Want a nudge in the evening if you're about to lose it?")
+            }
+        }
         .sheet(isPresented: $showWatchlist) {
             WatchlistView(store: watchlist) { item in
                 viewModel.load(item)
@@ -372,6 +391,22 @@ struct ContentView: View {
         guard !dictation.isActive else { return }
         symbolFocused = false
         NavigationMotion.push(&path, route)
+    }
+
+    /// Turns on the streak reminder from the contextual prompt — same effect
+    /// as the Settings toggle, requesting notification permission the first
+    /// time, falling back to off if the user declines that system prompt.
+    private func enableStreakReminder() {
+        UserDefaults.standard.set(true, forKey: StreakReminder.enabledKey)
+        Task {
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                UserDefaults.standard.set(false, forKey: StreakReminder.enabledKey)
+                return
+            }
+            await StreakReminder.rescheduleIfEnabled(streak: viewModel.userCalls.currentStreak, calls: viewModel.userCalls.calls)
+        }
     }
 
     private func confirmDictation() async {

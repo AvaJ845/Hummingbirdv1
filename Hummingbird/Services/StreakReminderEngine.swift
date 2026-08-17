@@ -31,6 +31,25 @@ enum StreakReminderEngine {
 /// wake-up as the other notifications.
 enum StreakReminder {
     static let enabledKey = "hb.streakReminder.enabled"
+    /// Set the moment the contextual opt-in prompt is shown (regardless of the
+    /// user's answer) — a one-time offer, never re-asked, so declining once
+    /// doesn't mean being asked again on every future streak.
+    static let hasOfferedKey = "hb.streakReminder.hasOffered"
+
+    /// Whether the contextual "want a reminder?" prompt should fire right now
+    /// — a real streak worth protecting, not already on, and never asked
+    /// before. Doesn't itself mark the offer as made; call `recordOffered()`
+    /// when the prompt actually appears.
+    static func shouldOfferPrompt(streak: Int, defaults: UserDefaults = .standard) -> Bool {
+        guard streak >= 2 else { return false }
+        guard !defaults.bool(forKey: enabledKey) else { return false }
+        guard !defaults.bool(forKey: hasOfferedKey) else { return false }
+        return true
+    }
+
+    static func recordOffered(defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: hasOfferedKey)
+    }
 
     static func rescheduleIfEnabled(streak: Int, calls: [UserCall]) async {
         let defaults = UserDefaults.standard

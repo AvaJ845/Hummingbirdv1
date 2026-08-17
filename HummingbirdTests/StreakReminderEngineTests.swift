@@ -39,4 +39,39 @@ final class StreakReminderEngineTests: XCTestCase {
         let digest = StreakReminderEngine.compose(streak: 1, calls: calls, now: now, calendar: calendar)
         XCTAssertTrue(digest!.body.contains("never advice"))
     }
+
+    // MARK: - Contextual opt-in prompt
+
+    private let suiteName = "hummingbird.tests.streakReminderPrompt"
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: suiteName)
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+        super.tearDown()
+    }
+
+    func testDoesNotOfferBelowTwoDayStreak() {
+        XCTAssertFalse(StreakReminder.shouldOfferPrompt(streak: 1, defaults: defaults))
+    }
+
+    func testOffersOnceStreakReachesTwo() {
+        XCTAssertTrue(StreakReminder.shouldOfferPrompt(streak: 2, defaults: defaults))
+    }
+
+    func testNeverOffersTwiceOnceRecorded() {
+        XCTAssertTrue(StreakReminder.shouldOfferPrompt(streak: 3, defaults: defaults))
+        StreakReminder.recordOffered(defaults: defaults)
+        XCTAssertFalse(StreakReminder.shouldOfferPrompt(streak: 5, defaults: defaults))
+    }
+
+    func testDoesNotOfferWhenAlreadyEnabled() {
+        defaults.set(true, forKey: StreakReminder.enabledKey)
+        XCTAssertFalse(StreakReminder.shouldOfferPrompt(streak: 4, defaults: defaults))
+    }
 }
