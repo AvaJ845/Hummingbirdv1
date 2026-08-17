@@ -7,6 +7,7 @@ import SwiftUI
 struct ScorecardView: View {
     @Bindable var scorecard: SketchScorecardStore
     @Bindable var entitlements: EntitlementStore
+    @State private var shareImage: Image?
 
     private var report: ScorecardReport { scorecard.report }
 
@@ -16,6 +17,10 @@ struct ScorecardView: View {
                 emptyState
             } else {
                 headlineSection
+                // Definitions sit right after the numbers they explain, not
+                // buried below every Pro section — a free user shouldn't have
+                // to scroll past a paywall to learn what "usual gap" means.
+                aboutSection
                 if entitlements.isPro {
                     if !report.horizons.isEmpty { horizonSection }
                     if !report.models.isEmpty { methodSection }
@@ -25,10 +30,22 @@ struct ScorecardView: View {
                     proTeaser
                 }
             }
-            aboutSection
         }
         .navigationTitle("Accuracy report")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: shareRenderKey) { shareImage = renderShareImage() }
+    }
+
+    private var shareRenderKey: String {
+        "\(report.summary.totalSketches)-\(report.summary.resolvedSketches)-\(report.calibration?.inRangeRate ?? -1)"
+    }
+
+    @MainActor private func renderShareImage() -> Image? {
+        guard !scorecard.records.isEmpty else { return nil }
+        let renderer = ImageRenderer(content: AccuracyShareCard(report: report))
+        renderer.scale = 3
+        guard let uiImage = renderer.uiImage else { return nil }
+        return Image(uiImage: uiImage)
     }
 
     // MARK: - Headline (free)
@@ -44,6 +61,10 @@ struct ScorecardView: View {
                     Text("the real price landed inside our range · we aim for about 8 in 10")
                         .font(.caption).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                    CalibrationGauge(rate: cal.inRangeRate, target: RangeCalibration.target,
+                                     barColor: calibrationColor(cal.inRangeRate))
+                        .frame(height: 8)
+                        .padding(.top, 2)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
@@ -145,12 +166,16 @@ struct ScorecardView: View {
         }
     }
 
-    private var shareSection: some View {
-        Section {
-            ShareLink(item: reportText) {
-                Label("Share this report", systemImage: "square.and.arrow.up")
+    @ViewBuilder private var shareSection: some View {
+        if let shareImage {
+            Section {
+                ShareLink(item: shareImage,
+                          preview: SharePreview("Hummingbird accuracy report", image: shareImage)) {
+                    Label("Share this report", systemImage: "square.and.arrow.up")
+                }
+                .tint(Theme.accentAlt)
+                .accessibilityHint("Shares this accuracy report as an image with the not-advice note included")
             }
-            .tint(Theme.accentAlt)
         }
     }
 
@@ -162,7 +187,7 @@ struct ScorecardView: View {
                 PaywallView(entitlements: entitlements, scorecard: scorecard)
             } label: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("See the full report", systemImage: "sparkles")
+                    Label(personalizedTeaserTitle, systemImage: "sparkles")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Theme.brandGradient)
                     ForEach([
@@ -180,6 +205,15 @@ struct ScorecardView: View {
         } footer: {
             Text("The headline above is always free — Pro just adds the detail behind it.")
         }
+    }
+
+    /// Personalized with the user's own count when there's enough to make it
+    /// concrete, rather than a generic pitch — still strictly honest, just
+    /// grounded in what's actually already tracked.
+    private var personalizedTeaserTitle: String {
+        let n = report.summary.totalSketches
+        guard n > 0 else { return "See the full report" }
+        return "See the full breakdown of your \(n) sketch\(n == 1 ? "" : "es")"
     }
 
     private var aboutSection: some View {
@@ -204,22 +238,6 @@ struct ScorecardView: View {
     }
 
     // MARK: - Helpers
-
-    private var reportText: String {
-        var lines = ["Hummingbird accuracy report — a record of the past, not advice.",
-                     "\(report.summary.totalSketches) sketches · \(report.summary.resolvedSketches) checked",
-                     "Usual gap: \(errorText(report.summary.medianError))"]
-        if let cal = report.calibration {
-            lines.append("In range: \(pct(cal.inRangeRate)) of the time (we aim for ~8 in 10)")
-        }
-        if let directional = report.directional {
-            lines.append("Pointed the right way: \(pct(directional.hitRate)) of the time")
-        }
-        for horizon in report.horizons {
-            lines.append("• \(horizon.daysAhead) day\(horizon.daysAhead == 1 ? "" : "s") ahead: \(errorText(horizon.medianError)) usual gap (\(horizon.resolvedCount) checked)")
-        }
-        return lines.joined(separator: "\n")
-    }
 
     private func stat(value: String, caption: String) -> some View {
         VStack(spacing: 3) {
