@@ -173,7 +173,12 @@ struct SettingsView: View {
                         set: { digestEnabled = $0; rescheduleDigest() }
                     ))
                     if digestEnabled {
-                        DatePicker("Time", selection: digestTime, displayedComponents: .hourAndMinute)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("When do you usually check the markets?")
+                                .font(.caption).foregroundStyle(.secondary)
+                            DigestTriggerChips(hour: $digestHour, minute: $digestMinute, onSelect: rescheduleDigest)
+                        }
+                        DatePicker("Or choose a time", selection: digestTime, displayedComponents: .hourAndMinute)
                     }
                 } header: {
                     Text("Morning read")

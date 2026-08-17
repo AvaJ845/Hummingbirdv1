@@ -227,9 +227,14 @@ private struct QuickAddSection: View {
 }
 
 /// Digest opt-in, mirroring `SettingsView`'s toggle so the choice made here
-/// behaves identically to changing it later in Settings.
+/// behaves identically to changing it later in Settings. Asking *when* the
+/// user already checks the markets — rather than silently picking 8am — is
+/// an implementation-intention cue (Gollwitzer, 1999): tying a new behavior
+/// to a trigger that already exists in the user's day, not inventing one.
 private struct DigestOptInSection: View {
     @AppStorage("hb.digest.enabled") private var digestEnabled = false
+    @AppStorage("hb.digest.hour") private var digestHour = 8
+    @AppStorage("hb.digest.minute") private var digestMinute = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -247,10 +252,22 @@ private struct DigestOptInSection: View {
                 }
             }
             .tint(Theme.accent)
+
+            if digestEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("When do you usually check the markets?")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    DigestTriggerChips(hour: $digestHour, minute: $digestMinute, onSelect: reschedule)
+                }
+                .padding(.top, 2)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .padding(.horizontal, 24)
+        .animation(.snappy(duration: 0.2), value: digestEnabled)
     }
 
     private func reschedule() {
