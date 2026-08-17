@@ -247,7 +247,11 @@ struct PaywallView: View {
                     .foregroundStyle(Theme.accent)
             }
         }
-        .disabled(entitlements.isPro)
+        // Gated on the real purchase status, not `isPro` — in TestFlight,
+        // `isPro` is auto-true so testers can validate every Pro feature
+        // without buying first, but the buy buttons must stay tappable so
+        // the actual purchase flow itself is still testable end to end.
+        .disabled(entitlements.hasRealPurchase)
         .accessibilityLabel("\(product.displayName)\(highlighted ? ", best value" : ""), \(badge)")
         .accessibilityHint(product.subscription != nil ? "Auto-renewable subscription" : "One-time purchase")
     }

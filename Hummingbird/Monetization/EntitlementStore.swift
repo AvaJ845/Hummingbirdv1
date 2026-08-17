@@ -23,11 +23,32 @@ final class EntitlementStore {
     /// Local QA unlock — DEBUG builds only; never written in Release.
     private(set) var debugUnlocked: Bool = false
 
+    /// The real, StoreKit-verified purchase status — independent of the
+    /// TestFlight override below. This is what the paywall's purchase button
+    /// gates on, so the actual buy flow stays fully testable in TestFlight
+    /// even though features are already unlocked there.
+    var hasRealPurchase: Bool { !purchasedProductIDs.isEmpty }
+
+    /// True only when the running binary was installed via TestFlight — never
+    /// true for a real App Store download. TestFlight and the App Store ship
+    /// the exact same Release build (there's no separate "beta configuration"
+    /// to compile against), so this is the only reliable way to tell them
+    /// apart at runtime: Apple stamps a TestFlight install with a sandbox
+    /// receipt, a real purchase with a production one.
+    nonisolated static var isTestFlight: Bool {
+        Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+    }
+
+    /// Feature-gating status: a real purchase, DEBUG's local QA toggle, or
+    /// simply running via TestFlight. External testers get every Pro method
+    /// and feature unlocked automatically so they can validate the full set
+    /// without completing a purchase first — never true for a real App Store
+    /// production install.
     var isPro: Bool {
         #if DEBUG
-        debugUnlocked || !purchasedProductIDs.isEmpty
+        debugUnlocked || hasRealPurchase || Self.isTestFlight
         #else
-        !purchasedProductIDs.isEmpty
+        hasRealPurchase || Self.isTestFlight
         #endif
     }
 
