@@ -12,6 +12,13 @@ struct YourCallsView: View {
     private var report: UserCallReport { store.report }
     private var freeResolvedLimit: Int { 5 }
 
+    /// The streak shown to the user, including a Pro subscriber's one grace
+    /// day (see `ProFeature.streakFreeze`) — never the raw participation
+    /// count alone once Pro is active.
+    private var displayStreak: Int {
+        StreakEngine.currentStreak(store.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
+    }
+
     var body: some View {
         List {
             if store.calls.isEmpty {
@@ -38,11 +45,11 @@ struct YourCallsView: View {
     }
 
     private var shareRenderKey: String {
-        "\(report.overall.decided)-\(report.overall.correct)-\(store.currentStreak)"
+        "\(report.overall.decided)-\(report.overall.correct)-\(displayStreak)"
     }
 
     @MainActor private func renderShareImage() -> Image? {
-        let card = ScorecardShareCard(report: report, streak: store.currentStreak)
+        let card = ScorecardShareCard(report: report, streak: displayStreak)
         let renderer = ImageRenderer(content: card)
         renderer.scale = 3
         guard let uiImage = renderer.uiImage else { return nil }
@@ -74,8 +81,8 @@ struct YourCallsView: View {
         } footer: {
             if report.overall.decided == 0 {
                 Text("Your record fills in as your calls reach their dates. Pull to refresh.")
-            } else if store.currentStreak >= 2 {
-                Label("\(store.currentStreak)-day streak — you've called it \(store.currentStreak) days running.", systemImage: "flame.fill")
+            } else if displayStreak >= 2 {
+                Label("\(displayStreak)-day streak — you've called it \(displayStreak) days running.", systemImage: "flame.fill")
                     .foregroundStyle(Theme.warning)
             }
         }

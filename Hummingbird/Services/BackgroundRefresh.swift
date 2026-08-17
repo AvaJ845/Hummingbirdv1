@@ -48,5 +48,9 @@ enum BackgroundRefresh {
                 hasJournalActivity: !SharedStorage.snapshots().isEmpty
             )
         }
+
+        if !Task.isCancelled {
+            await StreakReminder.rescheduleIfEnabled(streak: callStore.currentStreak, calls: callStore.calls)
+        }
     }
 }

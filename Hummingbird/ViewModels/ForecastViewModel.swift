@@ -515,6 +515,10 @@ final class ForecastViewModel {
                              horizonDays: loggingCall.horizonDays, symbol: fetched.symbol,
                              assetClass: fetched.assetClass, spot: spot,
                              methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))
+                // Today's call is in — cancel any pending "don't lose your
+                // streak" reminder right away rather than waiting on the next
+                // background cycle to notice.
+                Task { await StreakReminder.rescheduleIfEnabled(streak: calls.store.currentStreak, calls: calls.store.calls) }
             }
         } catch is CancellationError {
             return

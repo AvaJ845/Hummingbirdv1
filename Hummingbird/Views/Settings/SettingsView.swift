@@ -45,6 +45,7 @@ struct SettingsView: View {
     @AppStorage("hb.digest.hour") private var digestHour = 8
     @AppStorage("hb.digest.minute") private var digestMinute = 0
     @AppStorage("hb.weeklyRecap.enabled") private var weeklyRecapEnabled = false
+    @AppStorage("hb.streakReminder.enabled") private var streakReminderEnabled = false
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
@@ -192,6 +193,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Streak reminder", isOn: Binding(
+                        get: { streakReminderEnabled },
+                        set: { streakReminderEnabled = $0; rescheduleStreakReminder() }
+                    ))
+                } header: {
+                    Text("Streak reminder")
+                } footer: {
+                    Text("A same-day evening nudge, only when you have an active call streak and haven't called anything yet today. About showing up, never about being right.")
+                }
+
+                Section {
                     Toggle("Track on Lock Screen", isOn: Binding(
                         get: { liveActivityEnabled },
                         set: { liveActivityEnabled = $0; if !$0 { SketchLiveActivityManager.endAll() } }
@@ -307,6 +319,24 @@ struct SettingsView: View {
                 streak: userCalls.currentStreak,
                 hasJournalActivity: !SharedStorage.snapshots().isEmpty
             )
+        }
+    }
+
+    /// (Re)schedule or cancel today's streak reminder. Requests permission the
+    /// first time it's enabled.
+    private func rescheduleStreakReminder() {
+        Task { @MainActor in
+            guard streakReminderEnabled else {
+                NotificationService.cancelStreakReminder()
+                return
+            }
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                streakReminderEnabled = false
+                return
+            }
+            await StreakReminder.rescheduleIfEnabled(streak: userCalls.currentStreak, calls: userCalls.calls)
         }
     }
 }

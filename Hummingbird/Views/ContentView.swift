@@ -161,7 +161,7 @@ struct ContentView: View {
                     YourCallsCard(
                         report: viewModel.userCalls.report,
                         pendingCount: viewModel.userCalls.pending.count,
-                        streak: viewModel.userCalls.currentStreak
+                        streak: displayStreak
                     ) { showYourCalls = true }
                     .transition(.opacity)
                 }
@@ -350,6 +350,12 @@ struct ContentView: View {
                         hasJournalActivity: !SharedStorage.snapshots().isEmpty
                     )
                 }
+                Task {
+                    await StreakReminder.rescheduleIfEnabled(
+                        streak: viewModel.userCalls.currentStreak,
+                        calls: viewModel.userCalls.calls
+                    )
+                }
                 // Never leave the mic + audio engine running off-screen. Only on
                 // .background (not .inactive) so the first-run permission prompt,
                 // which briefly deactivates the scene, doesn't cancel listening.
@@ -382,6 +388,13 @@ struct ContentView: View {
         if next != micCenter {
             micCenter = next
         }
+    }
+
+    /// The streak shown to the user, including a Pro subscriber's one grace
+    /// day (see `ProFeature.streakFreeze`) — never the raw participation count
+    /// alone once Pro is active.
+    private var displayStreak: Int {
+        StreakEngine.currentStreak(viewModel.userCalls.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
     }
 
     /// First-run nudge: sets the honest expectation that the accuracy track

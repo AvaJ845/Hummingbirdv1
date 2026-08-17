@@ -115,6 +115,41 @@ enum NotificationService {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [weeklyRecapIdentifier])
     }
 
+    private static let streakReminderIdentifier = "streak-reminder"
+
+    /// Schedule a same-day, one-shot streak reminder for the given local hour.
+    /// Does nothing if that hour has already passed today — there's nothing
+    /// useful to schedule for a moment already gone. Unlike the digest/recap,
+    /// this is deliberately one-shot, not recurring: relevance is evaluated
+    /// fresh each day (see `StreakReminder.rescheduleIfEnabled`), since
+    /// whether today needs a reminder at all depends on whether a call's
+    /// already been made.
+    static func scheduleStreakReminder(_ digest: Digest, hour: Int = 19, minute: Int = 0) async {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hour
+        components.minute = minute
+        guard let fireDate = calendar.date(from: components), fireDate > Date() else {
+            cancelStreakReminder() // that hour's already passed today
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = digest.title
+        content.body = digest.body
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fireDate.timeIntervalSinceNow, repeats: false)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [streakReminderIdentifier])
+        let request = UNNotificationRequest(identifier: streakReminderIdentifier, content: content, trigger: trigger)
+        await add(request, label: "streak reminder")
+    }
+
+    static func cancelStreakReminder() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [streakReminderIdentifier])
+    }
+
     /// Schedules a request and surfaces failures in DEBUG — these are silent
     /// come-back mechanisms (digest, call nudge, movement alert); a failed
     /// schedule should be observable to a developer, not invisible.
