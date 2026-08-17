@@ -40,7 +40,7 @@ struct AccuracyShareCard: View {
                 Text(errorText(report.summary.medianError))
                     .font(.system(size: 44, weight: .bold, design: .rounded)).monospacedDigit()
                     .foregroundStyle(accentColor)
-                Text("usual gap across \(report.summary.resolvedSketches) checked sketches")
+                Text("typical miss across \(report.summary.resolvedSketches) resolved sketches")
                     .font(.subheadline).foregroundStyle(.white.opacity(0.65))
             }
 

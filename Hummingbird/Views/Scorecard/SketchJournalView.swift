@@ -38,7 +38,7 @@ struct SketchJournalView: View {
             HStack(spacing: 18) {
                 stat(value: "\(journal.sketchesRun)", caption: "Sketches run")
                 Divider().frame(height: 40)
-                stat(value: errorText(journal.medianAccuracy), caption: "Usual gap")
+                stat(value: errorText(journal.medianAccuracy), caption: "Typical miss")
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)

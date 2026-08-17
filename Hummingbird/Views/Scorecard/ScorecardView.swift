@@ -19,7 +19,7 @@ struct ScorecardView: View {
                 headlineSection
                 // Definitions sit right after the numbers they explain, not
                 // buried below every Pro section — a free user shouldn't have
-                // to scroll past a paywall to learn what "usual gap" means.
+                // to scroll past a paywall to learn what "typical miss" means.
                 aboutSection
                 if entitlements.isPro {
                     if !report.horizons.isEmpty { horizonSection }
@@ -73,9 +73,11 @@ struct ScorecardView: View {
             }
 
             HStack(spacing: 18) {
-                stat(value: errorText(report.summary.medianError), caption: "Usual gap")
+                stat(value: errorText(report.summary.medianError), caption: "Typical miss",
+                     qualifier: errorQualifier(report.summary.medianError),
+                     qualifierColor: errorColor(report.summary.medianError))
                 Divider().frame(height: 40)
-                stat(value: "\(report.summary.resolvedSketches)", caption: "Checked")
+                stat(value: "\(report.summary.resolvedSketches)", caption: "Resolved")
                 Divider().frame(height: 40)
                 stat(value: "\(report.summary.totalSketches)", caption: "Total")
             }
@@ -116,10 +118,10 @@ struct ScorecardView: View {
                         .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(horizon.daysAhead) days ahead, usual gap \(errorText(horizon.medianError)), \(horizon.resolvedCount) checked")
+                .accessibilityLabel("\(horizon.daysAhead) days ahead, typical miss \(errorText(horizon.medianError)), \(horizon.resolvedCount) resolved")
             }
         } header: {
-            Text("How close, by how far ahead")
+            Text("Accuracy by days ahead")
         } footer: {
             Text("Sketches further out are naturally less accurate — that's expected, not a flaw.")
         }
@@ -138,7 +140,7 @@ struct ScorecardView: View {
                         .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(model.modelName), usual gap \(errorText(model.medianError)), \(model.resolvedCount) checked")
+                .accessibilityLabel("\(model.modelName), typical miss \(errorText(model.medianError)), \(model.resolvedCount) resolved")
             }
         }
     }
@@ -149,7 +151,7 @@ struct ScorecardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(asset.symbol.uppercased()).font(.body.weight(.semibold))
-                        Text("\(asset.summary.resolvedSketches) checked · \(asset.summary.totalSketches) total")
+                        Text("\(asset.summary.resolvedSketches) resolved · \(asset.summary.totalSketches) total")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -157,11 +159,11 @@ struct ScorecardView: View {
                         Text(errorText(asset.summary.medianError))
                             .font(.body.weight(.semibold)).monospacedDigit()
                             .foregroundStyle(errorColor(asset.summary.medianError))
-                        Text("usual gap").font(.caption2).foregroundStyle(.secondary)
+                        Text("typical miss").font(.caption2).foregroundStyle(.secondary)
                     }
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(asset.symbol), \(asset.summary.resolvedSketches) checked, usual gap \(errorText(asset.summary.medianError))")
+                .accessibilityLabel("\(asset.symbol), \(asset.summary.resolvedSketches) resolved, typical miss \(errorText(asset.summary.medianError))")
             }
         }
     }
@@ -191,7 +193,7 @@ struct ScorecardView: View {
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Theme.brandGradient)
                     ForEach([
-                        "How close it's been, by how far ahead",
+                        "Accuracy by how many days ahead",
                         "Which method has tracked each asset best",
                         "How each asset has done — and a shareable report",
                     ], id: \.self) { line in
@@ -218,7 +220,7 @@ struct ScorecardView: View {
 
     private var aboutSection: some View {
         Section {
-            Text("“Usual gap” is how far a past sketch typically landed from the price that actually happened. “In range” is how often the real price fell inside a sketch's range. It's a record of the past — not a prediction, and never financial advice.")
+            Text("“Typical miss” is how far a past sketch typically landed from the price that actually happened — not to be confused with a stock “gap.” “In range” is how often the real price fell inside a sketch's range. It's a record of the past — not a prediction, and never financial advice.")
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
@@ -228,7 +230,7 @@ struct ScorecardView: View {
             VStack(spacing: 10) {
                 Image(systemName: "checkmark.seal")
                     .font(.system(size: 40)).foregroundStyle(Theme.accent)
-                Text("No sketches checked yet").font(.headline)
+                Text("No sketches resolved yet").font(.headline)
                 Text("Run a few projections. Once real prices catch up to their dates, you'll see how honest each sketch turned out to be.")
                     .font(.subheadline).foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -239,10 +241,13 @@ struct ScorecardView: View {
 
     // MARK: - Helpers
 
-    private func stat(value: String, caption: String) -> some View {
+    private func stat(value: String, caption: String, qualifier: String? = nil, qualifierColor: Color = .secondary) -> some View {
         VStack(spacing: 3) {
             Text(value).font(.title3.weight(.bold)).monospacedDigit()
             Text(caption).font(.caption2).foregroundStyle(.secondary)
+            if let qualifier {
+                Text(qualifier).font(.caption2.weight(.semibold)).foregroundStyle(qualifierColor)
+            }
         }
         .frame(maxWidth: .infinity)
     }
@@ -260,6 +265,18 @@ struct ScorecardView: View {
         case ..<0.03: return Theme.up
         case ..<0.08: return Theme.warning
         default: return Theme.down
+        }
+    }
+
+    /// A plain-English read on the number, so a first-time visitor doesn't
+    /// need outside context to know whether e.g. "3.2%" is good — it shares
+    /// the exact same thresholds as `errorColor`, just spelled out in words.
+    private func errorQualifier(_ error: Double?) -> String? {
+        guard let error else { return nil }
+        switch error {
+        case ..<0.03: return "tight"
+        case ..<0.08: return "so-so"
+        default: return "wide"
         }
     }
 
