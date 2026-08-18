@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var showYourCalls = false
     @State private var spacedRecall = SpacedRecallStore()
     @State private var activeRecallBatch: [(call: UserCall, intervalIndex: Int)] = []
+    @State private var literacy = WeeklyLiteracyStore()
+    @State private var literacyQuestion: LiteracyQuestion?
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
@@ -167,6 +169,7 @@ struct ContentView: View {
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
+            literacyQuestion = literacy.questionForThisWeek()
         }
     }
 
@@ -222,6 +225,18 @@ struct ContentView: View {
                             for item in dueRecallBatch {
                                 spacedRecall.recordReviewed(item.call, intervalIndex: item.intervalIndex)
                             }
+                        }
+                    )
+                    .transition(.opacity)
+                }
+
+                if let literacyQuestion {
+                    LiteracyQuestionCard(
+                        question: literacyQuestion,
+                        onAnswered: { literacy.recordShown() },
+                        onDismiss: {
+                            literacy.recordShown()
+                            self.literacyQuestion = nil
                         }
                     )
                     .transition(.opacity)
