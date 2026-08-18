@@ -12,6 +12,7 @@ struct ForecastResultsView: View {
     @State private var shareImage: Image?
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
     @State private var isTracking = false
+    @State private var explainItPrompt: ExplainItPrompt?
 
     /// Two-up metric tiles side by side normally; stacked at accessibility sizes
     /// so each value keeps full width and stays legible.
@@ -79,6 +80,10 @@ struct ForecastResultsView: View {
                 ForecastDetailList(forecast: forecast)
             }
 
+            if let explainItPrompt {
+                ExplainItCard(prompt: explainItPrompt)
+            }
+
             WhySketchCard(drivers: SketchExplainer.drivers(
                 forecast: forecast,
                 disagreementSpread: viewModel.disagreementSpread
@@ -98,6 +103,7 @@ struct ForecastResultsView: View {
             }
         }
         .task(id: shareRenderKey) { shareImage = renderShareImage() }
+        .task(id: shareRenderKey) { updateExplainItPrompt() }
         .onAppear { isTracking = SketchLiveActivityManager.hasActive }
         .onChange(of: viewModel.priceUpdateToken) { _, _ in
             guard isTracking else { return }
@@ -158,6 +164,24 @@ struct ForecastResultsView: View {
             .buttonStyle(.bordered)
             .tint(Theme.accentAlt)
             .accessibilityHint("Shares this sketch as an image with the not-advice note included")
+        }
+    }
+
+    // MARK: - Explain It
+
+    /// Runs once per new sketch, not on every re-render — recording the
+    /// throttle timestamp here (not from a computed property) keeps that
+    /// side effect tied to an actual new forecast, not a SwiftUI redraw.
+    private func updateExplainItPrompt() {
+        let next = ExplainItEngine.prompt(
+            disagreementSpread: viewModel.disagreementSpread,
+            macroActive: forecast.macro.isActive,
+            macroHorizonBias: forecast.macro.horizonBias,
+            lastPromptedAt: ExplainItThrottle.lastPromptedAt()
+        )
+        explainItPrompt = next
+        if next != nil {
+            ExplainItThrottle.recordPrompted()
         }
     }
 
