@@ -150,6 +150,38 @@ enum NotificationService {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [streakReminderIdentifier])
     }
 
+    private static let economicCalendarCallIdentifier = "economic-calendar-call"
+
+    /// Schedule a same-day, one-shot morning nudge for a scheduled macro
+    /// release — well before the 8:30am ET jobs report for most US-hours
+    /// users. Does nothing if that hour has already passed today, matching
+    /// the streak reminder's one-shot, freshly-evaluated-each-day discipline.
+    static func scheduleEconomicCalendarCall(_ digest: Digest, hour: Int = 7, minute: Int = 0) async {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hour
+        components.minute = minute
+        guard let fireDate = calendar.date(from: components), fireDate > Date() else {
+            cancelEconomicCalendarCall()
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = digest.title
+        content.body = digest.body
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fireDate.timeIntervalSinceNow, repeats: false)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [economicCalendarCallIdentifier])
+        let request = UNNotificationRequest(identifier: economicCalendarCallIdentifier, content: content, trigger: trigger)
+        await add(request, label: "economic calendar call")
+    }
+
+    static func cancelEconomicCalendarCall() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [economicCalendarCallIdentifier])
+    }
+
     /// Schedules a request and surfaces failures in DEBUG — these are silent
     /// come-back mechanisms (digest, call nudge, movement alert); a failed
     /// schedule should be observable to a developer, not invisible.

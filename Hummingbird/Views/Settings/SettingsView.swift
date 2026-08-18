@@ -46,6 +46,7 @@ struct SettingsView: View {
     @AppStorage("hb.digest.minute") private var digestMinute = 0
     @AppStorage("hb.weeklyRecap.enabled") private var weeklyRecapEnabled = false
     @AppStorage("hb.streakReminder.enabled") private var streakReminderEnabled = false
+    @AppStorage("hb.economicCalendarCall.enabled") private var economicCalendarCallEnabled = false
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
@@ -209,6 +210,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Jobs Report reminder", isOn: Binding(
+                        get: { economicCalendarCallEnabled },
+                        set: { economicCalendarCallEnabled = $0; rescheduleEconomicCalendarCall() }
+                    ))
+                } header: {
+                    Text("Jobs Report reminder")
+                } footer: {
+                    Text("A morning nudge on Jobs Report day (first Friday of the month), only if you haven't called anything yet. Predict which way the market leans before the numbers land — never advice.")
+                }
+
+                Section {
                     Toggle("Track on Lock Screen", isOn: Binding(
                         get: { liveActivityEnabled },
                         set: { liveActivityEnabled = $0; if !$0 { SketchLiveActivityManager.endAll() } }
@@ -342,6 +354,24 @@ struct SettingsView: View {
                 return
             }
             await StreakReminder.rescheduleIfEnabled(streak: userCalls.currentStreak, calls: userCalls.calls)
+        }
+    }
+
+    /// (Re)schedule or cancel today's Jobs Report reminder. Requests
+    /// permission the first time it's enabled.
+    private func rescheduleEconomicCalendarCall() {
+        Task { @MainActor in
+            guard economicCalendarCallEnabled else {
+                NotificationService.cancelEconomicCalendarCall()
+                return
+            }
+            var authorized = await NotificationService.isAuthorized()
+            if !authorized { authorized = await NotificationService.requestAuthorization() }
+            guard authorized else {
+                economicCalendarCallEnabled = false
+                return
+            }
+            await EconomicCalendarCall.rescheduleIfEnabled(calls: userCalls.calls)
         }
     }
 }
