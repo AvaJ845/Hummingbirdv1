@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var showOnboarding = false
     @State private var showCallSheet = false
     @State private var showYourCalls = false
+    @State private var spacedRecall = SpacedRecallStore()
+    @State private var activeRecall: (call: UserCall, intervalIndex: Int)?
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
@@ -141,6 +143,16 @@ struct ContentView: View {
                 }
             }
         }
+        .sheet(isPresented: Binding(
+            get: { activeRecall != nil },
+            set: { if !$0 { activeRecall = nil } }
+        )) {
+            if let due = activeRecall {
+                RecallView(call: due.call, daysAgo: daysSince(due.call.resolvedAt)) {
+                    spacedRecall.recordReviewed(due.call, intervalIndex: due.intervalIndex)
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showOnboarding) {
             OnboardingView(watchlist: watchlist) {
                 hasOnboarded = true
@@ -182,6 +194,16 @@ struct ContentView: View {
                         pendingCount: viewModel.userCalls.pending.count,
                         streak: displayStreak
                     ) { showYourCalls = true }
+                    .transition(.opacity)
+                }
+
+                if let due = dueRecall {
+                    RecallCard(
+                        symbol: due.call.symbol,
+                        daysAgo: daysSince(due.call.resolvedAt),
+                        onTap: { activeRecall = due },
+                        onDismiss: { spacedRecall.recordReviewed(due.call, intervalIndex: due.intervalIndex) }
+                    )
                     .transition(.opacity)
                 }
 
@@ -430,6 +452,22 @@ struct ContentView: View {
     /// alone once Pro is active.
     private var displayStreak: Int {
         StreakEngine.currentStreak(viewModel.userCalls.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
+    }
+
+    /// The one past call, if any, due for a spaced-retrieval memory check
+    /// right now — computed fresh each time the home screen appears rather
+    /// than pushed via notification, matching the app's deference to the
+    /// user (this is a learning aid, not something to nag someone into).
+    private var dueRecall: (call: UserCall, intervalIndex: Int)? {
+        SpacedRecallEngine.due(
+            calls: viewModel.userCalls.calls,
+            isReviewed: { spacedRecall.isReviewed($0, intervalIndex: $1) }
+        )
+    }
+
+    private func daysSince(_ date: Date?) -> Int {
+        guard let date else { return 0 }
+        return Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
     }
 
     /// First-run nudge: sets the honest expectation that the accuracy track
