@@ -28,7 +28,7 @@ enum DigestEngine {
         if notable.isEmpty {
             let n = snapshots.count
             return Digest(
-                title: "Your morning read",
+                title: "How's your watchlist looking today?",
                 body: "Your \(n) watched \(n == 1 ? "asset's sketch is" : "assets' sketches are") close to flat today. Educational projections, not predictions."
             )
         }
@@ -36,7 +36,7 @@ enum DigestEngine {
         let top = notable.prefix(3).map { "\($0.title) \($0.change.asSignedPercent())" }.joined(separator: ", ")
         let more = notable.count > 3 ? " and \(notable.count - 3) more" : ""
         return Digest(
-            title: "Your morning read",
+            title: "What moved in your watchlist?",
             body: "Your latest sketches: \(top)\(more). Educational projections across your watchlist — not predictions or advice."
         )
     }

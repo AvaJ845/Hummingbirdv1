@@ -13,7 +13,7 @@ struct ContentView: View {
     @State private var showCallSheet = false
     @State private var showYourCalls = false
     @State private var spacedRecall = SpacedRecallStore()
-    @State private var activeRecall: (call: UserCall, intervalIndex: Int)?
+    @State private var activeRecallBatch: [(call: UserCall, intervalIndex: Int)] = []
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
@@ -144,12 +144,14 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: Binding(
-            get: { activeRecall != nil },
-            set: { if !$0 { activeRecall = nil } }
+            get: { !activeRecallBatch.isEmpty },
+            set: { if !$0 { activeRecallBatch = [] } }
         )) {
-            if let due = activeRecall {
-                RecallView(call: due.call, daysAgo: daysSince(due.call.resolvedAt)) {
-                    spacedRecall.recordReviewed(due.call, intervalIndex: due.intervalIndex)
+            if !activeRecallBatch.isEmpty {
+                RecallView(items: activeRecallBatch) {
+                    for item in activeRecallBatch {
+                        spacedRecall.recordReviewed(item.call, intervalIndex: item.intervalIndex)
+                    }
                 }
             }
         }
@@ -197,12 +199,30 @@ struct ContentView: View {
                     .transition(.opacity)
                 }
 
-                if let due = dueRecall {
+                if let insight = calibrationInsight {
+                    CalibrationInsightCard(
+                        insight: insight,
+                        onTap: {
+                            CalibrationInsightThrottle.recordShown(insight.signature)
+                            showYourCalls = true
+                        },
+                        onDismiss: {
+                            CalibrationInsightThrottle.recordShown(insight.signature)
+                        }
+                    )
+                    .transition(.opacity)
+                }
+
+                if !dueRecallBatch.isEmpty {
                     RecallCard(
-                        symbol: due.call.symbol,
-                        daysAgo: daysSince(due.call.resolvedAt),
-                        onTap: { activeRecall = due },
-                        onDismiss: { spacedRecall.recordReviewed(due.call, intervalIndex: due.intervalIndex) }
+                        symbols: dueRecallBatch.map(\.call.symbol),
+                        daysAgo: daysSince(dueRecallBatch.first?.call.resolvedAt),
+                        onTap: { activeRecallBatch = dueRecallBatch },
+                        onDismiss: {
+                            for item in dueRecallBatch {
+                                spacedRecall.recordReviewed(item.call, intervalIndex: item.intervalIndex)
+                            }
+                        }
                     )
                     .transition(.opacity)
                 }
@@ -458,11 +478,21 @@ struct ContentView: View {
     /// right now — computed fresh each time the home screen appears rather
     /// than pushed via notification, matching the app's deference to the
     /// user (this is a learning aid, not something to nag someone into).
-    private var dueRecall: (call: UserCall, intervalIndex: Int)? {
-        SpacedRecallEngine.due(
+    private var dueRecallBatch: [(call: UserCall, intervalIndex: Int)] {
+        SpacedRecallEngine.dueBatch(
             calls: viewModel.userCalls.calls,
             isReviewed: { spacedRecall.isReviewed($0, intervalIndex: $1) }
         )
+    }
+
+    /// A genuinely worth-knowing pattern in the user's own confidence-vs-
+    /// accuracy record, if the numbers currently show one and this exact
+    /// shape of finding hasn't already been shown.
+    private var calibrationInsight: CalibrationInsight? {
+        guard let insight = CalibrationInsightEngine.insight(from: viewModel.userCalls.report.byConfidence),
+              insight.signature != CalibrationInsightThrottle.lastShownSignature()
+        else { return nil }
+        return insight
     }
 
     private func daysSince(_ date: Date?) -> Int {

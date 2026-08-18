@@ -79,4 +79,72 @@ final class SpacedRecallEngineTests: XCTestCase {
         let c = call(daysAgoResolved: 30)
         XCTAssertNil(SpacedRecallEngine.due(calls: [c], isReviewed: { _, _ in true }, now: now, calendar: calendar))
     }
+
+    // MARK: - dueBatch (interleaved mixed review)
+
+    func testDueBatchEmptyWhenNoResolvedCalls() {
+        let result = SpacedRecallEngine.dueBatch(calls: [], isReviewed: { _, _ in false }, now: now, calendar: calendar)
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testDueBatchMixesDistinctSymbols() {
+        let calls = [
+            call(daysAgoResolved: 3, symbol: "AAPL"),
+            call(daysAgoResolved: 4, symbol: "BTC"),
+            call(daysAgoResolved: 5, symbol: "TSLA"),
+        ]
+        let result = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar, limit: 3)
+        XCTAssertEqual(Set(result.map(\.call.symbol)), ["AAPL", "BTC", "TSLA"])
+    }
+
+    func testDueBatchRespectsLimit() {
+        let calls = [
+            call(daysAgoResolved: 3, symbol: "AAPL"),
+            call(daysAgoResolved: 4, symbol: "BTC"),
+            call(daysAgoResolved: 5, symbol: "TSLA"),
+        ]
+        let result = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar, limit: 2)
+        XCTAssertEqual(result.count, 2)
+    }
+
+    func testDueBatchFallsBackToRepeatingSymbolWhenNoVarietyAvailable() {
+        // Two AAPL calls, both due at tier 0 — only one symbol exists at all,
+        // so the batch should still fill rather than stay short.
+        let calls = [
+            call(daysAgoResolved: 3, symbol: "AAPL"),
+            call(daysAgoResolved: 4, symbol: "AAPL"),
+        ]
+        let result = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar, limit: 2)
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.allSatisfy { $0.call.symbol == "AAPL" })
+    }
+
+    func testDueBatchOldestWithinTierFirstWhenSameSymbol() {
+        let calls = [
+            call(daysAgoResolved: 3, symbol: "AAPL"),
+            call(daysAgoResolved: 4, symbol: "AAPL"),
+        ]
+        let result = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar, limit: 1)
+        XCTAssertEqual(result.first?.call.symbol, "AAPL")
+        // daysAgoResolved 4 means it's been waiting longer than the 3-day one.
+        let resolvedDaysAgo4 = calendar.date(byAdding: .day, value: -4, to: now)!
+        XCTAssertEqual(result.first?.call.resolvedAt, resolvedDaysAgo4)
+    }
+
+    func testDueBatchSkipsAlreadyReviewedInterval() {
+        let calls = [call(daysAgoResolved: 3, symbol: "AAPL")]
+        let result = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, idx in idx == 0 }, now: now, calendar: calendar)
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testDueBatchSingleResultMatchesDue() {
+        let calls = [
+            call(daysAgoResolved: 3, symbol: "AAPL"),
+            call(daysAgoResolved: 10, symbol: "BTC"),
+        ]
+        let single = SpacedRecallEngine.due(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar)
+        let batch = SpacedRecallEngine.dueBatch(calls: calls, isReviewed: { _, _ in false }, now: now, calendar: calendar, limit: 1)
+        XCTAssertEqual(batch.first?.call.symbol, single?.call.symbol)
+        XCTAssertEqual(batch.first?.intervalIndex, single?.intervalIndex)
+    }
 }

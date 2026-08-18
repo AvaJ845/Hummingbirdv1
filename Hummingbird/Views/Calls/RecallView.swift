@@ -1,26 +1,42 @@
 import SwiftUI
 
-/// A predict-before-reveal memory check on one of the user's own past,
-/// already-resolved calls — the retrieval-practice half of Spaced Recall.
-/// Testing what you remember, then seeing the real answer, is what makes it
-/// stick (Roediger & Karpicke, 2006, "Test-Enhanced Learning"). Purely
-/// educational: nothing here is scored, ranked, or kept as a streak — the
-/// self-assessment exists only to make the retrieval attempt real, the way
-/// a flashcard app asks "did you know it?" before flipping the card.
+/// A predict-before-reveal memory check across one or more of the user's own
+/// past, already-resolved calls — the retrieval-practice half of Spaced
+/// Recall. Testing what you remember, then seeing the real answer, is what
+/// makes it stick (Roediger & Karpicke, 2006, "Test-Enhanced Learning").
+/// When there's more than one call due, they're stepped through in one
+/// mixed session — interleaving different symbols, rather than reviewing
+/// one repeatedly, is what strengthens retention (Rohrer & Taylor, 2007).
+/// Purely educational: nothing here is scored, ranked, or kept as a streak —
+/// self-assessment exists only to make the retrieval attempt real, the way a
+/// flashcard app asks "did you know it?" before flipping the card.
 struct RecallView: View {
-    let call: UserCall
-    let daysAgo: Int
+    let items: [(call: UserCall, intervalIndex: Int)]
     var onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var currentIndex = 0
     @State private var selfAssessment: SelfAssessment?
 
     private enum SelfAssessment { case right, wrong, unsure }
+
+    private var current: UserCall { items[currentIndex].call }
+    private var isLast: Bool { currentIndex == items.count - 1 }
+    private var daysAgo: Int {
+        guard let date = current.resolvedAt else { return 0 }
+        return Calendar.current.dateComponents([.day], from: date, to: Date()).day ?? 0
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 22) {
+                    if items.count > 1 {
+                        Text("\(currentIndex + 1) of \(items.count)")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+
                     header
 
                     if let selfAssessment {
@@ -53,7 +69,7 @@ struct RecallView: View {
                 .accessibilityHidden(true)
             Text("Remember this call?")
                 .font(.title2.weight(.bold))
-            Text("\(daysAgo) days ago, you called \(call.symbol.uppercased()) \(call.direction.title.lowercased()) — \(call.confidence.title.lowercased()).")
+            Text("\(daysAgo) days ago, you called \(current.symbol.uppercased()) \(current.direction.title.lowercased()) — \(current.confidence.title.lowercased()).")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -97,7 +113,7 @@ struct RecallView: View {
 
     @ViewBuilder private func reveal(_ assessment: SelfAssessment) -> some View {
         VStack(spacing: 14) {
-            if let correct = call.wasCorrect {
+            if let correct = current.wasCorrect {
                 Label(correct ? "You were right" : "You were off",
                       systemImage: correct ? "checkmark.circle.fill" : "xmark.circle.fill")
                     .font(.title3.weight(.bold))
@@ -108,8 +124,8 @@ struct RecallView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if let change = call.actualChange {
-                Text("\(call.symbol.uppercased()) actually moved \(change.asSignedPercent()).")
+            if let change = current.actualChange {
+                Text("\(current.symbol.uppercased()) actually moved \(change.asSignedPercent()).")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -124,13 +140,29 @@ struct RecallView: View {
             Text("A record of the past — never advice.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+
+            if !isLast {
+                Button {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        currentIndex += 1
+                        selfAssessment = nil
+                    }
+                } label: {
+                    Text("Next call")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+                .padding(.top, 8)
+            }
         }
         .accessibilityElement(children: .combine)
         .transition(.opacity)
     }
 
     private func feedbackText(for assessment: SelfAssessment) -> String {
-        guard let correct = call.wasCorrect else {
+        guard let correct = current.wasCorrect else {
             return "This one landed flat, so there was nothing to recall right or wrong."
         }
         switch (assessment, correct) {

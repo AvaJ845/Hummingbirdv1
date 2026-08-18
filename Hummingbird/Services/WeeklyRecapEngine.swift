@@ -37,7 +37,11 @@ enum WeeklyRecapEngine {
         if hasJournalActivity {
             body += " Your watchlist journal is ready too."
         }
-        return Digest(title: "Your week in calls", body: body)
+        // A question about the user's own data opens more often than a flat
+        // statement — the body underneath still states the real numbers
+        // plainly, so this is a hook, never a withheld fact (Loewenstein,
+        // 1994, "The Psychology of Curiosity," Psychological Bulletin).
+        return Digest(title: "How did your week go?", body: body)
     }
 }
 

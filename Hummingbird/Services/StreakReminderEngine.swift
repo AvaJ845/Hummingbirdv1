@@ -21,7 +21,10 @@ enum StreakReminderEngine {
         guard !calledToday else { return nil }
 
         let body = "Don't lose your \(streak)-day streak — call something before the day's out. A record of showing up, never advice."
-        return Digest(title: "Your streak needs you", body: body)
+        // A question opens more often than a flat statement (Loewenstein,
+        // 1994, "The Psychology of Curiosity") — the body still states the
+        // real stakes plainly underneath, so this is a hook, not a tease.
+        return Digest(title: "Still time to keep it going?", body: body)
     }
 }
 
