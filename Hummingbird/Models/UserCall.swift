@@ -28,6 +28,28 @@ enum CallConfidence: String, Codable, CaseIterable, Sendable, Hashable, Identifi
     }
 }
 
+/// Which kind of reasoning drove the call — a second, orthogonal axis of
+/// self-knowledge alongside confidence. Writing down *why* before the
+/// outcome is known, then reviewing that reasoning against what happened, is
+/// a well-established lever for improving judgment over time (Klein, 2007,
+/// "Performing a Project Premortem," Harvard Business Review; Ericsson,
+/// Krampe & Tesch-Römer, 1993, on deliberate practice — reviewing the
+/// reasoning behind a decision, not just its outcome, is what turns
+/// experience into skill).
+enum CallReason: String, Codable, CaseIterable, Sendable, Hashable, Identifiable {
+    case earnings, macro, technical, news, gutFeeling
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .earnings: "Earnings"
+        case .macro: "Macro / rates"
+        case .technical: "Technical pattern"
+        case .news: "News"
+        case .gutFeeling: "Gut feeling"
+        }
+    }
+}
+
 /// One call the user logged *before* seeing the sketch — their own judgment,
 /// later resolved against the real price. Stored on-device only.
 struct UserCall: Codable, Identifiable, Hashable, Sendable {
@@ -39,6 +61,9 @@ struct UserCall: Codable, Identifiable, Hashable, Sendable {
     let spotAtCall: Double
     let direction: CallDirection
     let confidence: CallConfidence
+    /// Optional so older calls (logged before this field existed) decode
+    /// cleanly — treated as "not tagged" rather than a decode failure.
+    var reason: CallReason? = nil
     /// What each method predicted for this asset over this call's horizon,
     /// snapshotted at call time (method id → Higher/Lower). Lets us score you
     /// head-to-head against the methods on the very same calls. Optional so
@@ -93,6 +118,16 @@ struct ConfidenceCalibration: Identifiable, Equatable, Sendable {
     var id: String { confidence.rawValue }
 }
 
+/// Hit rate for one reasoning tag — which kinds of reasoning have actually
+/// held up. Untagged calls (logged before this existed, or left blank) are
+/// excluded rather than bucketed as their own category.
+struct ReasonCalibration: Identifiable, Equatable, Sendable {
+    let reason: CallReason
+    let decided: Int
+    let hitRate: Double
+    var id: String { reason.rawValue }
+}
+
 /// One method's head-to-head record against the user, over the same calls.
 struct MethodTally: Identifiable, Equatable, Sendable {
     let methodId: String
@@ -119,8 +154,9 @@ struct UserCallReport: Equatable, Sendable {
     let resolved: Int
     let overall: CallAccuracy
     let byConfidence: [ConfidenceCalibration]
+    let byReason: [ReasonCalibration]
 
     static let empty = UserCallReport(total: 0, resolved: 0,
                                       overall: CallAccuracy(decided: 0, correct: 0),
-                                      byConfidence: [])
+                                      byConfidence: [], byReason: [])
 }

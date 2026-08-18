@@ -35,7 +35,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
         case .youVsMethods:
             "See whether your own calls are beating the app’s methods — scored on the very same calls."
         case .honestRecord:
-            "Your accuracy by confidence — did feeling sure mean being right? — and how calibrated you’ve been over time."
+            "Your accuracy by confidence and by reasoning — did feeling sure mean being right, and which kind of thinking actually held up."
         case .keepEveryCall:
             "Your full call history, not just the recent handful, plus a shareable summary of your record."
         case .weeklyJournal:

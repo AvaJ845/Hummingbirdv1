@@ -27,6 +27,7 @@ struct YourCallsView: View {
                 overallSection
                 vsMethodsSection
                 if !report.byConfidence.isEmpty { confidenceSection }
+                if !report.byReason.isEmpty { reasoningSection }
                 if !store.pending.isEmpty { pendingSection }
                 resolvedSection
                 if entitlements.isPro {
@@ -149,6 +150,46 @@ struct YourCallsView: View {
             Text("Did feeling sure mean being right?")
         } footer: {
             Text("If “Confident” isn't higher than “Hunch,” that's worth knowing — confidence and accuracy aren't the same thing.")
+        }
+    }
+
+    /// Which kind of reasoning has actually held up — a second axis of
+    /// self-knowledge alongside confidence. Free shows what you've been
+    /// tagging (no numbers to protect); Pro unlocks whether each kind of
+    /// reasoning has actually paid off.
+    @ViewBuilder private var reasoningSection: some View {
+        Section {
+            if entitlements.isPro {
+                ForEach(report.byReason) { row in
+                    HStack {
+                        Text(row.reason.title).font(.body)
+                        Spacer()
+                        Text(pct(row.hitRate)).font(.body.weight(.semibold)).monospacedDigit()
+                        Text("·  \(row.decided)").font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(row.reason.title): right \(pct(row.hitRate)) of the time, \(row.decided) calls")
+                }
+            } else {
+                ForEach(report.byReason) { row in
+                    HStack {
+                        Text(row.reason.title).font(.body)
+                        Spacer()
+                        Text("\(row.decided) call\(row.decided == 1 ? "" : "s")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Button(action: onUnlock) {
+                    Label("See accuracy by reason with Pro", systemImage: "sparkles")
+                        .font(.subheadline).foregroundStyle(Theme.brandGradient)
+                }
+            }
+        } header: {
+            Text("What kind of reasoning holds up?")
+        } footer: {
+            if entitlements.isPro {
+                Text("Which kind of thinking has actually paid off — a record of the past, never advice.")
+            }
         }
     }
 

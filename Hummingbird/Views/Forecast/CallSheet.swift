@@ -5,11 +5,12 @@ import SwiftUI
 /// advice, never a promise.
 struct CallSheet: View {
     let symbol: String
-    let onCommit: (CallDirection, CallConfidence, Int) -> Void
+    let onCommit: (CallDirection, CallConfidence, CallReason?, Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var direction: CallDirection?
     @State private var confidence: CallConfidence = .fairlySure
+    @State private var reason: CallReason?
     /// A short window keeps the loop tight — independent of the sketch horizon.
     @State private var callHorizon = 7
 
@@ -52,6 +53,19 @@ struct CallSheet: View {
                         .pickerStyle(.segmented)
                     }
 
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("What's driving this call?").font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text("Optional").font(.caption).foregroundStyle(.tertiary)
+                        }
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 8) {
+                            ForEach(CallReason.allCases) { level in
+                                reasonChip(level)
+                            }
+                        }
+                    }
+
                     Text("A record of your own call, logged before the sketch. Being right before doesn't mean you'll be right again — never advice.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -59,7 +73,7 @@ struct CallSheet: View {
 
                     Button {
                         guard let direction else { return }
-                        onCommit(direction, confidence, callHorizon)
+                        onCommit(direction, confidence, reason, callHorizon)
                         dismiss()
                     } label: {
                         Text("Lock in call · see the sketch")
@@ -102,5 +116,22 @@ struct CallSheet: View {
             .foregroundStyle(selected ? tint : .primary)
         }
         .accessibilityLabel("\(label)\(selected ? ", selected" : "")")
+    }
+
+    private func reasonChip(_ value: CallReason) -> some View {
+        let selected = reason == value
+        return Button {
+            reason = selected ? nil : value
+        } label: {
+            Text(value.title)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10).padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(selected ? Theme.accent.opacity(0.16) : Color(.secondarySystemGroupedBackground),
+                            in: Capsule())
+                .overlay(Capsule().strokeBorder(selected ? Theme.accent : .clear, lineWidth: 1.5))
+                .foregroundStyle(selected ? Theme.accent : .primary)
+        }
+        .accessibilityLabel("\(value.title)\(selected ? ", selected" : "")")
     }
 }

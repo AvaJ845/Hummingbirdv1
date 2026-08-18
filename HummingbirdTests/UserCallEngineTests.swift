@@ -7,11 +7,11 @@ final class UserCallEngineTests: XCTestCase {
     private let created = Date(timeIntervalSince1970: 1_700_000_000)
 
     private func call(_ direction: CallDirection, _ confidence: CallConfidence,
-                      spot: Double = 100, horizon: Int = 7,
+                      reason: CallReason? = nil, spot: Double = 100, horizon: Int = 7,
                       actual: Double? = nil) -> UserCall {
         UserCall(id: UUID(), symbol: "AAPL", assetClass: .stock, createdAt: created,
                  horizonDays: horizon, spotAtCall: spot, direction: direction,
-                 confidence: confidence, actualClose: actual,
+                 confidence: confidence, reason: reason, actualClose: actual,
                  resolvedAt: actual == nil ? nil : created)
     }
 
@@ -68,6 +68,27 @@ final class UserCallEngineTests: XCTestCase {
         XCTAssertEqual(report.byConfidence.first { $0.confidence == .confident }?.hitRate ?? 0, 0.5, accuracy: 1e-9)
         XCTAssertEqual(report.byConfidence.first { $0.confidence == .hunch }?.hitRate ?? 0, 0.5, accuracy: 1e-9)
         XCTAssertEqual(report.byConfidence.first { $0.confidence == .fairlySure }?.hitRate ?? 0, 1.0, accuracy: 1e-9)
+    }
+
+    func testReportReasonCalibrationExcludesUntagged() {
+        let calls = [
+            call(.higher, .confident, reason: .technical, actual: 110),  // correct
+            call(.higher, .confident, reason: .technical, actual: 95),   // wrong → Technical: 1/2
+            call(.lower, .fairlySure, reason: .gutFeeling, actual: 90),  // correct → Gut feeling: 1/1
+            call(.higher, .hunch, actual: 90),                           // untagged, excluded
+        ]
+        let report = UserCallEngine.report(calls)
+
+        XCTAssertEqual(Set(report.byReason.map(\.reason)), [.technical, .gutFeeling])
+        XCTAssertEqual(report.byReason.first { $0.reason == .technical }?.hitRate ?? 0, 0.5, accuracy: 1e-9)
+        XCTAssertEqual(report.byReason.first { $0.reason == .gutFeeling }?.hitRate ?? 0, 1.0, accuracy: 1e-9)
+        // Best hit rate first.
+        XCTAssertEqual(report.byReason.first?.reason, .gutFeeling)
+    }
+
+    func testReportReasonCalibrationEmptyWhenNoneTagged() {
+        let calls = [call(.higher, .hunch, actual: 110)]
+        XCTAssertTrue(UserCallEngine.report(calls).byReason.isEmpty)
     }
 
     private func snapshotCall(actual: Double) -> UserCall {

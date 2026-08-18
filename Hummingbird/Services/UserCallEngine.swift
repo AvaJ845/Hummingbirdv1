@@ -42,8 +42,19 @@ enum UserCallEngine {
         }
         .sorted { $0.confidence.order < $1.confidence.order }
 
+        let byReason: [ReasonCalibration] = CallReason.allCases.compactMap { reason in
+            let flags = resolved.filter { $0.reason == reason }.compactMap(\.wasCorrect)
+            guard !flags.isEmpty else { return nil }
+            return ReasonCalibration(
+                reason: reason,
+                decided: flags.count,
+                hitRate: Double(flags.filter { $0 }.count) / Double(flags.count)
+            )
+        }
+        .sorted { $0.hitRate > $1.hitRate }
+
         return UserCallReport(total: calls.count, resolved: resolved.count,
-                              overall: overall, byConfidence: byConfidence)
+                              overall: overall, byConfidence: byConfidence, byReason: byReason)
     }
 
     /// You vs. the methods — your directional hit rate against each method's, on

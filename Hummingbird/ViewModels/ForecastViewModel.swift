@@ -200,7 +200,7 @@ final class ForecastViewModel {
     /// A direction + confidence + horizon the user committed *before* the sketch
     /// reveals. The call horizon is its own short window (a tight return loop),
     /// independent of the sketch's display horizon.
-    typealias PendingCall = (direction: CallDirection, confidence: CallConfidence, horizonDays: Int)
+    typealias PendingCall = (direction: CallDirection, confidence: CallConfidence, reason: CallReason?, horizonDays: Int)
 
     func run(loggingCall: PendingCall? = nil) {
         let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -516,6 +516,7 @@ final class ForecastViewModel {
             calls.resolve(using: fetched)
             if let loggingCall, let spot = forecast?.lastClose {
                 calls.record(direction: loggingCall.direction, confidence: loggingCall.confidence,
+                             reason: loggingCall.reason,
                              horizonDays: loggingCall.horizonDays, symbol: fetched.symbol,
                              assetClass: fetched.assetClass, spot: spot,
                              methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))

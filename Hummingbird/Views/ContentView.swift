@@ -122,8 +122,8 @@ struct ContentView: View {
             SettingsView(entitlements: entitlements, scorecard: viewModel.scorecard, userCalls: viewModel.userCalls)
         }
         .sheet(isPresented: $showCallSheet) {
-            CallSheet(symbol: viewModel.symbol) { direction, confidence, horizonDays in
-                viewModel.run(loggingCall: (direction, confidence, horizonDays))
+            CallSheet(symbol: viewModel.symbol) { direction, confidence, reason, horizonDays in
+                viewModel.run(loggingCall: (direction, confidence, reason, horizonDays))
             }
         }
         .sheet(isPresented: $showYourCalls) {

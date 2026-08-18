@@ -20,11 +20,11 @@ final class CallsCoordinator {
 
     /// Log the user's pre-sketch call (with each method's snapshotted direction)
     /// and schedule its resolution reminder.
-    func record(direction: CallDirection, confidence: CallConfidence, horizonDays: Int,
+    func record(direction: CallDirection, confidence: CallConfidence, reason: CallReason? = nil, horizonDays: Int,
                 symbol: String, assetClass: AssetClass, spot: Double,
                 methodDirections: [String: CallDirection]) {
         let recorded = store.record(symbol: symbol, assetClass: assetClass, direction: direction,
-                                    confidence: confidence, horizonDays: horizonDays, spot: spot,
+                                    confidence: confidence, reason: reason, horizonDays: horizonDays, spot: spot,
                                     methodDirections: methodDirections)
         Task { await scheduleReminder(recorded) }
     }

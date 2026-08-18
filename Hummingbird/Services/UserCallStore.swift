@@ -43,13 +43,13 @@ final class UserCallStore {
     /// Log a call the user made before revealing the sketch.
     @discardableResult
     func record(symbol: String, assetClass: AssetClass, direction: CallDirection,
-                confidence: CallConfidence, horizonDays: Int, spot: Double,
+                confidence: CallConfidence, reason: CallReason? = nil, horizonDays: Int, spot: Double,
                 methodDirections: [String: CallDirection]? = nil,
                 now: Date = Date()) -> UserCall {
         let call = UserCall(
             id: UUID(), symbol: symbol, assetClass: assetClass, createdAt: now,
             horizonDays: horizonDays, spotAtCall: spot, direction: direction,
-            confidence: confidence, methodDirections: methodDirections,
+            confidence: confidence, reason: reason, methodDirections: methodDirections,
             actualClose: nil, resolvedAt: nil
         )
         calls.append(call)

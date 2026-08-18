@@ -113,7 +113,7 @@ final class ForecastViewModelModelWiringTests: XCTestCase {
             userCalls: calls
         )
         viewModel.horizon = 30                       // sketch horizon
-        viewModel.run(loggingCall: (.higher, .confident, 7))  // call's own short window
+        viewModel.run(loggingCall: (.higher, .confident, .technical, 7))  // call's own short window
         try? await Task.sleep(nanoseconds: 120_000_000)
 
         XCTAssertTrue(viewModel.hasResult)
