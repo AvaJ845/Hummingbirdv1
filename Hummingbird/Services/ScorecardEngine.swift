@@ -21,6 +21,7 @@ enum ScorecardEngine {
         symbol: String,
         assetClass: AssetClass,
         reliabilityAtCreation: Int? = nil,
+        regimeAtCreation: VolatilityRegime? = nil,
         now: Date = Date()
     ) -> SketchRecord? {
         guard let spot = forecast.lastClose, !forecast.points.isEmpty else { return nil }
@@ -60,7 +61,8 @@ enum ScorecardEngine {
             createdAt: now,
             spotAtCreation: spot,
             projections: projections.sorted { $0.targetDate < $1.targetDate },
-            reliabilityAtCreation: reliabilityAtCreation
+            reliabilityAtCreation: reliabilityAtCreation,
+            regimeAtCreation: regimeAtCreation
         )
     }
 
@@ -119,6 +121,26 @@ enum ScorecardEngine {
     /// sketches exist).
     static func bestModel(_ records: [SketchRecord], minResolved: Int = 2) -> ModelPerformance? {
         modelPerformances(records, minResolved: minResolved).first
+    }
+
+    /// Method performance segmented by the market regime in effect when each
+    /// sketch was made — a method that tracks well in calm stretches isn't
+    /// always the one that tracks well when things get choppy. Only records
+    /// carrying a `regimeAtCreation` count; one entry per regime that has
+    /// enough resolved sketches, calm → high order.
+    static func regimePerformances(_ records: [SketchRecord], minResolved: Int = 2) -> [RegimePerformance] {
+        let byRegime = Dictionary(grouping: records.compactMap { record -> (VolatilityRegime, SketchRecord)? in
+            guard let regime = record.regimeAtCreation else { return nil }
+            return (regime, record)
+        }, by: \.0).mapValues { $0.map(\.1) }
+
+        let order: [VolatilityRegime] = [.calm, .normal, .elevated, .high]
+        return order.compactMap { regime in
+            guard let recs = byRegime[regime] else { return nil }
+            let performances = modelPerformances(recs, minResolved: minResolved)
+            guard let best = performances.first else { return nil }
+            return RegimePerformance(regime: regime, best: best, breakdown: performances)
+        }
     }
 
     // MARK: - Accuracy Report Card

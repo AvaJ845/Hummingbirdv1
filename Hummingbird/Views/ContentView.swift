@@ -318,6 +318,7 @@ struct ContentView: View {
                         assetSymbol: series.symbol,
                         best: best,
                         breakdown: viewModel.sketchContext.modelBreakdown,
+                        regimeBreakdown: viewModel.sketchContext.regimeBreakdown,
                         isPro: entitlements.isPro,
                         currentModelId: viewModel.model.strategy.rawValue,
                         onUse: { applyRecommendedModel($0) },

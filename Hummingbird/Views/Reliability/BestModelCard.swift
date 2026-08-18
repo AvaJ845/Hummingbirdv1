@@ -8,6 +8,7 @@ struct BestModelCard: View {
     let assetSymbol: String
     let best: ModelPerformance
     let breakdown: [ModelPerformance]
+    var regimeBreakdown: [RegimePerformance] = []
     let isPro: Bool
     let currentModelId: String
     var onUse: (String) -> Void = { _ in }
@@ -82,6 +83,26 @@ struct BestModelCard: View {
                             Text(errorText(perf.medianError)).font(.caption.weight(.semibold))
                                 .monospacedDigit().foregroundStyle(.secondary)
                         }
+                    }
+                }
+                .padding(.top, 2)
+            }
+
+            if !regimeBreakdown.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("By market conditions")
+                        .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(regimeBreakdown) { perf in
+                        HStack {
+                            Text(perf.regime.shortLabel).font(.caption)
+                            Spacer()
+                            Text(perf.best.modelName).font(.caption.weight(.semibold))
+                            Text(errorText(perf.best.medianError)).font(.caption2)
+                                .monospacedDigit().foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(perf.regime.shortLabel) conditions: \(perf.best.modelName) tracked closest, \(errorText(perf.best.medianError)) typical error")
                     }
                 }
                 .padding(.top, 2)

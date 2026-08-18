@@ -5,7 +5,7 @@ import SwiftUI
 /// context that helps a user read a sketch with appropriate caution. Pairs
 /// with the gap-handling in the forecaster: when things are wild, widen your
 /// mental error bars.
-enum VolatilityRegime: String, Sendable {
+enum VolatilityRegime: String, Codable, Sendable {
     case calm, normal, elevated, high
 
     /// Only elevated/high are worth interrupting the user for.
@@ -17,6 +17,17 @@ enum VolatilityRegime: String, Sendable {
         case .normal: "Moving normally"
         case .elevated: "Choppier than usual"
         case .high: "Very choppy right now"
+        }
+    }
+
+    /// Compact form for table-style rows (e.g. regime-segmented breakdowns)
+    /// where `title`'s narrative phrasing would run long.
+    var shortLabel: String {
+        switch self {
+        case .calm: "Calm"
+        case .normal: "Normal"
+        case .elevated: "Elevated"
+        case .high: "High volatility"
         }
     }
 

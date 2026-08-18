@@ -44,6 +44,12 @@ struct SketchRecord: Codable, Identifiable, Hashable, Sendable {
     /// The reliability score (0–100) shown when this sketch was made. Groundwork
     /// for reliability calibration; optional so older records decode cleanly.
     var reliabilityAtCreation: Int?
+    /// The volatility regime in effect when this sketch was made — lets later
+    /// analysis ask "which method tracked best in calm vs. turbulent
+    /// conditions," not just "which method tracked best overall." Optional so
+    /// older records (made before this was tracked) simply don't count toward
+    /// a regime bucket, same graceful-degradation as `reliabilityAtCreation`.
+    var regimeAtCreation: VolatilityRegime?
 
     var isResolved: Bool { projections.contains { $0.isResolved } }
     var isFullyResolved: Bool { !projections.isEmpty && projections.allSatisfy { $0.isResolved } }
@@ -76,6 +82,16 @@ struct ModelPerformance: Identifiable, Equatable, Sendable {
     let resolvedCount: Int
     let medianError: Double   // fraction, e.g. 0.021
     var id: String { modelId }
+}
+
+/// Method performance segmented by the market conditions in effect when each
+/// sketch was made — the method that tracks best in a calm stretch isn't
+/// always the one that tracks best when things get choppy.
+struct RegimePerformance: Identifiable, Equatable, Sendable {
+    let regime: VolatilityRegime
+    let best: ModelPerformance
+    let breakdown: [ModelPerformance]   // best first
+    var id: String { regime.rawValue }
 }
 
 /// Typical error at one sampled horizon (e.g. "7 days ahead → 2.3%").

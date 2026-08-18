@@ -49,8 +49,10 @@ final class SketchScorecardStore {
 
     /// Record a freshly completed sketch (deduped to ~one per asset+model per
     /// 12 h so auto-refresh doesn't spam the ledger).
-    func record(forecast: Forecast, symbol: String, assetClass: AssetClass, now: Date = Date()) {
-        guard let new = ScorecardEngine.makeRecord(forecast: forecast, symbol: symbol, assetClass: assetClass, now: now)
+    func record(forecast: Forecast, symbol: String, assetClass: AssetClass,
+                regime: VolatilityRegime? = nil, now: Date = Date()) {
+        guard let new = ScorecardEngine.makeRecord(forecast: forecast, symbol: symbol, assetClass: assetClass,
+                                                    regimeAtCreation: regime, now: now)
         else { return }
 
         let duplicate = records.contains { existing in
@@ -101,6 +103,11 @@ final class SketchScorecardStore {
     /// Per-method track record for this asset, best first.
     func modelPerformances(for symbol: String, assetClass: AssetClass) -> [ModelPerformance] {
         ScorecardEngine.modelPerformances(records(for: symbol, assetClass: assetClass))
+    }
+
+    /// Per-method track record for this asset, segmented by market regime.
+    func regimePerformances(for symbol: String, assetClass: AssetClass) -> [RegimePerformance] {
+        ScorecardEngine.regimePerformances(records(for: symbol, assetClass: assetClass))
     }
 
     func records(for symbol: String, assetClass: AssetClass) -> [SketchRecord] {

@@ -77,11 +77,12 @@ final class ScorecardEngineTests: XCTestCase {
         XCTAssertFalse(ScorecardEngine.resolve(future, against: futureSeries).isResolved)
     }
 
-    private func resolvedRecord(model: String, ape: Double) -> SketchRecord {
+    private func resolvedRecord(model: String, ape: Double, regime: VolatilityRegime? = nil) -> SketchRecord {
         SketchRecord(id: UUID(), symbol: "AAPL", assetClass: .stock, modelId: model, modelName: model.capitalized,
                      createdAt: Date(), spotAtCreation: 100,
                      projections: [SketchProjection(targetDate: Date(timeIntervalSince1970: 1),
-                                                    projectedMean: 100, actualClose: 100 / (1 - ape), resolvedAt: Date())])
+                                                    projectedMean: 100, actualClose: 100 / (1 - ape), resolvedAt: Date())],
+                     regimeAtCreation: regime)
     }
 
     func testBestModelPicksLowestErrorAndRespectsMinResolved() {
@@ -121,5 +122,35 @@ final class ScorecardEngineTests: XCTestCase {
         XCTAssertEqual(summary.totalSketches, 3)
         XCTAssertEqual(summary.resolvedSketches, 2)
         XCTAssertNotNil(summary.medianError)
+    }
+
+    // MARK: - Regime-segmented performance
+
+    func testRegimePerformancesExcludesRecordsWithoutARegime() {
+        let records = [
+            resolvedRecord(model: "holt", ape: 0.02, regime: nil),
+            resolvedRecord(model: "holt", ape: 0.02, regime: nil),
+        ]
+        XCTAssertTrue(ScorecardEngine.regimePerformances(records).isEmpty)
+    }
+
+    func testRegimePerformancesSegmentsByRegimeIndependently() {
+        let calm =
+            [resolvedRecord(model: "drift", ape: 0.01, regime: .calm), resolvedRecord(model: "drift", ape: 0.01, regime: .calm)]
+            + [resolvedRecord(model: "holt", ape: 0.05, regime: .calm), resolvedRecord(model: "holt", ape: 0.05, regime: .calm)]
+        let high =
+            [resolvedRecord(model: "holt", ape: 0.02, regime: .high), resolvedRecord(model: "holt", ape: 0.02, regime: .high)]
+            + [resolvedRecord(model: "drift", ape: 0.09, regime: .high), resolvedRecord(model: "drift", ape: 0.09, regime: .high)]
+
+        let result = ScorecardEngine.regimePerformances(calm + high)
+
+        XCTAssertEqual(result.map(\.regime), [.calm, .high])   // canonical calm→high order
+        XCTAssertEqual(result.first { $0.regime == .calm }?.best.modelId, "drift")
+        XCTAssertEqual(result.first { $0.regime == .high }?.best.modelId, "holt", "the same method needn't win in both regimes")
+    }
+
+    func testRegimePerformancesRespectsMinResolvedPerBucket() {
+        let records = [resolvedRecord(model: "drift", ape: 0.02, regime: .calm)]   // only 1 scored
+        XCTAssertTrue(ScorecardEngine.regimePerformances(records).isEmpty)
     }
 }

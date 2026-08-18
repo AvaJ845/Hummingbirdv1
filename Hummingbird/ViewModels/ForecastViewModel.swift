@@ -347,13 +347,15 @@ final class ForecastViewModel {
             return
         }
 
-        scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass)
+        let regime = RegimeClassifier.classify(series: series)
+        scorecard.record(forecast: forecast, symbol: series.symbol, assetClass: series.assetClass, regime: regime)
         scorecard.resolve(using: series)
 
         var context = sketchContext          // preserve the current reliability
-        context.regime = RegimeClassifier.classify(series: series)
+        context.regime = regime
         context.bestModel = scorecard.bestModel(for: series.symbol, assetClass: series.assetClass)
         context.modelBreakdown = scorecard.modelPerformances(for: series.symbol, assetClass: series.assetClass)
+        context.regimeBreakdown = scorecard.regimePerformances(for: series.symbol, assetClass: series.assetClass)
         sketchContext = context
 
         refreshReliabilityIfNeeded(series: series, forecast: forecast)

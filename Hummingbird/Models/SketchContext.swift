@@ -9,4 +9,5 @@ struct SketchContext: Equatable {
     var reliability: ReliabilityScore?
     var bestModel: ModelPerformance?
     var modelBreakdown: [ModelPerformance] = []
+    var regimeBreakdown: [RegimePerformance] = []
 }
