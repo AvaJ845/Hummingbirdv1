@@ -16,7 +16,7 @@ settings:
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
     MARKETING_VERSION: "1.16.0"
-    CURRENT_PROJECT_VERSION: "22"
+    CURRENT_PROJECT_VERSION: "23"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
@@ -105,6 +105,15 @@ targets:
           # with the TestFlight app instead of replacing it. Release is untouched.
           PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev
           APP_DISPLAY_NAME: Hummingbird Dev
+        Release:
+          # Manual App Store signing, pinned to the installed distribution
+          # profile — Automatic signing does not reliably pick up the Apple
+          # Distribution cert for archive builds, so this is set explicitly
+          # to survive every `xcodegen generate` without a GUI re-fix.
+          CODE_SIGN_STYLE: Manual
+          DEVELOPMENT_TEAM: 3L683975L8
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: Hummingbird App Store
     postBuildScripts:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
@@ -140,6 +149,11 @@ targets:
           # Match the app's Debug identity so the embedded widget stays a valid
           # prefix (com.avaresearch.hummingbird.dev.widget).
           PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.widget
+        Release:
+          CODE_SIGN_STYLE: Manual
+          DEVELOPMENT_TEAM: 3L683975L8
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: hummingbird.widget
     postBuildScripts:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
@@ -171,12 +185,24 @@ targets:
         CODE_SIGN_ENTITLEMENTS: HummingbirdWatch/HummingbirdWatch.entitlements
         TARGETED_DEVICE_FAMILY: "4"
         SDKROOT: watchos
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Companion watch apps aren't independently installable products —
+        # without this, the archive silently duplicates HummingbirdWatch.app
+        # as a second top-level product alongside Hummingbird.app, which
+        # breaks Xcode's archive metadata (ApplicationProperties) generation
+        # and makes the whole archive unrecognizable as distributable.
+        SKIP_INSTALL: YES
       configs:
         Debug:
           # Mirror the iOS Debug identity so the pairing (WKCompanionAppBundleIdentifier)
           # stays valid against the side-by-side dev install.
           PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.watchkitapp
           WK_COMPANION_BUNDLE_ID: com.avaresearch.hummingbird.dev
+        Release:
+          CODE_SIGN_STYLE: Manual
+          DEVELOPMENT_TEAM: 3L683975L8
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: hummingbird.watchkitapp
     postBuildScripts:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
@@ -211,6 +237,11 @@ targets:
       configs:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.dev.watchkitapp.widget
+        Release:
+          CODE_SIGN_STYLE: Manual
+          DEVELOPMENT_TEAM: 3L683975L8
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: L8.com.avaresearch.hummingbird.watchkitapp.widget
     postBuildScripts:
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
