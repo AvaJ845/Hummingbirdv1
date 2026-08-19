@@ -5,6 +5,7 @@ import SwiftUI
 struct HummingbirdWidgetBundle: WidgetBundle {
     var body: some Widget {
         WatchlistWidget()
+        TrackRecordWidget()
         SketchLiveActivity()
     }
 }

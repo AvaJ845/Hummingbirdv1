@@ -29,6 +29,19 @@ final class WatchlistRefreshTests: XCTestCase {
         XCTAssertEqual(Set(shared.map(\.title)), ["Bitcoin", "AAPL"])
     }
 
+    func testSharedStorageTrackRecordRoundTrips() {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        XCTAssertNil(SharedStorage.trackRecord(defaults: defaults))
+
+        let snapshot = TrackRecordSnapshot(streak: 5, hitRate: 0.6, decided: 10, updatedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        SharedStorage.saveTrackRecord(snapshot, defaults: defaults)
+
+        let read = SharedStorage.trackRecord(defaults: defaults)
+        XCTAssertEqual(read?.streak, 5)
+        XCTAssertEqual(read?.hitRate, 0.6)
+        XCTAssertEqual(read?.decided, 10)
+    }
+
     func testBackgroundTaskIdentifierMatchesInfoPlist() {
         // Guards against the scheduler identifier drifting from the Info.plist entry.
         XCTAssertEqual(BackgroundRefresh.taskIdentifier, "com.avaresearch.hummingbird.refresh")

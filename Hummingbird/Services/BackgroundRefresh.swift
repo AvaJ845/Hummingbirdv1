@@ -1,5 +1,6 @@
 import Foundation
 import BackgroundTasks
+import WidgetKit
 
 /// Schedules and performs periodic off-screen refreshes of the watchlist so the
 /// widget stays fresh and movement alerts fire even when the app is closed.
@@ -55,6 +56,17 @@ enum BackgroundRefresh {
 
         if !Task.isCancelled {
             await EconomicCalendarCall.rescheduleIfEnabled(calls: callStore.calls)
+        }
+
+        if !Task.isCancelled {
+            let report = callStore.report
+            SharedStorage.saveTrackRecord(TrackRecordSnapshot(
+                streak: callStore.currentStreak,
+                hitRate: report.overall.hitRate,
+                decided: report.overall.decided,
+                updatedAt: Date()
+            ))
+            WidgetCenter.shared.reloadTimelines(ofKind: TrackRecordWidgetKind.identifier)
         }
     }
 }

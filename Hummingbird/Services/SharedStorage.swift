@@ -1,10 +1,13 @@
 import Foundation
 
-/// Read-only access to the watchlist snapshots the app writes to the App Group.
-/// Used by the widget (and could back Siri) without pulling in the full store.
+/// Shared App Group storage the main app writes to and the widget/watch
+/// extensions read from — the watchlist side is read-only here (the app
+/// writes it via `WatchlistStore`); the track-record side is read *and*
+/// written here since it has no dedicated store of its own.
 enum SharedStorage {
     static let snapshotsKey = "hummingbird.watchlist.snapshots"
     static let itemsKey = "hummingbird.watchlist.items"
+    static let trackRecordKey = "hummingbird.trackRecord.snapshot"
 
     static func snapshots(defaults: UserDefaults = AppGroup.defaults) -> [WatchlistSnapshot] {
         guard let data = defaults.data(forKey: snapshotsKey),
@@ -17,5 +20,17 @@ enum SharedStorage {
         guard let data = defaults.data(forKey: itemsKey),
               let list = try? JSONDecoder().decode([WatchlistItem].self, from: data) else { return [] }
         return list
+    }
+
+    /// Persist the latest track-record snapshot (streak + accuracy) for the
+    /// widget and watch complication to read.
+    static func saveTrackRecord(_ snapshot: TrackRecordSnapshot, defaults: UserDefaults = AppGroup.defaults) {
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        defaults.set(data, forKey: trackRecordKey)
+    }
+
+    static func trackRecord(defaults: UserDefaults = AppGroup.defaults) -> TrackRecordSnapshot? {
+        guard let data = defaults.data(forKey: trackRecordKey) else { return nil }
+        return try? JSONDecoder().decode(TrackRecordSnapshot.self, from: data)
     }
 }

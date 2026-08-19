@@ -15,8 +15,8 @@ settings:
     # now that watchOS targets exist in the same project — each watchOS target
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
-    MARKETING_VERSION: "1.15.0"
-    CURRENT_PROJECT_VERSION: "21"
+    MARKETING_VERSION: "1.16.0"
+    CURRENT_PROJECT_VERSION: "22"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
@@ -123,6 +123,7 @@ targets:
       - path: Hummingbird/Models/Asset.swift
       - path: Hummingbird/Models/WatchlistItem.swift
       - path: Hummingbird/Models/SketchActivityAttributes.swift
+      - path: Hummingbird/Models/TrackRecordSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
       - path: Hummingbird/Views/Watchlist/Sparkline.swift
     settings:
@@ -155,6 +156,7 @@ targets:
       - path: Hummingbird/Support/Formatters.swift
       - path: Hummingbird/Models/Asset.swift
       - path: Hummingbird/Models/WatchlistItem.swift
+      - path: Hummingbird/Models/TrackRecordSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
     dependencies:
       - target: HummingbirdWatchWidget
@@ -194,6 +196,7 @@ targets:
       - path: Hummingbird/Support/Formatters.swift
       - path: Hummingbird/Models/Asset.swift
       - path: Hummingbird/Models/WatchlistItem.swift
+      - path: Hummingbird/Models/TrackRecordSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
     settings:
       base:

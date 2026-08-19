@@ -1,5 +1,6 @@
 import SwiftUI
 import StoreKit
+import WidgetKit
 
 struct ContentView: View {
     @Environment(\.requestReview) private var requestReview
@@ -166,11 +167,26 @@ struct ContentView: View {
         .task {
             await entitlements.loadProducts()
             await viewModel.resolveDueCalls()
+            updateTrackRecordSnapshot()
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
             literacyQuestion = literacy.questionForThisWeek()
         }
+    }
+
+    /// Keep the widget's/watch complication's track-record snapshot fresh on
+    /// app open — same raw participation streak `BackgroundRefresh` writes in
+    /// the background, so the two paths never disagree with each other.
+    private func updateTrackRecordSnapshot() {
+        let report = viewModel.userCalls.report
+        SharedStorage.saveTrackRecord(TrackRecordSnapshot(
+            streak: viewModel.userCalls.currentStreak,
+            hitRate: report.overall.hitRate,
+            decided: report.overall.decided,
+            updatedAt: Date()
+        ))
+        WidgetCenter.shared.reloadTimelines(ofKind: TrackRecordWidgetKind.identifier)
     }
 
     /// Keep the widget/watchlist snapshot fresh whenever a watched asset is projected.

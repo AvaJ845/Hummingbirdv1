@@ -5,5 +5,6 @@ import SwiftUI
 struct HummingbirdWatchWidgetBundle: WidgetBundle {
     var body: some Widget {
         WatchlistComplication()
+        TrackRecordComplication()
     }
 }
