@@ -6,10 +6,19 @@ struct YourCallsView: View {
     @Bindable var store: UserCallStore
     @Bindable var entitlements: EntitlementStore
     var service: any MarketDataProviding = MarketDataService()
+    /// When the user first engaged a weekly lesson — drives the honest
+    /// lessons→calibration read. Nil = never engaged (insight stays hidden).
+    var lessonsStartedAt: Date? = nil
     var onUnlock: () -> Void = {}
     @State private var shareImage: Image?
 
     private var report: UserCallReport { store.report }
+
+    /// Correlation-only read of whether calls improved after the lessons began.
+    /// Nil unless there's a real sample on both sides — so it never shows noise.
+    private var lessonsInsight: LessonsCalibrationInsight? {
+        LessonsCalibrationEngine.insight(calls: store.calls, lessonsStartedAt: lessonsStartedAt)
+    }
     private var freeResolvedLimit: Int { 5 }
 
     /// The streak shown to the user, including a Pro subscriber's one grace
@@ -25,6 +34,7 @@ struct YourCallsView: View {
                 emptyState
             } else {
                 overallSection
+                if let insight = lessonsInsight { lessonsSection(insight) }
                 vsMethodsSection
                 if !report.byConfidence.isEmpty { confidenceSection }
                 if !report.byReason.isEmpty { reasoningSection }
@@ -87,6 +97,53 @@ struct YourCallsView: View {
                     .foregroundStyle(Theme.warning)
             }
         }
+    }
+
+    /// Honest, *shown-not-rewarded* read of whether engaging with the weekly
+    /// lessons tracked with better calls. Correlation only — never a claim the
+    /// lessons caused it, and gated so it can't surface on a thin sample.
+    private func lessonsSection(_ insight: LessonsCalibrationInsight) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Since the weekly lessons", systemImage: "graduationcap")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.brandGradient)
+
+                HStack(spacing: 8) {
+                    Text(pct(insight.beforeRate)).foregroundStyle(.secondary)
+                    Image(systemName: "arrow.right").font(.footnote).foregroundStyle(.tertiary)
+                    Text(pct(insight.afterRate))
+                        .foregroundStyle(insight.improved ? Theme.up : .primary)
+                    Text(deltaText(insight))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(deltaColor(insight))
+                }
+                .font(.title3.weight(.semibold)).monospacedDigit()
+
+                Text("\(insight.beforeDecided) calls before · \(insight.afterDecided) after")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 2)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Since the weekly lessons, your calls went from \(pct(insight.beforeRate)) right to \(pct(insight.afterRate)) right, across \(insight.beforeDecided) calls before and \(insight.afterDecided) after.")
+        } footer: {
+            Text("How your calls compare before and after you started the weekly questions. Correlation, not proof — the lessons might help, or you might just be practicing more. Never advice.")
+        }
+    }
+
+    /// Signed change in hit rate, in percentage *points* (a difference of two
+    /// rates is points, not percent — saying "%" here would be misleading).
+    private func deltaText(_ insight: LessonsCalibrationInsight) -> String {
+        let points = (insight.delta * 100).rounded()
+        if points > 0 { return "+\(Int(points)) pts" }
+        if points < 0 { return "−\(Int(abs(points))) pts" }
+        return "no change"
+    }
+
+    private func deltaColor(_ insight: LessonsCalibrationInsight) -> Color {
+        if insight.delta > 0.0005 { return Theme.up }
+        if insight.delta < -0.0005 { return Theme.warning }
+        return .secondary
     }
 
     @ViewBuilder private var vsMethodsSection: some View {

@@ -150,6 +150,7 @@ struct ContentView: View {
                 YourCallsView(
                     store: viewModel.userCalls,
                     entitlements: entitlements,
+                    lessonsStartedAt: literacy.firstEngagedAt,
                     onUnlock: {
                         showYourCalls = false
                         viewModel.pendingPaywallReason = "Pro keeps your full call record and a shareable summary of how calibrated you've been."
