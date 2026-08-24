@@ -3,13 +3,26 @@ import Charts
 
 /// Two honest lines over time: your portfolio value (solid) vs. holding your
 /// day-one basket untouched (dashed). The gap between them is the value your
-/// trading added or destroyed. End-of-day only — a record of the past, never
-/// advice.
+/// trading added or destroyed. Scrub to read either line on any date. EOD only
+/// — a record of the past, never advice.
 struct PaperPortfolioChart: View {
     let points: [PortfolioValuePoint]
+    @State private var selectedDate: Date?
+
+    /// Nearest sample to the scrub position.
+    private var selected: PortfolioValuePoint? {
+        guard let selectedDate else { return nil }
+        return points.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+    /// What the readout row shows: the scrubbed point, else the latest.
+    private var readout: PortfolioValuePoint? { selected ?? points.last }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let readout { readoutRow(readout) }
+
             Chart {
                 ForEach(points) { point in
                     LineMark(x: .value("Date", point.date), y: .value("Value", point.hold),
@@ -24,6 +37,15 @@ struct PaperPortfolioChart: View {
                         .foregroundStyle(Theme.accent)
                         .lineStyle(StrokeStyle(lineWidth: 2.5))
                         .interpolationMethod(.catmullRom)
+                }
+                if let selected {
+                    RuleMark(x: .value("Date", selected.date))
+                        .foregroundStyle(Color.secondary.opacity(0.35))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                    PointMark(x: .value("Date", selected.date), y: .value("Value", selected.hold))
+                        .foregroundStyle(Color.secondary).symbolSize(70)
+                    PointMark(x: .value("Date", selected.date), y: .value("Value", selected.you))
+                        .foregroundStyle(Theme.accent).symbolSize(90)
                 }
             }
             .chartYAxis {
@@ -42,10 +64,33 @@ struct PaperPortfolioChart: View {
                     AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
                 }
             }
+            // Native selection: SwiftUI arbitrates the scrub gesture against the
+            // enclosing scroll view, so vertical scrolling still works.
+            .chartXSelection(value: $selectedDate)
             .frame(height: 190)
+            .sensoryFeedback(.selection, trigger: selected?.date)
             .accessibilityLabel(accessibilityText)
 
             legend
+        }
+    }
+
+    private func readoutRow(_ point: PortfolioValuePoint) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            valueColumn("You", point.you, Theme.accent)
+            valueColumn("Buy-and-hold", point.hold, .secondary)
+            Spacer()
+            Text(point.date, format: .dateTime.month(.abbreviated).day())
+                .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func valueColumn(_ title: String, _ value: Double, _ color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption2).foregroundStyle(.secondary)
+            Text(value.asCurrency(maximumFractionDigits: 0))
+                .font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(color)
         }
     }
 
