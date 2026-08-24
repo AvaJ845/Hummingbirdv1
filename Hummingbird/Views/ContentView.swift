@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var showOnboarding = false
     @State private var showCallSheet = false
     @State private var showYourCalls = false
+    @State private var paper = PaperPortfolioStore()
+    @State private var showPaperPortfolio = false
     @State private var spacedRecall = SpacedRecallStore()
     @State private var activeRecallBatch: [(call: UserCall, intervalIndex: Int)] = []
     @State private var literacy = WeeklyLiteracyStore()
@@ -129,11 +131,31 @@ struct ContentView: View {
                 viewModel.run(loggingCall: (direction, confidence, reason, horizonDays))
             }
         }
+        .sheet(isPresented: $showPaperPortfolio) {
+            NavigationStack {
+                PaperPortfolioView(
+                    store: paper,
+                    entitlements: entitlements,
+                    currentSymbol: viewModel.symbol,
+                    currentAssetClass: viewModel.assetClass,
+                    onUnlock: {
+                        showPaperPortfolio = false
+                        viewModel.pendingPaywallReason = "Pro charts your practice trades against buy-and-hold over time."
+                    }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { showPaperPortfolio = false }
+                    }
+                }
+            }
+        }
         .sheet(isPresented: $showYourCalls) {
             NavigationStack {
                 YourCallsView(
                     store: viewModel.userCalls,
                     entitlements: entitlements,
+                    lessonsStartedAt: literacy.firstEngagedAt,
                     onUnlock: {
                         showYourCalls = false
                         viewModel.pendingPaywallReason = "Pro keeps your full call record and a shareable summary of how calibrated you've been."
@@ -167,6 +189,7 @@ struct ContentView: View {
         .task {
             await entitlements.loadProducts()
             await viewModel.resolveDueCalls()
+            await paper.revalueDue(using: MarketDataService())
             updateTrackRecordSnapshot()
         }
         .onAppear {
@@ -217,6 +240,11 @@ struct ContentView: View {
                     ) { showYourCalls = true }
                     .transition(.opacity)
                 }
+
+                PaperPortfolioCard(
+                    report: paper.report,
+                    hasStarted: paper.hasStarted
+                ) { showPaperPortfolio = true }
 
                 if let insight = calibrationInsight {
                     CalibrationInsightCard(
@@ -429,6 +457,7 @@ struct ContentView: View {
             if phase == .active {
                 if viewModel.hasResult { viewModel.beginAutoRefresh() }
                 Task { await viewModel.resolveDueCalls() }
+                Task { await paper.revalueDue(using: MarketDataService()) }
             } else if phase != .active {
                 viewModel.endAutoRefresh()
             }

@@ -68,13 +68,26 @@ final class WeeklyLiteracyStoreTests: XCTestCase {
         XCTAssertFalse(store.answered)
     }
 
+    @MainActor func testGoesSilentAfterAnsweringWithinSameWeek() {
+        // The reported bug: "This week's question" re-appeared every time Home
+        // came forward, and answering never silenced it. Once answered (or
+        // dismissed), re-asking within the same week must return nil.
+        let store = WeeklyLiteracyStore(defaults: defaults)
+        XCTAssertNotNil(store.questionForThisWeek(now: weekOne, calendar: calendar))
+        store.recordShown()
+        let laterSameWeek = calendar.date(byAdding: .day, value: 2, to: weekOne)!
+        XCTAssertNil(store.questionForThisWeek(now: laterSameWeek, calendar: calendar))
+    }
+
     @MainActor func testPersistsAcrossInstances() {
         let first = WeeklyLiteracyStore(defaults: defaults)
         let question = first.questionForThisWeek(now: weekOne, calendar: calendar)
         first.recordShown()
 
+        // A fresh instance in the same week honors the persisted answered
+        // state: still silent, and the id is remembered as shown.
         let second = WeeklyLiteracyStore(defaults: defaults)
-        XCTAssertEqual(second.questionForThisWeek(now: weekOne, calendar: calendar)?.id, question?.id)
+        XCTAssertNil(second.questionForThisWeek(now: weekOne, calendar: calendar))
         XCTAssertTrue(second.shownIDs.contains(question!.id))
     }
 }
