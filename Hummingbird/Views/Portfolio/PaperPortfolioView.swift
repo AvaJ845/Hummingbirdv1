@@ -78,6 +78,8 @@ struct PaperPortfolioView: View {
             } else {
                 holdingsSection
             }
+            readsSection
+            closedTradesSection
             actionsSection
             shareSection
             disclaimerSection
@@ -284,6 +286,76 @@ struct PaperPortfolioView: View {
         .background(tint.opacity(0.14), in: Capsule())
         .accessibilityHidden(true)
     }
+
+    // MARK: - Directional reads (lean scoring) + closed trades
+
+    @ViewBuilder private var readsSection: some View {
+        if report.leanAccuracy.decided > 0, let rate = report.leanAccuracy.hitRate {
+            Section {
+                HStack {
+                    Label("Your directional reads", systemImage: "scope").font(.subheadline)
+                    Spacer()
+                    Text("\(pctText(rate)) right").font(.subheadline.weight(.semibold)).monospacedDigit()
+                    Text("· \(report.leanAccuracy.correct)/\(report.leanAccuracy.decided)")
+                        .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Your directional reads: \(pctText(rate)) right, \(report.leanAccuracy.correct) of \(report.leanAccuracy.decided).")
+            } footer: {
+                Text("How often the price moved the way you leaned — your read, scored apart from your timing.")
+            }
+        }
+    }
+
+    @ViewBuilder private var closedTradesSection: some View {
+        let closed = store.portfolio.positions.filter { !$0.isOpen }
+            .sorted { ($0.closedAt ?? .distantPast) > ($1.closedAt ?? .distantPast) }
+        if !closed.isEmpty {
+            Section("Closed trades") {
+                ForEach(closed) { closedRow($0) }
+            }
+        }
+    }
+
+    private func closedRow(_ pos: PaperPosition) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(pos.symbol.uppercased()).font(.body.weight(.semibold))
+                    leanResultChip(pos)
+                }
+                Text("leaned \(pos.direction.title) · in \(pos.entryPrice.asCurrency()) → out \((pos.exitPrice ?? pos.entryPrice).asCurrency())")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let realized = pos.realizedReturn {
+                Text(realized.asSignedPercent()).font(.body.weight(.semibold)).monospacedDigit()
+                    .foregroundStyle(abs(realized) < 0.00005 ? .secondary : (realized > 0 ? Theme.up : Theme.down))
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(pos.symbol.uppercased()), leaned \(pos.direction.title), \(leanResultText(pos)), realized \(pos.realizedReturn?.asSignedPercent() ?? "flat").")
+    }
+
+    private func leanResultChip(_ pos: PaperPosition) -> some View {
+        let color: Color = pos.leanWasRight == true ? Theme.up : (pos.leanWasRight == false ? Theme.down : .secondary)
+        let icon = pos.leanWasRight == true ? "checkmark" : (pos.leanWasRight == false ? "xmark" : "minus")
+        return HStack(spacing: 2) { Image(systemName: icon); Text(leanResultText(pos)) }
+            .font(.caption2.weight(.semibold)).foregroundStyle(color)
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(color.opacity(0.14), in: Capsule())
+            .accessibilityHidden(true)
+    }
+
+    private func leanResultText(_ pos: PaperPosition) -> String {
+        switch pos.leanWasRight {
+        case .some(true): "read right"
+        case .some(false): "read wrong"
+        case .none: "push"
+        }
+    }
+
+    private func pctText(_ fraction: Double) -> String { String(format: "%.0f%%", fraction * 100) }
 
     // MARK: - Start / all-cash state
 

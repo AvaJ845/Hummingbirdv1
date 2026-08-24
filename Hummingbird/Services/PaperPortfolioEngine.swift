@@ -105,11 +105,14 @@ enum PaperPortfolioEngine {
     /// your day-one basket untouched.
     static func report(_ portfolio: PaperPortfolio, prices: [String: Double],
                        calendar: Calendar = .current) -> PaperReport {
-        PaperReport(
+        let leanFlags = portfolio.positions.compactMap(\.leanWasRight)   // closed + decidable
+        let leanAccuracy = CallAccuracy(decided: leanFlags.count, correct: leanFlags.filter { $0 }.count)
+        return PaperReport(
             value: currentValue(portfolio, prices: prices),
             startingCash: portfolio.startingCash,
             openPositionCount: portfolio.openPositions.count,
-            comparison: comparison(portfolio, prices: prices, calendar: calendar)
+            comparison: comparison(portfolio, prices: prices, calendar: calendar),
+            leanAccuracy: leanAccuracy
         )
     }
 }

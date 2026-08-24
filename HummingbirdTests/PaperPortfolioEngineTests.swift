@@ -156,4 +156,37 @@ final class PaperPortfolioEngineTests: XCTestCase {
         XCTAssertEqual(report.openPositionCount, 1)
         XCTAssertEqual(report.comparison.holdValue, 12_000, accuracy: 1e-6)
     }
+
+    // MARK: - Lean scoring
+
+    func testLeanWasRightAcrossCases() {
+        // higher lean, sold higher -> right
+        XCTAssertEqual(position("A", entry: 100, shares: 1, opened: day1, exit: 120, closed: day3,
+                                direction: .higher).leanWasRight, true)
+        // higher lean, sold lower -> wrong
+        XCTAssertEqual(position("A", entry: 100, shares: 1, opened: day1, exit: 90, closed: day3,
+                                direction: .higher).leanWasRight, false)
+        // lower lean, sold lower -> right
+        XCTAssertEqual(position("A", entry: 100, shares: 1, opened: day1, exit: 90, closed: day3,
+                                direction: .lower).leanWasRight, true)
+        // flat exit -> push (nil)
+        XCTAssertNil(position("A", entry: 100, shares: 1, opened: day1, exit: 100, closed: day3,
+                              direction: .higher).leanWasRight)
+        // still open -> nil
+        XCTAssertNil(position("A", entry: 100, shares: 1, opened: day1, direction: .higher).leanWasRight)
+    }
+
+    func testReportLeanAccuracyOverClosedLots() {
+        let p = portfolio(cash: 0, [
+            position("A", entry: 100, shares: 1, opened: day1, exit: 120, closed: day3, direction: .higher), // right
+            position("B", entry: 100, shares: 1, opened: day1, exit: 90,  closed: day3, direction: .higher), // wrong
+            position("C", entry: 100, shares: 1, opened: day1, exit: 80,  closed: day3, direction: .lower),  // right
+            position("D", entry: 100, shares: 1, opened: day1, exit: 100, closed: day3, direction: .higher), // push (excluded)
+            position("E", entry: 100, shares: 1, opened: day1, direction: .higher),                           // open (excluded)
+        ])
+        let report = PaperPortfolioEngine.report(p, prices: [:], calendar: cal)
+        XCTAssertEqual(report.leanAccuracy.decided, 3)   // pushes + open excluded
+        XCTAssertEqual(report.leanAccuracy.correct, 2)
+        XCTAssertEqual(report.leanAccuracy.hitRate ?? 0, 2.0/3.0, accuracy: 1e-9)
+    }
 }

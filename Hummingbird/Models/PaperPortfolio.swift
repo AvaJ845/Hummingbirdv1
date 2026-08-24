@@ -28,6 +28,20 @@ struct PaperPosition: Codable, Identifiable, Hashable, Sendable {
 
     /// Market value of this lot at a given price.
     func value(at price: Double) -> Double { shares * price }
+
+    /// Was the stated lean right — did the price move the way you leaned between
+    /// buy and sell? Nil while open, or on a flat exit (a push). Measures your
+    /// directional *read*, separate from whether the sell was well-timed.
+    var leanWasRight: Bool? {
+        guard let exit = exitPrice, exit != entryPrice else { return nil }
+        return (direction == .higher) == (exit > entryPrice)
+    }
+
+    /// Realized percent gain/loss on a closed lot (nil while open).
+    var realizedReturn: Double? {
+        guard let exit = exitPrice, entryPrice != 0 else { return nil }
+        return (exit - entryPrice) / entryPrice
+    }
 }
 
 /// The user's on-device practice portfolio. One per device in slice 1.
@@ -96,4 +110,7 @@ struct PaperReport: Equatable, Sendable {
     let startingCash: Double
     let openPositionCount: Int
     let comparison: BuyAndHoldComparison
+    /// How often your directional lean was right, over closed (decidable) lots —
+    /// your read, scored separately from your P/L.
+    let leanAccuracy: CallAccuracy
 }
