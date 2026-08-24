@@ -67,17 +67,36 @@ final class PaperPortfolioStore {
         return position
     }
 
-    /// Close an open lot at `price`; proceeds return to cash. No-op if the lot
-    /// isn't found or is already closed.
+    /// Sell an open lot at `price` — all of it, or `shares` of it. Proceeds
+    /// return to cash. A partial sell splits the lot: the open remainder keeps
+    /// the lot's id, and the sold portion becomes its own closed lot (so its
+    /// lean and realized P/L are recorded). No-op if the lot isn't found, is
+    /// already closed, or `shares` exceeds what's held. `shares == nil` sells
+    /// the whole lot (the original behavior).
     @discardableResult
-    func sell(positionID: UUID, price: Double, now: Date = Date()) -> Bool {
+    func sell(positionID: UUID, shares soldShares: Double? = nil, price: Double, now: Date = Date()) -> Bool {
         guard price > 0,
               let idx = portfolio.positions.firstIndex(where: { $0.id == positionID }),
               portfolio.positions[idx].isOpen
         else { return false }
-        portfolio.positions[idx].closedAt = now
-        portfolio.positions[idx].exitPrice = price
-        portfolio.cash += portfolio.positions[idx].shares * price
+        let lot = portfolio.positions[idx]
+        let qty = soldShares ?? lot.shares
+        guard qty > 0, qty <= lot.shares + 1e-9 else { return false }
+
+        if qty >= lot.shares - 1e-9 {
+            portfolio.positions[idx].closedAt = now
+            portfolio.positions[idx].exitPrice = price
+        } else {
+            let remaining = PaperPosition(id: lot.id, symbol: lot.symbol, assetClass: lot.assetClass,
+                openedAt: lot.openedAt, entryPrice: lot.entryPrice, shares: lot.shares - qty,
+                direction: lot.direction, reason: lot.reason, closedAt: nil, exitPrice: nil)
+            let sold = PaperPosition(id: UUID(), symbol: lot.symbol, assetClass: lot.assetClass,
+                openedAt: lot.openedAt, entryPrice: lot.entryPrice, shares: qty,
+                direction: lot.direction, reason: lot.reason, closedAt: now, exitPrice: price)
+            portfolio.positions[idx] = remaining
+            portfolio.positions.append(sold)
+        }
+        portfolio.cash += qty * price
         save()
         return true
     }

@@ -54,6 +54,31 @@ final class PaperPortfolioStoreTests: XCTestCase {
         XCTAssertFalse(store.portfolio.positions.isEmpty)   // closed lot is retained
     }
 
+    @MainActor func testPartialSellSplitsLot() {
+        let store = PaperPortfolioStore(defaults: defaults)
+        let lot = store.buy(symbol: "AAPL", assetClass: .stock, cashAmount: 1_000, price: 100, direction: .higher)!
+        // sell half (5 of 10 shares) at 150
+        XCTAssertTrue(store.sell(positionID: lot.id, shares: 5, price: 150))
+        // cash: 9000 + 5*150 = 9750
+        XCTAssertEqual(store.portfolio.cash, 9_750, accuracy: 1e-6)
+        // one open remainder (5 sh, same id) + one closed lot (5 sh)
+        let open = store.portfolio.openPositions
+        XCTAssertEqual(open.count, 1)
+        XCTAssertEqual(open.first?.id, lot.id)
+        XCTAssertEqual(open.first?.shares ?? 0, 5, accuracy: 1e-9)
+        let closed = store.portfolio.positions.filter { !$0.isOpen }
+        XCTAssertEqual(closed.count, 1)
+        XCTAssertEqual(closed.first?.shares ?? 0, 5, accuracy: 1e-9)
+        XCTAssertEqual(closed.first?.exitPrice, 150)
+    }
+
+    @MainActor func testCannotSellMoreThanHeld() {
+        let store = PaperPortfolioStore(defaults: defaults)
+        let lot = store.buy(symbol: "AAPL", assetClass: .stock, cashAmount: 1_000, price: 100, direction: .higher)!
+        XCTAssertFalse(store.sell(positionID: lot.id, shares: 999, price: 150))
+        XCTAssertEqual(store.portfolio.openPositions.count, 1)   // unchanged
+    }
+
     @MainActor func testSellUnknownOrClosedIsNoOp() {
         let store = PaperPortfolioStore(defaults: defaults)
         let lot = store.buy(symbol: "AAPL", assetClass: .stock, cashAmount: 1_000, price: 100, direction: .higher)!

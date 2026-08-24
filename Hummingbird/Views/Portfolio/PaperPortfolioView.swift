@@ -105,8 +105,12 @@ struct PaperPortfolioView: View {
             if let pos = pendingSell {
                 let price = currentPrice(pos)
                 let fresh = store.latestPrices[pos.assetKey] != nil
-                Button(fresh ? "Sell at \(price.asCurrency())" : "Sell at cost · \(price.asCurrency())") {
+                Button(fresh ? "Sell all at \(price.asCurrency())" : "Sell all at cost · \(price.asCurrency())") {
                     _ = store.sell(positionID: pos.id, price: price)
+                    pendingSell = nil
+                }
+                Button("Sell half at \(price.asCurrency())") {
+                    _ = store.sell(positionID: pos.id, shares: pos.shares / 2, price: price)
                     pendingSell = nil
                 }
                 Button("Cancel", role: .cancel) { pendingSell = nil }
