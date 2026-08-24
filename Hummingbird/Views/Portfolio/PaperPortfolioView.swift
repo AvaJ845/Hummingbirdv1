@@ -138,6 +138,9 @@ struct PaperPortfolioView: View {
                     .foregroundStyle(Theme.brandGradient)
                 Text("Total value · \(store.portfolio.cash.asCurrency()) cash")
                     .font(.caption).foregroundStyle(.secondary)
+                if let periodText {
+                    Text(periodText).font(.caption2).foregroundStyle(.tertiary)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
@@ -343,13 +346,19 @@ struct PaperPortfolioView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            if let realized = pos.realizedReturn {
-                Text(realized.asSignedPercent()).font(.body.weight(.semibold)).monospacedDigit()
-                    .foregroundStyle(abs(realized) < 0.00005 ? .secondary : (realized > 0 ? Theme.up : Theme.down))
+            VStack(alignment: .trailing, spacing: 2) {
+                if let realized = pos.realizedReturn {
+                    Text(realized.asSignedPercent()).font(.body.weight(.semibold)).monospacedDigit()
+                        .foregroundStyle(abs(realized) < 0.00005 ? .secondary : (realized > 0 ? Theme.up : Theme.down))
+                }
+                if let closedAt = pos.closedAt {
+                    Text("sold \(closedAt.formatted(.dateTime.month(.abbreviated).day()))")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(pos.symbol.uppercased()), leaned \(pos.direction.title), \(leanResultText(pos)), realized \(pos.realizedReturn?.asSignedPercent() ?? "flat").")
+        .accessibilityLabel("\(pos.symbol.uppercased()), leaned \(pos.direction.title), \(leanResultText(pos)), realized \(pos.realizedReturn?.asSignedPercent() ?? "flat")\(pos.closedAt.map { ", sold \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? "").")
     }
 
     private func leanResultChip(_ pos: PaperPosition) -> some View {
@@ -434,14 +443,23 @@ struct PaperPortfolioView: View {
         }
     }
 
+    private var practiceStart: Date? { store.portfolio.positions.map(\.openedAt).min() }
+
+    private var periodText: String? {
+        guard let start = practiceStart else { return nil }
+        let days = max(1, Calendar.current.dateComponents([.day], from: start, to: Date()).day ?? 0)
+        return "over \(days) day\(days == 1 ? "" : "s") · since \(start.formatted(.dateTime.month(.abbreviated).day()))"
+    }
+
     private var shareRenderKey: String {
         let c = report.comparison
-        return "\(store.hasStarted)-\(Int(report.value))-\(Int(c.edge * 10000))-\(c.tradeCount)"
+        return "\(store.hasStarted)-\(Int(report.value))-\(Int(c.edge * 10000))-\(c.tradeCount)-\(Int((marketReturn ?? 0) * 10000))"
     }
 
     @MainActor private func renderShareImage() -> Image? {
         guard store.hasStarted else { return nil }
-        let renderer = ImageRenderer(content: PaperPortfolioShareCard(report: report))
+        let renderer = ImageRenderer(content: PaperPortfolioShareCard(
+            report: report, marketReturn: marketReturn, startDate: practiceStart))
         renderer.scale = 3
         guard let uiImage = renderer.uiImage else { return nil }
         return Image(uiImage: uiImage)

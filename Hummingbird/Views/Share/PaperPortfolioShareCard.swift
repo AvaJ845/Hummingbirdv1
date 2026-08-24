@@ -7,8 +7,18 @@ import SwiftUI
 /// against other users anywhere on the card.
 struct PaperPortfolioShareCard: View {
     let report: PaperReport
+    /// Return of the same starting cash in the market (S&P), if available.
+    var marketReturn: Double? = nil
+    /// When the practice began (earliest buy), for the period line.
+    var startDate: Date? = nil
 
     private var comparison: BuyAndHoldComparison { report.comparison }
+
+    private var periodText: String? {
+        guard let startDate else { return nil }
+        let days = max(1, Calendar.current.dateComponents([.day], from: startDate, to: Date()).day ?? 0)
+        return "over \(days) day\(days == 1 ? "" : "s") · since \(startDate.formatted(.dateTime.month(.abbreviated).day()))"
+    }
 
     private var isHolding: Bool { comparison.tradeCount == 0 || abs(comparison.edge) < 0.0005 }
 
@@ -40,15 +50,24 @@ struct PaperPortfolioShareCard: View {
                     .font(.subheadline).foregroundStyle(.white.opacity(0.65))
             }
 
-            HStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
                 label("You", comparison.yourReturn.asSignedPercent())
                 Spacer()
                 label("Buy-and-hold", comparison.holdReturn.asSignedPercent())
+                if let marketReturn {
+                    Spacer()
+                    label("Market (S&P)", marketReturn.asSignedPercent())
+                }
             }
 
-            if comparison.tradeCount > 0 {
-                Text("\(comparison.tradeCount) trade\(comparison.tradeCount == 1 ? "" : "s") vs. 0 — activity rarely wins.")
-                    .font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.75))
+            VStack(alignment: .leading, spacing: 4) {
+                if comparison.tradeCount > 0 {
+                    Text("\(comparison.tradeCount) trade\(comparison.tradeCount == 1 ? "" : "s") vs. 0 — activity rarely wins.")
+                        .font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.75))
+                }
+                if let periodText {
+                    Text(periodText).font(.caption2).foregroundStyle(.white.opacity(0.5))
+                }
             }
 
             Divider().overlay(.white.opacity(0.15))

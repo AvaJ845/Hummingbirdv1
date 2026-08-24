@@ -18,7 +18,7 @@ struct OnboardingView: View {
              body: "Predict Higher or Lower — and how sure you are — before you see the sketch. Hummingbird keeps an honest score of your own calls over time."),
         Page(symbol: "trophy.fill",
              title: "See if you beat the methods",
-             body: "Once your calls resolve against real prices, see how you did — and whether you're beating the app's own methods on the same calls."),
+             body: "Once your calls resolve against real prices, see how you did — and whether you're beating the app's own methods on the same calls. There's also a practice portfolio to test whether your trades beat simply buying and holding."),
         Page(symbol: "scribble.variable",
              title: "Sketches, not predictions",
              body: "It also draws simple paths from public prices and shows how wrong it's been. A record of the past — never advice, never a signal."),
