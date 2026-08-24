@@ -63,6 +63,7 @@ struct PaperPortfolioView: View {
     @State private var showBuy = false
     @State private var pendingSell: PaperPosition?
     @State private var showReset = false
+    @State private var shareImage: Image?
 
     private let service = MarketDataService()
 
@@ -78,12 +79,14 @@ struct PaperPortfolioView: View {
                 holdingsSection
             }
             actionsSection
+            shareSection
             disclaimerSection
         }
         .navigationTitle("Practice portfolio")
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.revalueDue(using: service) }
         .refreshable { await store.revalueDue(using: service, force: true) }
+        .task(id: shareRenderKey) { shareImage = renderShareImage() }
         .sheet(isPresented: $showBuy) {
             OpenPositionSheet(
                 cash: store.portfolio.cash,
@@ -327,6 +330,34 @@ struct PaperPortfolioView: View {
                 Text("You've reached the practice limit of \(PaperPortfolioStore.maxPositions) positions.")
             }
         }
+    }
+
+    // MARK: - Share (Pro)
+
+    @ViewBuilder private var shareSection: some View {
+        if entitlements.isPro, store.hasStarted, let shareImage {
+            Section {
+                ShareLink(item: shareImage,
+                          preview: SharePreview("My Hummingbird practice record", image: shareImage)) {
+                    Label("Share your record", systemImage: "square.and.arrow.up")
+                }
+                .tint(Theme.accentAlt)
+                .accessibilityHint("Shares how your practice trading compares to buy-and-hold, with the not-advice note included")
+            }
+        }
+    }
+
+    private var shareRenderKey: String {
+        let c = report.comparison
+        return "\(store.hasStarted)-\(Int(report.value))-\(Int(c.edge * 10000))-\(c.tradeCount)"
+    }
+
+    @MainActor private func renderShareImage() -> Image? {
+        guard store.hasStarted else { return nil }
+        let renderer = ImageRenderer(content: PaperPortfolioShareCard(report: report))
+        renderer.scale = 3
+        guard let uiImage = renderer.uiImage else { return nil }
+        return Image(uiImage: uiImage)
     }
 
     private var disclaimerSection: some View {
