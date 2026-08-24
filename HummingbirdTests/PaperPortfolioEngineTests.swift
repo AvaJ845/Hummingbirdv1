@@ -147,6 +147,28 @@ final class PaperPortfolioEngineTests: XCTestCase {
         XCTAssertLessThan(pts.last!.you, pts.last!.hold)             // lagging buy-and-hold
     }
 
+    // Market line: startingCash into the S&P on day one, held.
+    func testValueSeriesMarketLine() {
+        let d0 = utc.startOfDay(for: day1)
+        let d1 = d0.addingTimeInterval(86_400), d2 = d0.addingTimeInterval(2 * 86_400)
+        var hist = aaplHistory([(d0, 100), (d1, 110), (d2, 120)])
+        hist["Stock:spy"] = PriceSeries(symbol: "SPY", assetClass: .stock,
+            points: [PricePoint(date: d0, close: 400), PricePoint(date: d1, close: 420), PricePoint(date: d2, close: 440)],
+            isSample: false)
+        let p = portfolio(cash: 5_000, [position("AAPL", entry: 100, shares: 50, opened: d0)])
+
+        let pts = PaperPortfolioEngine.valueSeries(p, histories: hist, now: d2, calendar: utc)
+        XCTAssertEqual(pts.first?.market ?? 0, 10_000, accuracy: 1e-6)   // 10000 * 400/400
+        XCTAssertEqual(pts.last?.market ?? 0, 11_000, accuracy: 1e-6)    // 10000 * 440/400
+    }
+
+    func testValueSeriesMarketNilWithoutSpy() {
+        let d0 = utc.startOfDay(for: day1); let d2 = d0.addingTimeInterval(2 * 86_400)
+        let hist = aaplHistory([(d0, 100), (d2, 120)])
+        let p = portfolio(cash: 5_000, [position("AAPL", entry: 100, shares: 50, opened: d0)])
+        XCTAssertNil(PaperPortfolioEngine.valueSeries(p, histories: hist, now: d2, calendar: utc).last?.market)
+    }
+
     // Report surfaces value + the buy-and-hold comparison (reason calibration is
     // deliberately kept on calls, not the portfolio).
     func testReportSurfacesValueAndComparison() {

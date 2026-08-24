@@ -163,10 +163,21 @@ struct PaperPortfolioView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text("Your return \(c.yourReturn.asSignedPercent()) · holding your first picks \(c.holdReturn.asSignedPercent())")
                 .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            if let market = marketReturn {
+                Text("The market (S&P) \(market.asSignedPercent()) — index funds are hard to beat.")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(vsHoldHeadline)
+    }
+
+    /// Return of the starting cash if it had gone into the market (S&P) on day
+    /// one. Nil until the market history loads.
+    private var marketReturn: Double? {
+        guard let market = valuePoints.last?.market, report.startingCash != 0 else { return nil }
+        return (market - report.startingCash) / report.startingCash
     }
 
     private var vsHoldHeadline: String {

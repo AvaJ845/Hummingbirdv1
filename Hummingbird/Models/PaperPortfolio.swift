@@ -99,6 +99,10 @@ struct PortfolioValuePoint: Identifiable, Equatable, Sendable {
     let date: Date
     let you: Double
     let hold: Double
+    /// Your starting cash put into the market (S&P) on day one and held — an
+    /// asset-class-neutral "would an index fund have beaten me?" line. Nil when
+    /// no market history is available.
+    var market: Double? = nil
 }
 
 /// The practice portfolio's honest record. Reason calibration deliberately

@@ -19,11 +19,23 @@ struct PaperPortfolioChart: View {
     /// What the readout row shows: the scrubbed point, else the latest.
     private var readout: PortfolioValuePoint? { selected ?? points.last }
 
+    /// The market line is all-or-nothing (SPY history present or not).
+    private var showMarket: Bool { points.contains { $0.market != nil } }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let readout { readoutRow(readout) }
 
             Chart {
+                if showMarket {
+                    ForEach(points) { point in
+                        LineMark(x: .value("Date", point.date), y: .value("Value", point.market ?? point.hold),
+                                 series: .value("Series", "Market"))
+                            .foregroundStyle(Theme.accentAlt.opacity(0.9))
+                            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [2, 3]))
+                            .interpolationMethod(.catmullRom)
+                    }
+                }
                 ForEach(points) { point in
                     LineMark(x: .value("Date", point.date), y: .value("Value", point.hold),
                              series: .value("Series", "Buy-and-hold"))
@@ -79,6 +91,9 @@ struct PaperPortfolioChart: View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             valueColumn("You", point.you, Theme.accent)
             valueColumn("Buy-and-hold", point.hold, .secondary)
+            if let market = point.market {
+                valueColumn("Market", market, Theme.accentAlt)
+            }
             Spacer()
             Text(point.date, format: .dateTime.month(.abbreviated).day())
                 .font(.caption2).foregroundStyle(.tertiary).monospacedDigit()
@@ -98,6 +113,7 @@ struct PaperPortfolioChart: View {
         HStack(spacing: 16) {
             legendItem(color: Theme.accent, faded: false, label: "You")
             legendItem(color: .secondary, faded: true, label: "Buy-and-hold")
+            if showMarket { legendItem(color: Theme.accentAlt, faded: true, label: "Market") }
         }
         .font(.caption2)
         .accessibilityHidden(true)

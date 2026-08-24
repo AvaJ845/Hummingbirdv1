@@ -119,27 +119,29 @@ final class PaperPortfolioStoreTests: XCTestCase {
         XCTAssertEqual(store.report.value, 9_000 + 1_300, accuracy: 1e-6)
     }
 
+    // Each pass also fetches the market (SPY) benchmark ONCE, then caches it —
+    // so counts include one extra market fetch on the first pass only.
     @MainActor func testRevalueIsThrottled() async {
         let store = PaperPortfolioStore(defaults: defaults)
         _ = store.buy(symbol: "AAPL", assetClass: .stock, cashAmount: 1_000, price: 100, direction: .higher)
         let stub = PriceStub(["aapl": 130])
-        await store.revalueDue(using: stub, now: t0)
-        await store.revalueDue(using: stub, now: t0.addingTimeInterval(60))     // within 10-min throttle
+        await store.revalueDue(using: stub, now: t0)                            // AAPL + SPY = 2
+        await store.revalueDue(using: stub, now: t0.addingTimeInterval(60))     // throttled -> 0
         var count = await stub.count()
-        XCTAssertEqual(count, 1)
-        await store.revalueDue(using: stub, now: t0.addingTimeInterval(700))    // past throttle
-        count = await stub.count()
         XCTAssertEqual(count, 2)
+        await store.revalueDue(using: stub, now: t0.addingTimeInterval(700))    // past throttle: AAPL (SPY cached) -> +1
+        count = await stub.count()
+        XCTAssertEqual(count, 3)
     }
 
     @MainActor func testRevalueForceBypassesThrottle() async {
         let store = PaperPortfolioStore(defaults: defaults)
         _ = store.buy(symbol: "AAPL", assetClass: .stock, cashAmount: 1_000, price: 100, direction: .higher)
         let stub = PriceStub(["aapl": 130])
-        await store.revalueDue(using: stub, now: t0)
-        await store.revalueDue(using: stub, now: t0.addingTimeInterval(1), force: true)
+        await store.revalueDue(using: stub, now: t0)                                    // AAPL + SPY = 2
+        await store.revalueDue(using: stub, now: t0.addingTimeInterval(1), force: true) // AAPL (SPY cached) -> +1
         let count = await stub.count()
-        XCTAssertEqual(count, 2)
+        XCTAssertEqual(count, 3)
     }
 
     @MainActor func testRevalueIsCappedPerPass() async {
@@ -150,8 +152,10 @@ final class PaperPortfolioStoreTests: XCTestCase {
         let stub = PriceStub(["aaa": 110, "bbb": 110, "ccc": 110])
         await store.revalueDue(using: stub, now: t0, maxAssets: 2)
         let count = await stub.count()
-        XCTAssertEqual(count, 2)               // capped
-        XCTAssertEqual(store.latestPrices.count, 2)
+        XCTAssertEqual(count, 3)                // 2 held (capped) + 1 market
+        // held prices are capped at 2; the market line is separate.
+        XCTAssertEqual(store.latestPrices.filter { $0.key != PaperPortfolioEngine.marketKey }.count, 2)
+        XCTAssertNotNil(store.latestPrices[PaperPortfolioEngine.marketKey])
     }
 
     // Regression: after a day-one pick is SOLD it has no open lot, but the

@@ -140,6 +140,13 @@ final class PaperPortfolioStore {
                 series[key] = fetched
             }
         }
+        // Market benchmark line (the S&P), fetched once alongside holdings.
+        if series[PaperPortfolioEngine.marketKey] == nil,
+           let spy = try? await service.history(symbol: "SPY", assetClass: .stock),
+           !spy.isSample {
+            series[PaperPortfolioEngine.marketKey] = spy
+            if let close = spy.last?.close { prices[PaperPortfolioEngine.marketKey] = close }
+        }
         latestPrices = prices
         histories = series
     }

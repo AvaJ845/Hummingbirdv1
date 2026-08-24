@@ -7,6 +7,9 @@ import Foundation
 /// up."
 enum PaperPortfolioEngine {
 
+    /// History key for the market benchmark line (S&P via SPY).
+    static let marketKey = "Stock:spy"
+
     /// Latest close for a position's asset, falling back to its own entry price
     /// when a fresh price isn't available — so an unpriced holding shows no fake
     /// P/L rather than dropping out of the totals.
@@ -77,6 +80,10 @@ enum PaperPortfolioEngine {
         let dayOne = portfolio.positions.filter { calendar.isDate($0.openedAt, inSameDayAs: firstOpen) }
         let residualCash = portfolio.startingCash - dayOne.reduce(0) { $0 + $1.cost }
 
+        // Market benchmark: startingCash into the S&P on day one, held.
+        let marketSeries = histories[marketKey]
+        let marketBase = marketSeries.flatMap { PriceResolution.nearestClose(in: $0, to: start, toleranceDays: 5) }
+
         func price(_ pos: PaperPosition, on day: Date) -> Double {
             guard let series = histories[pos.assetKey] else { return pos.entryPrice }
             return PriceResolution.nearestClose(in: series, to: day, toleranceDays: 5) ?? pos.entryPrice
@@ -97,7 +104,13 @@ enum PaperPortfolioEngine {
                 if bought && !sold { openValue += pos.shares * price(pos, on: day) }
             }
             let hold = residualCash + dayOne.reduce(0.0) { $0 + $1.shares * price($1, on: day) }
-            return PortfolioValuePoint(date: day, you: cash + openValue, hold: hold)
+
+            var market: Double?
+            if let marketSeries, let base = marketBase, base != 0,
+               let close = PriceResolution.nearestClose(in: marketSeries, to: day, toleranceDays: 5) {
+                market = portfolio.startingCash * (close / base)
+            }
+            return PortfolioValuePoint(date: day, you: cash + openValue, hold: hold, market: market)
         }
     }
 
