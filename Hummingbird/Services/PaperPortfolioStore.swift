@@ -14,6 +14,11 @@ final class PaperPortfolioStore {
     /// cost (no fake P/L) until the first refresh lands.
     private(set) var latestPrices: [String: Double] = [:]
 
+    /// Full end-of-day series per asset key, kept alongside `latestPrices` so the
+    /// You-vs-hold chart can reconstruct both value lines over time. In memory
+    /// only, re-fetched on open.
+    private(set) var histories: [String: PriceSeries] = [:]
+
     /// Hard safety cap so the record can't grow unbounded. Buys are rejected
     /// beyond it rather than silently dropping lots, which would corrupt the
     /// day-one benchmark.
@@ -107,13 +112,17 @@ final class PaperPortfolioStore {
         lastRevalue = now
 
         var prices = latestPrices
+        var series = histories
         for item in held.prefix(maxAssets) {
-            if let series = try? await service.history(symbol: item.symbol, assetClass: item.assetClass),
-               !series.isSample, let close = series.last?.close {
-                prices["\(item.assetClass.rawValue):\(item.symbol.lowercased())"] = close
+            if let fetched = try? await service.history(symbol: item.symbol, assetClass: item.assetClass),
+               !fetched.isSample, let close = fetched.last?.close {
+                let key = "\(item.assetClass.rawValue):\(item.symbol.lowercased())"
+                prices[key] = close
+                series[key] = fetched
             }
         }
         latestPrices = prices
+        histories = series
     }
 
     // MARK: - Reads
@@ -125,6 +134,7 @@ final class PaperPortfolioStore {
     func resetPortfolio(now: Date = Date()) {
         portfolio = PaperPortfolio(createdAt: now)
         latestPrices = [:]
+        histories = [:]
         lastRevalue = nil
         save()
     }

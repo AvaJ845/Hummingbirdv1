@@ -78,6 +78,15 @@ struct BuyAndHoldComparison: Equatable, Sendable {
     var isBeatingHold: Bool { yourValue > holdValue }
 }
 
+/// One dated sample of the portfolio's value beside the day-one buy-and-hold
+/// benchmark — the two lines of the You-vs-hold chart.
+struct PortfolioValuePoint: Identifiable, Equatable, Sendable {
+    var id: Date { date }
+    let date: Date
+    let you: Double
+    let hold: Double
+}
+
 /// The practice portfolio's honest record. Reason calibration deliberately
 /// lives on *calls* (a single decision, honestly scored) and not here: a lot's
 /// profit depends on both entry thesis and exit timing, so tagging it to the

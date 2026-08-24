@@ -53,6 +53,54 @@ enum PaperPortfolioEngine {
         )
     }
 
+    /// The two value lines over time — your portfolio vs. holding your day-one
+    /// basket untouched — reconstructed from the trade history against each held
+    /// asset's daily closes. Sampled at the closes we already fetch; end-of-day
+    /// only, no I/O. Empty until histories are available or nothing's been bought.
+    static func valueSeries(_ portfolio: PaperPortfolio, histories: [String: PriceSeries],
+                            now: Date = Date(), calendar: Calendar = .current) -> [PortfolioValuePoint] {
+        guard let firstOpen = portfolio.positions.map(\.openedAt).min() else { return [] }
+        let start = calendar.startOfDay(for: firstOpen)
+        let today = calendar.startOfDay(for: now)
+
+        // Day axis: unique close days across the needed histories, within range,
+        // always bookended by the first buy and today.
+        var days: Set<Date> = [start, today]
+        for series in histories.values {
+            for point in series.points {
+                let day = calendar.startOfDay(for: point.date)
+                if day >= start && day <= today { days.insert(day) }
+            }
+        }
+        let axis = days.sorted()
+
+        let dayOne = portfolio.positions.filter { calendar.isDate($0.openedAt, inSameDayAs: firstOpen) }
+        let residualCash = portfolio.startingCash - dayOne.reduce(0) { $0 + $1.cost }
+
+        func price(_ pos: PaperPosition, on day: Date) -> Double {
+            guard let series = histories[pos.assetKey] else { return pos.entryPrice }
+            return PriceResolution.nearestClose(in: series, to: day, toleranceDays: 5) ?? pos.entryPrice
+        }
+        func onOrBefore(_ date: Date?, _ day: Date) -> Bool {
+            guard let date else { return false }
+            return calendar.startOfDay(for: date) <= day
+        }
+
+        return axis.map { day in
+            var cash = portfolio.startingCash
+            var openValue = 0.0
+            for pos in portfolio.positions {
+                let bought = onOrBefore(pos.openedAt, day)
+                let sold = onOrBefore(pos.closedAt, day)
+                if bought { cash -= pos.cost }
+                if sold { cash += pos.shares * (pos.exitPrice ?? pos.entryPrice) }
+                if bought && !sold { openValue += pos.shares * price(pos, on: day) }
+            }
+            let hold = residualCash + dayOne.reduce(0.0) { $0 + $1.shares * price($1, on: day) }
+            return PortfolioValuePoint(date: day, you: cash + openValue, hold: hold)
+        }
+    }
+
     /// The portfolio's honest record: your value, and how it compares to holding
     /// your day-one basket untouched.
     static func report(_ portfolio: PaperPortfolio, prices: [String: Double],

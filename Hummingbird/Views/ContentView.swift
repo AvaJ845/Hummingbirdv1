@@ -135,8 +135,13 @@ struct ContentView: View {
             NavigationStack {
                 PaperPortfolioView(
                     store: paper,
+                    entitlements: entitlements,
                     currentSymbol: viewModel.symbol,
-                    currentAssetClass: viewModel.assetClass
+                    currentAssetClass: viewModel.assetClass,
+                    onUnlock: {
+                        showPaperPortfolio = false
+                        viewModel.pendingPaywallReason = "Pro charts your practice trades against buy-and-hold over time."
+                    }
                 )
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {

@@ -99,6 +99,54 @@ final class PaperPortfolioEngineTests: XCTestCase {
         XCTAssertEqual(c.holdValue, 10_000, accuracy: 1e-6)
     }
 
+    // MARK: - Value series (the You-vs-hold chart)
+
+    private var utc: Calendar {
+        var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "UTC")!; return c
+    }
+
+    private func aaplHistory(_ closes: [(Date, Double)]) -> [String: PriceSeries] {
+        let pts = closes.map { PricePoint(date: $0.0, close: $0.1) }
+        return ["Stock:aapl": PriceSeries(symbol: "AAPL", assetClass: .stock, points: pts, isSample: false)]
+    }
+
+    func testValueSeriesEmptyWhenNothingBought() {
+        XCTAssertTrue(PaperPortfolioEngine.valueSeries(PaperPortfolio(createdAt: day1),
+                                                       histories: [:], calendar: utc).isEmpty)
+    }
+
+    // Never traded → your line and the buy-and-hold line are identical at every
+    // sample (you ARE holding your first picks).
+    func testValueSeriesNeverTradedTracksHold() {
+        let d0 = utc.startOfDay(for: day1)
+        let d1 = d0.addingTimeInterval(86_400), d2 = d0.addingTimeInterval(2 * 86_400)
+        let hist = aaplHistory([(d0, 100), (d1, 110), (d2, 120)])
+        let p = portfolio(cash: 5_000, [position("AAPL", entry: 100, shares: 50, opened: d0)])
+
+        let pts = PaperPortfolioEngine.valueSeries(p, histories: hist, now: d2, calendar: utc)
+        XCTAssertEqual(pts.count, 3)
+        for pt in pts { XCTAssertEqual(pt.you, pt.hold, accuracy: 1e-6) }
+        XCTAssertEqual(pts.last?.you ?? 0, 11_000, accuracy: 1e-6)   // 5000 cash + 50*120
+    }
+
+    // Sold the day-one pick on day 1, then it kept rising: your line flattens in
+    // cash while the hold line climbs — the divergence the chart exists to show.
+    func testValueSeriesSellingThenRallyDivergesFromHold() {
+        let d0 = utc.startOfDay(for: day1)
+        let d1 = d0.addingTimeInterval(86_400), d2 = d0.addingTimeInterval(2 * 86_400)
+        let hist = aaplHistory([(d0, 100), (d1, 110), (d2, 120)])
+        let sold = position("AAPL", entry: 100, shares: 50, opened: d0, exit: 110, closed: d1)
+        let p = portfolio(cash: 5_000 + 50 * 110, [sold])   // proceeds already in cash
+
+        let pts = PaperPortfolioEngine.valueSeries(p, histories: hist, now: d2, calendar: utc)
+        // hold ignores the sale: 5000 residual + 50 * close
+        XCTAssertEqual(pts.first?.hold ?? 0, 10_000, accuracy: 1e-6)  // d0: 5000 + 50*100
+        XCTAssertEqual(pts.last?.hold ?? 0, 11_000, accuracy: 1e-6)   // d2: 5000 + 50*120
+        // you: sat in cash after selling at 110 → 5000 + 5500 = 10500, flat by d2
+        XCTAssertEqual(pts.last?.you ?? 0, 10_500, accuracy: 1e-6)
+        XCTAssertLessThan(pts.last!.you, pts.last!.hold)             // lagging buy-and-hold
+    }
+
     // Report surfaces value + the buy-and-hold comparison (reason calibration is
     // deliberately kept on calls, not the portfolio).
     func testReportSurfacesValueAndComparison() {

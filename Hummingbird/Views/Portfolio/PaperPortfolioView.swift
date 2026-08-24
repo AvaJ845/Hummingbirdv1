@@ -54,8 +54,10 @@ struct PaperPortfolioCard: View {
 /// Prices are end-of-day only; this is a record of the past, never advice.
 struct PaperPortfolioView: View {
     @Bindable var store: PaperPortfolioStore
+    @Bindable var entitlements: EntitlementStore
     var currentSymbol: String?
     var currentAssetClass: AssetClass = .stock
+    var onUnlock: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
     @State private var showBuy = false
@@ -69,6 +71,7 @@ struct PaperPortfolioView: View {
     var body: some View {
         List {
             headerSection
+            chartSection
             if store.portfolio.openPositions.isEmpty {
                 startOrCashSection
             } else {
@@ -170,6 +173,56 @@ struct PaperPortfolioView: View {
         let c = report.comparison
         if c.tradeCount == 0 || abs(c.edge) < 0.0005 { return .primary }
         return c.isBeatingHold ? Theme.up : Theme.warning
+    }
+
+    // MARK: - You vs. buy-and-hold chart (Pro)
+
+    private var valuePoints: [PortfolioValuePoint] {
+        PaperPortfolioEngine.valueSeries(store.portfolio, histories: store.histories)
+    }
+
+    @ViewBuilder private var chartSection: some View {
+        if store.hasStarted {
+            Section {
+                if entitlements.isPro {
+                    let points = valuePoints
+                    if points.count >= 2, !store.histories.isEmpty {
+                        PaperPortfolioChart(points: points)
+                            .padding(.vertical, 4)
+                    } else {
+                        Text("Your chart fills in once prices load and there's a day or two of history.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                } else {
+                    proChartTeaser
+                }
+            } header: {
+                Text("You vs. buy-and-hold over time")
+            }
+        }
+    }
+
+    private var proChartTeaser: some View {
+        Button(action: onUnlock) {
+            HStack(spacing: 12) {
+                Image(systemName: "chart.xyaxis.line")
+                    .font(.title3).foregroundStyle(Theme.accentAlt).frame(width: 28)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("See your trades vs. buy-and-hold over time")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Watch the two lines diverge — a Pro view of your record.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("Pro").font(.caption2.weight(.bold))
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(Theme.accentAlt.opacity(0.15), in: Capsule())
+                    .foregroundStyle(Theme.accentAlt)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Unlocks the You versus buy-and-hold chart with Pro")
     }
 
     // MARK: - Holdings
