@@ -133,6 +133,7 @@ targets:
       - path: Hummingbird/Models/WatchlistItem.swift
       - path: Hummingbird/Models/SketchActivityAttributes.swift
       - path: Hummingbird/Models/TrackRecordSnapshot.swift
+      - path: Hummingbird/Models/PortfolioSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
       - path: Hummingbird/Views/Watchlist/Sparkline.swift
     settings:

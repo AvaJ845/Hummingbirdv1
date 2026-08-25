@@ -191,6 +191,7 @@ struct ContentView: View {
             await viewModel.resolveDueCalls()
             await paper.revalueDue(using: MarketDataService())
             updateTrackRecordSnapshot()
+            updatePortfolioSnapshot()
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
@@ -210,6 +211,20 @@ struct ContentView: View {
             updatedAt: Date()
         ))
         WidgetCenter.shared.reloadTimelines(ofKind: TrackRecordWidgetKind.identifier)
+    }
+
+    /// Keep the portfolio widget's snapshot fresh on app open, right after
+    /// `paper.revalueDue` has run so the value reflects the latest close.
+    private func updatePortfolioSnapshot() {
+        guard paper.hasStarted else { return }
+        let comparison = paper.report.comparison
+        SharedStorage.savePortfolioSnapshot(PortfolioSnapshot(
+            value: paper.report.value,
+            edge: comparison.edge,
+            tradeCount: comparison.tradeCount,
+            updatedAt: Date()
+        ))
+        WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
     }
 
     /// Keep the widget/watchlist snapshot fresh whenever a watched asset is projected.

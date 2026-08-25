@@ -49,7 +49,8 @@ final class PaperPortfolioStore {
     /// there isn't enough cash, the inputs are invalid, or the cap is reached.
     @discardableResult
     func buy(symbol: String, assetClass: AssetClass, cashAmount: Double, price: Double,
-             direction: CallDirection, reason: CallReason? = nil, now: Date = Date()) -> PaperPosition? {
+             direction: CallDirection, reason: CallReason? = nil,
+             methodDirections: [String: CallDirection]? = nil, now: Date = Date()) -> PaperPosition? {
         let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, price > 0, cashAmount > 0,
               cashAmount <= portfolio.cash + 1e-6,
@@ -59,7 +60,7 @@ final class PaperPortfolioStore {
         let position = PaperPosition(
             id: UUID(), symbol: trimmed, assetClass: assetClass, openedAt: now,
             entryPrice: price, shares: cashAmount / price, direction: direction,
-            reason: reason, closedAt: nil, exitPrice: nil
+            reason: reason, closedAt: nil, exitPrice: nil, methodDirections: methodDirections
         )
         portfolio.positions.append(position)
         portfolio.cash -= cashAmount
@@ -89,10 +90,12 @@ final class PaperPortfolioStore {
         } else {
             let remaining = PaperPosition(id: lot.id, symbol: lot.symbol, assetClass: lot.assetClass,
                 openedAt: lot.openedAt, entryPrice: lot.entryPrice, shares: lot.shares - qty,
-                direction: lot.direction, reason: lot.reason, closedAt: nil, exitPrice: nil)
+                direction: lot.direction, reason: lot.reason, closedAt: nil, exitPrice: nil,
+                methodDirections: lot.methodDirections)
             let sold = PaperPosition(id: UUID(), symbol: lot.symbol, assetClass: lot.assetClass,
                 openedAt: lot.openedAt, entryPrice: lot.entryPrice, shares: qty,
-                direction: lot.direction, reason: lot.reason, closedAt: now, exitPrice: price)
+                direction: lot.direction, reason: lot.reason, closedAt: now, exitPrice: price,
+                methodDirections: lot.methodDirections)
             portfolio.positions[idx] = remaining
             portfolio.positions.append(sold)
         }
@@ -130,6 +133,7 @@ final class PaperPortfolioStore {
         if !force, let last = lastRevalue, now.timeIntervalSince(last) < revalueThrottle { return }
         lastRevalue = now
 
+        let previousPrices = latestPrices
         var prices = latestPrices
         var series = histories
         for item in held.prefix(maxAssets) {
@@ -149,6 +153,22 @@ final class PaperPortfolioStore {
         }
         latestPrices = prices
         histories = series
+
+        await deliverMovementAlertsIfEnabled(previousPrices: previousPrices, newPrices: prices)
+    }
+
+    /// Honest "this moved, not a signal" alert for held assets — same movement
+    /// alert the watchlist already sends, reusing its shared daily budget.
+    /// Opt-in via Settings; a fresh symbol (no previous price yet) never fires.
+    private func deliverMovementAlertsIfEnabled(previousPrices: [String: Double], newPrices: [String: Double]) async {
+        guard UserDefaults.standard.bool(forKey: PortfolioAlerts.enabledKey) else { return }
+        let alerts = AlertEngine.evaluatePortfolio(
+            openPositions: portfolio.openPositions, previousPrices: previousPrices,
+            newPrices: newPrices, threshold: PortfolioAlerts.defaultThreshold
+        )
+        for alert in alerts {
+            await NotificationService.deliver(alert, id: "portfolio-\(alert.title)")
+        }
     }
 
     // MARK: - Reads

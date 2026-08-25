@@ -42,6 +42,20 @@ final class WatchlistRefreshTests: XCTestCase {
         XCTAssertEqual(read?.decided, 10)
     }
 
+    func testSharedStoragePortfolioSnapshotRoundTrips() {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        XCTAssertNil(SharedStorage.portfolioSnapshot(defaults: defaults))
+
+        let snapshot = PortfolioSnapshot(value: 10_500, edge: 0.03, tradeCount: 2,
+                                         updatedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        SharedStorage.savePortfolioSnapshot(snapshot, defaults: defaults)
+
+        let read = SharedStorage.portfolioSnapshot(defaults: defaults)
+        XCTAssertEqual(read?.value, 10_500)
+        XCTAssertEqual(read?.edge, 0.03)
+        XCTAssertEqual(read?.tradeCount, 2)
+    }
+
     func testBackgroundTaskIdentifierMatchesInfoPlist() {
         // Guards against the scheduler identifier drifting from the Info.plist entry.
         XCTAssertEqual(BackgroundRefresh.taskIdentifier, "com.avaresearch.hummingbird.refresh")

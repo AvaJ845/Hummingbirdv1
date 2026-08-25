@@ -389,15 +389,7 @@ final class ForecastViewModel {
     /// Each method's directional prediction over the call's horizon, snapshotted
     /// at call time — the basis for the honest "you vs. the methods" comparison.
     private func methodDirectionSnapshot(series: PriceSeries, horizon: Int) -> [String: CallDirection] {
-        var result: [String: CallDirection] = [:]
-        for candidate in ForecastModel.available {
-            let projection = Forecaster.forecast(series: series, model: candidate, horizon: horizon,
-                                                 macro: macro(for: candidate))
-            if let change = projection.expectedChange, change != 0 {
-                result[candidate.strategy.rawValue] = change > 0 ? .higher : .lower
-            }
-        }
-        return result
+        MethodDirectionSnapshot.compute(series: series, horizon: horizon, macro: { self.macro(for: $0) })
     }
 
     /// Resolve any calls whose horizon has passed. Cheap when nothing is due.

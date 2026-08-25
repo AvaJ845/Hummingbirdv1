@@ -35,4 +35,27 @@ enum AlertEngine {
             changeFraction: change
         )
     }
+
+    /// Same movement check, applied to practice-portfolio holdings instead of
+    /// the watchlist. Grouped by symbol (not lot) so a partial sell doesn't
+    /// fire the same alert twice, and only evaluates symbols present in both
+    /// price snapshots — a first-ever fetch (no previous price yet) can't move.
+    static func evaluatePortfolio(
+        openPositions: [PaperPosition],
+        previousPrices: [String: Double],
+        newPrices: [String: Double],
+        threshold: Double
+    ) -> [MovementAlert] {
+        var seen = Set<String>()
+        var alerts: [MovementAlert] = []
+        for pos in openPositions {
+            guard seen.insert(pos.assetKey).inserted else { continue }
+            guard let previous = previousPrices[pos.assetKey], let new = newPrices[pos.assetKey] else { continue }
+            let item = WatchlistItem(symbol: pos.symbol, assetClass: pos.assetClass)
+            if let alert = evaluate(item: item, previousPrice: previous, newPrice: new, threshold: threshold) {
+                alerts.append(alert)
+            }
+        }
+        return alerts
+    }
 }

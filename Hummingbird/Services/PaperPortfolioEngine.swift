@@ -191,6 +191,36 @@ enum PaperPortfolioEngine {
         return residualCash + investedValue
     }
 
+    /// Your positions vs. the app's own methods, head-to-head on the very same
+    /// buys — mirrors `UserCallEngine.vsMethods` exactly, scored on closed
+    /// positions that carry a method-direction snapshot. Nil until at least
+    /// `minResolved` such positions exist, so it never surfaces on a thin
+    /// sample. A record of the past, never advice.
+    static func vsMethods(_ portfolio: PaperPortfolio, minResolved: Int = 5) -> VsMethods? {
+        let eligible = portfolio.positions.filter { $0.leanWasRight != nil && $0.methodDirections != nil }
+        guard eligible.count >= minResolved else { return nil }
+
+        let userHits = eligible.filter { $0.leanWasRight == true }.count
+        let userRate = Double(userHits) / Double(eligible.count)
+
+        var ids = Set<String>()
+        for pos in eligible { if let dirs = pos.methodDirections { ids.formUnion(dirs.keys) } }
+
+        let methods: [MethodTally] = ids.compactMap { id in
+            let flags = eligible.compactMap { $0.methodWasCorrect(id) }
+            guard !flags.isEmpty else { return nil }
+            return MethodTally(
+                methodId: id,
+                methodName: ForecastModel.model(id: id)?.name ?? id,
+                decided: flags.count,
+                hitRate: Double(flags.filter { $0 }.count) / Double(flags.count)
+            )
+        }
+        .sorted { $0.hitRate > $1.hitRate }
+
+        return VsMethods(userHitRate: userRate, userDecided: eligible.count, methods: methods)
+    }
+
     /// The portfolio's honest record: your value, and how it compares to holding
     /// your day-one basket untouched.
     static func report(_ portfolio: PaperPortfolio, prices: [String: Double],

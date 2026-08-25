@@ -16,6 +16,12 @@ struct PaperPosition: Codable, Identifiable, Hashable, Sendable {
     var reason: CallReason?
     var closedAt: Date?
     var exitPrice: Double?
+    /// What each method called for this asset at buy time (method id →
+    /// Higher/Lower), snapshotted the same way a call's `methodDirections`
+    /// is — lets the portfolio be scored head-to-head against the app's own
+    /// methods, on the very same positions. Optional so older positions
+    /// decode cleanly.
+    var methodDirections: [String: CallDirection]? = nil
 
     /// Cash put in at entry.
     var cost: Double { entryPrice * shares }
@@ -35,6 +41,16 @@ struct PaperPosition: Codable, Identifiable, Hashable, Sendable {
     var leanWasRight: Bool? {
         guard let exit = exitPrice, exit != entryPrice else { return nil }
         return (direction == .higher) == (exit > entryPrice)
+    }
+
+    /// Whether a given method's snapshotted call for this position was right —
+    /// same entry→exit comparison as `leanWasRight`, just scored against the
+    /// method's stated direction instead of your own. Nil if unresolved, flat
+    /// (a push), or the method wasn't recorded for this position.
+    func methodWasCorrect(_ methodId: String) -> Bool? {
+        guard let exit = exitPrice, exit != entryPrice,
+              let dir = methodDirections?[methodId] else { return nil }
+        return (dir == .higher) == (exit > entryPrice)
     }
 
     /// Realized percent gain/loss on a closed lot (nil while open).

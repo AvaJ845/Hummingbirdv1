@@ -9,10 +9,12 @@ final class PaperPortfolioEngineTests: XCTestCase {
     private func position(_ symbol: String, entry: Double, shares: Double,
                           opened: Date, reason: CallReason? = nil,
                           exit: Double? = nil, closed: Date? = nil,
-                          direction: CallDirection = .higher) -> PaperPosition {
+                          direction: CallDirection = .higher,
+                          methodDirections: [String: CallDirection]? = nil) -> PaperPosition {
         PaperPosition(id: UUID(), symbol: symbol, assetClass: .stock, openedAt: opened,
                       entryPrice: entry, shares: shares, direction: direction,
-                      reason: reason, closedAt: closed, exitPrice: exit)
+                      reason: reason, closedAt: closed, exitPrice: exit,
+                      methodDirections: methodDirections)
     }
 
     private func portfolio(cash: Double, _ positions: [PaperPosition]) -> PaperPortfolio {
@@ -332,6 +334,70 @@ final class PaperPortfolioEngineTests: XCTestCase {
         let today = d0.addingTimeInterval(7 * 86_400)
         let dca = PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, intervalDays: 7, now: today, calendar: utc)
         XCTAssertEqual(dca ?? 0, 10_000, accuracy: 1e-6)   // flat price, so DCA == lump sum == starting cash
+    }
+
+    // MARK: - Method-direction scoring ("portfolio vs. the methods")
+
+    func testMethodWasCorrectAcrossCases() {
+        // drift called Higher, exit was higher -> right
+        XCTAssertEqual(position("A", entry: 100, shares: 1, opened: day1, exit: 120, closed: day3,
+                                methodDirections: ["drift": .higher]).methodWasCorrect("drift"), true)
+        // drift called Higher, exit was lower -> wrong
+        XCTAssertEqual(position("A", entry: 100, shares: 1, opened: day1, exit: 90, closed: day3,
+                                methodDirections: ["drift": .higher]).methodWasCorrect("drift"), false)
+        // method never snapshotted -> nil
+        XCTAssertNil(position("A", entry: 100, shares: 1, opened: day1, exit: 120, closed: day3,
+                              methodDirections: ["drift": .higher]).methodWasCorrect("holt"))
+        // still open -> nil
+        XCTAssertNil(position("A", entry: 100, shares: 1, opened: day1,
+                              methodDirections: ["drift": .higher]).methodWasCorrect("drift"))
+        // flat exit (push) -> nil
+        XCTAssertNil(position("A", entry: 100, shares: 1, opened: day1, exit: 100, closed: day3,
+                              methodDirections: ["drift": .higher]).methodWasCorrect("drift"))
+    }
+
+    func testVsMethodsNilBelowMinResolved() {
+        let closed = (0..<4).map { _ in
+            position("A", entry: 100, shares: 1, opened: day1, exit: 110, closed: day3,
+                    methodDirections: ["drift": .higher])
+        }
+        let p = portfolio(cash: 0, closed)
+        XCTAssertNil(PaperPortfolioEngine.vsMethods(p, minResolved: 5))
+    }
+
+    func testVsMethodsExcludesPositionsWithoutASnapshot() {
+        var positions = (0..<5).map { _ in
+            position("A", entry: 100, shares: 1, opened: day1, exit: 110, closed: day3,
+                    methodDirections: ["drift": .higher])
+        }
+        // A closed, decidable position with no method snapshot at all — must not count.
+        positions.append(position("B", entry: 100, shares: 1, opened: day1, exit: 90, closed: day3))
+        let p = portfolio(cash: 0, positions)
+        let vs = PaperPortfolioEngine.vsMethods(p, minResolved: 5)
+        XCTAssertEqual(vs?.userDecided, 5)
+    }
+
+    func testVsMethodsComputesHitRatesAndRanksBestFirst() {
+        // 5 positions, all leaned Higher, all closed higher (user 100% right).
+        // "drift" always said Higher (right, 100%). "holt" always said Lower (wrong, 0%).
+        let positions = (0..<5).map { _ in
+            position("A", entry: 100, shares: 1, opened: day1, exit: 110, closed: day3,
+                    methodDirections: ["drift": .higher, "holt": .lower])
+        }
+        let p = portfolio(cash: 0, positions)
+        let vs = PaperPortfolioEngine.vsMethods(p, minResolved: 5)
+        XCTAssertNotNil(vs)
+        XCTAssertEqual(vs?.userHitRate ?? 0, 1.0, accuracy: 1e-9)
+        XCTAssertEqual(vs?.userDecided, 5)
+        XCTAssertEqual(vs?.methods.count, 2)
+        // Best hit rate sorts first.
+        XCTAssertEqual(vs?.methods.first?.methodId, "drift")
+        XCTAssertEqual(vs?.methods.first?.hitRate ?? 0, 1.0, accuracy: 1e-9)
+        XCTAssertEqual(vs?.methods.last?.methodId, "holt")
+        XCTAssertEqual(vs?.methods.last?.hitRate ?? 0, 0.0, accuracy: 1e-9)
+        // methodsBeaten requires STRICTLY higher — tied with drift at 100%
+        // doesn't count as beating it, only holt (0%) does.
+        XCTAssertEqual(vs?.methodsBeaten, 1)
     }
 
     // A missing history for one day-one symbol (a data gap) must fall back to

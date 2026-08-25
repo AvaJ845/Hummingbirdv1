@@ -9,8 +9,13 @@ struct OpenPositionSheet: View {
     var prefillSymbol: String?
     var prefillAssetClass: AssetClass = .stock
     let service: any MarketDataProviding
-    /// symbol, assetClass, cashAmount, price, direction
-    let onBuy: (String, AssetClass, Double, Double, CallDirection) -> Void
+    /// symbol, assetClass, cashAmount, price, direction, methodDirections
+    let onBuy: (String, AssetClass, Double, Double, CallDirection, [String: CallDirection]?) -> Void
+
+    /// Horizon used only to snapshot what each method calls the direction —
+    /// the position itself has no fixed exit date; this is purely the same
+    /// "what did the methods say" comparison window calls use by default.
+    private static let methodSnapshotHorizonDays = 7
 
     @Environment(\.dismiss) private var dismiss
     @State private var symbol: String = ""
@@ -21,6 +26,7 @@ struct OpenPositionSheet: View {
     @State private var amount: Double = 0
     @State private var direction: CallDirection?
     @State private var regime: VolatilityRegime?
+    @State private var methodDirections: [String: CallDirection]?
 
     var body: some View {
         NavigationStack {
@@ -159,7 +165,7 @@ struct OpenPositionSheet: View {
         guard let price, let direction else { return }
         let sym = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sym.isEmpty, amount >= 1 else { return }
-        onBuy(sym, assetClass, amount, price, direction)
+        onBuy(sym, assetClass, amount, price, direction, methodDirections)
         dismiss()
     }
 
@@ -167,6 +173,7 @@ struct OpenPositionSheet: View {
         price = nil
         priceError = nil
         regime = nil
+        methodDirections = nil
     }
 
     private func fetchPrice() async {
@@ -176,6 +183,7 @@ struct OpenPositionSheet: View {
         priceError = nil
         price = nil
         regime = nil
+        methodDirections = nil
         defer { isFetching = false }
         do {
             let series = try await service.history(symbol: sym, assetClass: assetClass)
@@ -186,6 +194,9 @@ struct OpenPositionSheet: View {
                 // The same classifier used everywhere else in the app for
                 // sketches — surfaced here, before money moves, not after.
                 regime = RegimeClassifier.classify(series: series)
+                // What each method calls the direction, snapshotted at buy
+                // time — lets the position be scored against the methods later.
+                methodDirections = MethodDirectionSnapshot.compute(series: series, horizon: Self.methodSnapshotHorizonDays)
                 if amount > cash { amount = cash }
             } else {
                 priceError = "No price found for \(sym.uppercased())."

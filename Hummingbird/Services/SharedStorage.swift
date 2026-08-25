@@ -8,6 +8,7 @@ enum SharedStorage {
     static let snapshotsKey = "hummingbird.watchlist.snapshots"
     static let itemsKey = "hummingbird.watchlist.items"
     static let trackRecordKey = "hummingbird.trackRecord.snapshot"
+    static let portfolioSnapshotKey = "hummingbird.portfolio.snapshot"
 
     static func snapshots(defaults: UserDefaults = AppGroup.defaults) -> [WatchlistSnapshot] {
         guard let data = defaults.data(forKey: snapshotsKey),
@@ -32,5 +33,16 @@ enum SharedStorage {
     static func trackRecord(defaults: UserDefaults = AppGroup.defaults) -> TrackRecordSnapshot? {
         guard let data = defaults.data(forKey: trackRecordKey) else { return nil }
         return try? JSONDecoder().decode(TrackRecordSnapshot.self, from: data)
+    }
+
+    /// Persist the latest practice-portfolio snapshot for the widget to read.
+    static func savePortfolioSnapshot(_ snapshot: PortfolioSnapshot, defaults: UserDefaults = AppGroup.defaults) {
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        defaults.set(data, forKey: portfolioSnapshotKey)
+    }
+
+    static func portfolioSnapshot(defaults: UserDefaults = AppGroup.defaults) -> PortfolioSnapshot? {
+        guard let data = defaults.data(forKey: portfolioSnapshotKey) else { return nil }
+        return try? JSONDecoder().decode(PortfolioSnapshot.self, from: data)
     }
 }
