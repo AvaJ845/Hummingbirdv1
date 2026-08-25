@@ -47,6 +47,7 @@ struct SettingsView: View {
     @AppStorage("hb.weeklyRecap.enabled") private var weeklyRecapEnabled = false
     @AppStorage("hb.streakReminder.enabled") private var streakReminderEnabled = false
     @AppStorage("hb.economicCalendarCall.enabled") private var economicCalendarCallEnabled = false
+    @AppStorage("hb.portfolioAlerts.enabled") private var portfolioAlertsEnabled = false
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
@@ -218,6 +219,14 @@ struct SettingsView: View {
                     Text("Jobs Report reminder")
                 } footer: {
                     Text("A morning nudge on Jobs Report day (first Friday of the month), only if you haven't called anything yet. Predict which way the market leans before the numbers land — never advice.")
+                }
+
+                Section {
+                    Toggle("Portfolio movement alerts", isOn: $portfolioAlertsEnabled)
+                } header: {
+                    Text("Portfolio movement alerts")
+                } footer: {
+                    Text("Get notified when a practice-portfolio holding moves \(Int(PortfolioAlerts.defaultThreshold * 100))% or more since you last checked. Movement, not a signal.")
                 }
 
                 Section {

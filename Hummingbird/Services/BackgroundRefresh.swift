@@ -77,5 +77,16 @@ enum BackgroundRefresh {
             ))
             WidgetCenter.shared.reloadTimelines(ofKind: TrackRecordWidgetKind.identifier)
         }
+
+        if !Task.isCancelled, paperStore.hasStarted {
+            let comparison = paperStore.report.comparison
+            SharedStorage.savePortfolioSnapshot(PortfolioSnapshot(
+                value: paperStore.report.value,
+                edge: comparison.edge,
+                tradeCount: comparison.tradeCount,
+                updatedAt: Date()
+            ))
+            WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
+        }
     }
 }

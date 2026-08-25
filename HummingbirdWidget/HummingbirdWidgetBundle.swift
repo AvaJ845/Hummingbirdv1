@@ -6,6 +6,7 @@ struct HummingbirdWidgetBundle: WidgetBundle {
     var body: some Widget {
         WatchlistWidget()
         TrackRecordWidget()
+        PortfolioWidget()
         SketchLiveActivity()
     }
 }

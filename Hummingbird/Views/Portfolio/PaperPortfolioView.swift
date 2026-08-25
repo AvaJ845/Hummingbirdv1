@@ -80,6 +80,7 @@ struct PaperPortfolioView: View {
                 holdingsSection
             }
             readsSection
+            vsMethodsSection
             closedTradesSection
             actionsSection
             shareSection
@@ -96,9 +97,9 @@ struct PaperPortfolioView: View {
                 prefillSymbol: currentSymbol,
                 prefillAssetClass: currentAssetClass,
                 service: service
-            ) { symbol, assetClass, amount, price, direction in
+            ) { symbol, assetClass, amount, price, direction, methodDirections in
                 _ = store.buy(symbol: symbol, assetClass: assetClass, cashAmount: amount,
-                              price: price, direction: direction)
+                              price: price, direction: direction, methodDirections: methodDirections)
                 Task { await store.revalueDue(using: service, force: true) }
             }
         }
@@ -389,6 +390,54 @@ struct PaperPortfolioView: View {
                 .accessibilityLabel("Your directional reads: \(pctText(rate)) right, \(report.leanAccuracy.correct) of \(report.leanAccuracy.decided).")
             } footer: {
                 Text("How often the price moved the way you leaned — your read, scored apart from your timing.")
+            }
+        }
+    }
+
+    /// Your positions vs. the app's own forecasting methods, head-to-head on
+    /// the very same buys — the portfolio's version of "You vs. the methods."
+    /// Pro depth; free sees a teaser once there's something to unlock.
+    @ViewBuilder private var vsMethodsSection: some View {
+        if let vs = PaperPortfolioEngine.vsMethods(store.portfolio) {
+            Section {
+                if entitlements.isPro {
+                    HStack {
+                        Text("You").font(.body.weight(.bold))
+                        Spacer()
+                        Text(pctText(vs.userHitRate)).font(.body.weight(.bold)).monospacedDigit()
+                            .foregroundStyle(Theme.accent)
+                        Text("·  \(vs.userDecided)").font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    ForEach(vs.methods) { method in
+                        HStack {
+                            Text(method.methodName).font(.body).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(pctText(method.hitRate)).font(.body.weight(.medium)).monospacedDigit()
+                                .foregroundStyle(.secondary)
+                            Image(systemName: vs.userHitRate > method.hitRate ? "checkmark" : "minus")
+                                .font(.caption2)
+                                .foregroundStyle(vs.userHitRate > method.hitRate ? Theme.up : Color.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(method.methodName): right \(pctText(method.hitRate)), you are \(vs.userHitRate > method.hitRate ? "ahead" : "not ahead")")
+                    }
+                } else {
+                    Button(action: onUnlock) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Your trades vs. the methods", systemImage: "sparkles")
+                                .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
+                            Text("See whether your own trades are beating the app's methods — scored on the very same positions. Pro.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            } header: {
+                Text("Your trades vs. the methods")
+            } footer: {
+                if entitlements.isPro {
+                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; keep trading.")
+                }
             }
         }
     }

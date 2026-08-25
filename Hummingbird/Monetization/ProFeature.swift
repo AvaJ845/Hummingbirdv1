@@ -9,6 +9,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case streakFreeze
     // Self-knowledge next — the reason to pay is an honest mirror, not foresight.
     case youVsMethods
+    case portfolioVsHold
     case regimeReliability
     case honestRecord
     case keepEveryCall
@@ -22,6 +23,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .streakFreeze: "Streak freeze"
         case .youVsMethods: "You vs. the methods"
+        case .portfolioVsHold: "Your portfolio vs. buy-and-hold"
         case .regimeReliability: "Best method by conditions"
         case .honestRecord: "Your record, in depth"
         case .keepEveryCall: "Keep every call — and share it"
@@ -36,6 +38,8 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
             "Miss a day without losing your call streak — one grace day, automatically, so a busy day doesn't erase your progress."
         case .youVsMethods:
             "See whether your own calls are beating the app’s methods — scored on the very same calls."
+        case .portfolioVsHold:
+            "Watch your practice trades against buy-and-hold and the market over time — did your trading actually add anything?"
         case .regimeReliability:
             "See which method has tracked this asset closest in calm markets versus turbulent ones — the method that wins overall isn't always the one that wins right now."
         case .honestRecord:
@@ -53,6 +57,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .streakFreeze: "snowflake"
         case .youVsMethods: "trophy"
+        case .portfolioVsHold: "chart.xyaxis.line"
         case .regimeReliability: "waveform.path.ecg"
         case .honestRecord: "checkmark.seal"
         case .keepEveryCall: "tray.full"
