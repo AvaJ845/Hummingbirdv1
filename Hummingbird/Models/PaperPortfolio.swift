@@ -105,6 +105,18 @@ struct PortfolioValuePoint: Identifiable, Equatable, Sendable {
     var market: Double? = nil
 }
 
+/// How spread out the open portfolio is across distinct assets — information,
+/// never advice ("you should diversify" is a judgment this app doesn't make).
+/// Groups by symbol, not by lot, so a partially-sold position still counts as
+/// one asset. Nil when there's nothing open to measure.
+struct ConcentrationInsight: Equatable, Sendable {
+    let topSymbol: String
+    /// Share of total open value held in the single largest asset, 0...1.
+    let topFraction: Double
+    /// Distinct assets currently held (not lot count).
+    let assetCount: Int
+}
+
 /// The practice portfolio's honest record. Reason calibration deliberately
 /// lives on *calls* (a single decision, honestly scored) and not here: a lot's
 /// profit depends on both entry thesis and exit timing, so tagging it to the
@@ -117,4 +129,6 @@ struct PaperReport: Equatable, Sendable {
     /// How often your directional lean was right, over closed (decidable) lots —
     /// your read, scored separately from your P/L.
     let leanAccuracy: CallAccuracy
+    /// Nil when there are no open positions.
+    let concentration: ConcentrationInsight?
 }

@@ -211,4 +211,144 @@ final class PaperPortfolioEngineTests: XCTestCase {
         XCTAssertEqual(report.leanAccuracy.correct, 2)
         XCTAssertEqual(report.leanAccuracy.hitRate ?? 0, 2.0/3.0, accuracy: 1e-9)
     }
+
+    // MARK: - Concentration (diversification meter)
+
+    func testConcentrationNilWithNoOpenPositions() {
+        XCTAssertNil(PaperPortfolioEngine.concentration(PaperPortfolio(createdAt: day1), prices: [:]))
+        // an all-closed portfolio also has nothing open to measure
+        let closedOnly = portfolio(cash: 0, [position("A", entry: 100, shares: 1, opened: day1, exit: 110, closed: day3)])
+        XCTAssertNil(PaperPortfolioEngine.concentration(closedOnly, prices: [:]))
+    }
+
+    func testConcentrationSingleAssetIsFullyConcentrated() {
+        let p = portfolio(cash: 0, [position("AAPL", entry: 100, shares: 100, opened: day1)])
+        let c = PaperPortfolioEngine.concentration(p, prices: ["Stock:aapl": 120])
+        XCTAssertEqual(c?.topSymbol, "AAPL")
+        XCTAssertEqual(c?.topFraction ?? 0, 1.0, accuracy: 1e-9)
+        XCTAssertEqual(c?.assetCount, 1)
+    }
+
+    func testConcentrationSplitsAcrossDistinctSymbols() {
+        // 8000 in AAPL, 2000 in MSFT -> 80/20, AAPL is the top.
+        let p = portfolio(cash: 0, [
+            position("AAPL", entry: 100, shares: 80, opened: day1),
+            position("MSFT", entry: 100, shares: 20, opened: day1),
+        ])
+        let c = PaperPortfolioEngine.concentration(p, prices: ["Stock:aapl": 100, "Stock:msft": 100])
+        XCTAssertEqual(c?.topSymbol, "AAPL")
+        XCTAssertEqual(c?.topFraction ?? 0, 0.8, accuracy: 1e-9)
+        XCTAssertEqual(c?.assetCount, 2)
+    }
+
+    // A partial sell splits one symbol into two lots (see PaperPortfolioStoreTests
+    // testPartialSellSplitsLot) — concentration must still count that as ONE asset.
+    func testConcentrationGroupsMultipleLotsOfSameSymbolAsOneAsset() {
+        let p = portfolio(cash: 0, [
+            position("AAPL", entry: 100, shares: 30, opened: day1),
+            position("AAPL", entry: 100, shares: 20, opened: day1),   // remainder of a partial sell
+            position("MSFT", entry: 100, shares: 50, opened: day1),
+        ])
+        let c = PaperPortfolioEngine.concentration(p, prices: ["Stock:aapl": 100, "Stock:msft": 100])
+        XCTAssertEqual(c?.assetCount, 2)          // AAPL counted once despite two lots
+        XCTAssertEqual(c?.topFraction ?? 0, 0.5, accuracy: 1e-9)   // 50/50 once merged
+    }
+
+    // MARK: - Per-holding volatility regime
+
+    func testRegimeNilWithoutHistory() {
+        let pos = position("AAPL", entry: 100, shares: 1, opened: day1)
+        XCTAssertNil(PaperPortfolioEngine.regime(for: pos, histories: [:]))
+    }
+
+    func testRegimeClassifiesFromTheHoldingsOwnHistory() {
+        // Calm: flat closes throughout.
+        let calmCloses = (0..<30).map { i in
+            PricePoint(date: day1.addingTimeInterval(TimeInterval(i) * 86_400), close: 100)
+        }
+        let hist = ["Stock:aapl": PriceSeries(symbol: "AAPL", assetClass: .stock, points: calmCloses, isSample: false)]
+        let pos = position("AAPL", entry: 100, shares: 1, opened: day1)
+        XCTAssertEqual(PaperPortfolioEngine.regime(for: pos, histories: hist), .calm)
+    }
+
+    // MARK: - Dollar-cost-average comparison
+
+    func testDCANilWhenNothingBought() {
+        XCTAssertNil(PaperPortfolioEngine.dollarCostAverageValue(PaperPortfolio(createdAt: day1), histories: [:]))
+    }
+
+    func testDCANilWhenOnlyOnePossibleInterval() {
+        // "today" is the same day as the first buy -> only one possible interval,
+        // DCA and lump sum would be identical, so there's nothing to compare.
+        let d0 = utc.startOfDay(for: day1)
+        let hist = aaplHistory([(d0, 100)])
+        let p = portfolio(cash: 0, [position("AAPL", entry: 100, shares: 100, opened: d0)])
+        XCTAssertNil(PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, now: d0, calendar: utc))
+    }
+
+    // A steadily RISING market: buying gradually means paying higher prices for
+    // the later chunks, so DCA should end up with FEWER shares (lower value)
+    // than the lump sum that bought everything on day one at the low price.
+    func testDCAUnderperformsLumpSumInARisingMarket() {
+        let d0 = utc.startOfDay(for: day1)
+        let closes = (0...28).map { i in (d0.addingTimeInterval(TimeInterval(i) * 86_400), 100.0 + Double(i)) }
+        let hist = aaplHistory(closes)
+        let p = portfolio(cash: 0, [position("AAPL", entry: 100, shares: 100, opened: d0)])   // $10,000 lump sum
+        let today = d0.addingTimeInterval(28 * 86_400)
+
+        let lumpSum = PaperPortfolioEngine.buyAndHoldValue(p, prices: ["Stock:aapl": 128], calendar: utc)
+        let dca = PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, intervalDays: 7, now: today, calendar: utc)
+        XCTAssertNotNil(dca)
+        XCTAssertLessThan(dca!, lumpSum)
+    }
+
+    // A market that DIPS then fully RECOVERS to the same final price: DCA buys
+    // extra shares cheaply during the dip, so it should end up AHEAD of the lump
+    // sum even though both start and end at the identical price.
+    func testDCACanBeatLumpSumThroughADipAndRecovery() {
+        let d0 = utc.startOfDay(for: day1)
+        // day 0: 100, day 7: 60 (dip), day 14: 100 (recovered) — flat overall.
+        let closes: [(Date, Double)] = [
+            (d0, 100), (d0.addingTimeInterval(7 * 86_400), 60), (d0.addingTimeInterval(14 * 86_400), 100),
+        ]
+        let hist = aaplHistory(closes)
+        let p = portfolio(cash: 0, [position("AAPL", entry: 100, shares: 100, opened: d0)])
+        let today = d0.addingTimeInterval(14 * 86_400)
+
+        let lumpSum = PaperPortfolioEngine.buyAndHoldValue(p, prices: ["Stock:aapl": 100], calendar: utc)
+        XCTAssertEqual(lumpSum, 10_000, accuracy: 1e-6)   // flat round-trip: unchanged
+        let dca = PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, intervalDays: 7, now: today, calendar: utc)
+        XCTAssertNotNil(dca)
+        XCTAssertGreaterThan(dca!, lumpSum)   // the dip-bought shares are pure upside
+    }
+
+    // Residual (never-invested) cash must still be included, matching buyAndHoldValue.
+    func testDCAIncludesResidualCash() {
+        let d0 = utc.startOfDay(for: day1)
+        let hist = aaplHistory([(d0, 100), (d0.addingTimeInterval(7 * 86_400), 100)])
+        // Helper defaults startingCash to $10,000; $5,000 of it went into AAPL,
+        // leaving $5,000 residual — matches buyAndHoldValue's own residual math.
+        let p = portfolio(cash: 5_000, [position("AAPL", entry: 100, shares: 50, opened: d0)])
+        let today = d0.addingTimeInterval(7 * 86_400)
+        let dca = PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, intervalDays: 7, now: today, calendar: utc)
+        XCTAssertEqual(dca ?? 0, 10_000, accuracy: 1e-6)   // flat price, so DCA == lump sum == starting cash
+    }
+
+    // A missing history for one day-one symbol (a data gap) must fall back to
+    // its entry price — same convention as valueSeries/buyAndHoldValue — never
+    // silently drop that position's value to zero.
+    func testDCAFallsBackToEntryPriceOnMissingHistory() {
+        let d0 = utc.startOfDay(for: day1)
+        // AAPL has full history; MSFT has none in `histories` at all.
+        let hist = aaplHistory([(d0, 100), (d0.addingTimeInterval(7 * 86_400), 100)])
+        let p = portfolio(cash: 0, [
+            position("AAPL", entry: 100, shares: 50, opened: d0),
+            position("MSFT", entry: 200, shares: 25, opened: d0),
+        ])
+        let today = d0.addingTimeInterval(7 * 86_400)
+        let dca = PaperPortfolioEngine.dollarCostAverageValue(p, histories: hist, intervalDays: 7, now: today, calendar: utc)
+        // AAPL flat at 100 -> unchanged $5,000. MSFT has no data -> falls back
+        // to its $5,000 entry cost rather than vanishing. Total: $10,000.
+        XCTAssertEqual(dca ?? 0, 10_000, accuracy: 1e-6)
+    }
 }

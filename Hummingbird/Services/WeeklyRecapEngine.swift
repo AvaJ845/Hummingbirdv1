@@ -13,11 +13,15 @@ enum WeeklyRecapEngine {
         calls: [UserCall],
         streak: Int,
         hasJournalActivity: Bool = false,
+        portfolioComparison: BuyAndHoldComparison? = nil,
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> Digest? {
         guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) else { return nil }
         let thisWeek = calls.filter { $0.createdAt >= weekAgo && $0.createdAt <= now }
+        // The recap is anchored to call activity, same as before — a portfolio
+        // line only ever enriches an existing recap, never creates a new trigger
+        // (deliberately: this app doesn't add fresh notification conditions).
         guard !thisWeek.isEmpty else { return nil }
 
         var parts = ["\(thisWeek.count) call\(thisWeek.count == 1 ? "" : "s") made"]
@@ -31,6 +35,14 @@ enum WeeklyRecapEngine {
 
         if streak >= 2 {
             parts.append("a \(streak)-day streak going")
+        }
+
+        // Only mention the practice portfolio when there's an honest, non-flat
+        // number to report — silence beats a "0.0%, no change" non-update.
+        if let c = portfolioComparison, abs(c.edge) > 0.0005 {
+            parts.append(c.isBeatingHold
+                ? "your practice portfolio beating buy-and-hold by \(c.edge.asSignedPercent())"
+                : "your practice portfolio \((-c.edge).asPercent()) behind buy-and-hold")
         }
 
         var body = parts.joined(separator: ", ") + ". A record of the past — never advice."
@@ -52,12 +64,14 @@ enum WeeklyRecapEngine {
 enum WeeklyRecap {
     static let enabledKey = "hb.weeklyRecap.enabled"
 
-    static func rescheduleIfEnabled(calls: [UserCall], streak: Int, hasJournalActivity: Bool = false) async {
+    static func rescheduleIfEnabled(calls: [UserCall], streak: Int, hasJournalActivity: Bool = false,
+                                    portfolioComparison: BuyAndHoldComparison? = nil) async {
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: enabledKey) else { return }
         guard await NotificationService.isAuthorized() else { return }
 
-        guard let digest = WeeklyRecapEngine.compose(calls: calls, streak: streak, hasJournalActivity: hasJournalActivity) else {
+        guard let digest = WeeklyRecapEngine.compose(calls: calls, streak: streak, hasJournalActivity: hasJournalActivity,
+                                                      portfolioComparison: portfolioComparison) else {
             NotificationService.cancelWeeklyRecap()
             return
         }
