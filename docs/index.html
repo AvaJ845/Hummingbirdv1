@@ -42,6 +42,13 @@
     background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
     color:#fff;padding:11px 20px;border-radius:999px;font-weight:600;font-size:15px}
   .dot{width:8px;height:8px;border-radius:50%;background:#34c88e;box-shadow:0 0 0 4px rgba(52,200,142,.25)}
+  .cta{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;
+    padding:15px 30px;border-radius:999px;font-weight:700;font-size:16.5px;
+    box-shadow:0 12px 28px rgba(31,158,111,.42)}
+  .cta:hover{filter:brightness(1.06)}
+  .ctanote{color:#9cbcae;font-size:13px;margin:4px 0 0;max-width:46ch;text-align:center}
+  .cta-block{text-align:center;padding:8px 0 4px}
+  .cta-block .cta{color:#fff}
 
   section{padding:60px 0}
   h2{font-size:clamp(24px,4vw,32px);letter-spacing:-.02em;margin:0 0 8px;text-align:center;text-wrap:balance}
@@ -78,6 +85,8 @@
     <h1>Hummingbird</h1>
     <p class="tag">Call it before you peek — then keep an honest score of your own market calls.</p>
     <p class="sub">Predict Higher or Lower before you see the sketch, and see how your own calls stack up against the app's methods over time. On-device sketches from public prices. No account. No tracking. Educational — never advice.</p>
+    <a class="cta" href="https://testflight.apple.com/join/nzpZNbZz" target="_blank" rel="noopener">Join the TestFlight beta →</a>
+    <p class="ctanote">Early access via Apple TestFlight — no email to us, no tracking, no data collected. Same privacy as the app.</p>
     <span class="pill"><span class="dot"></span>Coming soon to the App Store</span>
     <p style="color:#9cbcae;font-size:13.5px;margin:8px 0 0">Free to use · optional Pro: $2.99/mo, $19.99/yr, or $49.99 once · 7-day free trial</p>
   </div>
@@ -183,6 +192,11 @@
       <p style="color:var(--muted);margin:0">
         Hummingbird produces <strong>educational projections</strong> from public prices — not predictions, price targets, or financial advice. Markets are unpredictable. It will never tell you to buy or sell, and it never sees an account, a balance, or a broker.
       </p>
+    </div>
+
+    <div class="cta-block">
+      <a class="cta" href="https://testflight.apple.com/join/nzpZNbZz" target="_blank" rel="noopener">Join the TestFlight beta →</a>
+      <p class="ctanote" style="margin-left:auto;margin-right:auto">Be an early tester. No email to us, no tracking — just the app, on your device.</p>
     </div>
   </div>
 </section>
