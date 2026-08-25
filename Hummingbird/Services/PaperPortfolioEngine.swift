@@ -114,6 +114,83 @@ enum PaperPortfolioEngine {
         }
     }
 
+    /// How concentrated the *open* book is in its single largest asset, grouped
+    /// by symbol (not lot) so a partial sell doesn't inflate the count. Nil with
+    /// no open positions or zero open value (avoids a divide-by-zero fraction).
+    static func concentration(_ portfolio: PaperPortfolio, prices: [String: Double]) -> ConcentrationInsight? {
+        let open = portfolio.openPositions
+        guard !open.isEmpty else { return nil }
+        var valueBySymbol: [String: Double] = [:]
+        for pos in open {
+            valueBySymbol[pos.symbol.uppercased(), default: 0] += pos.value(at: price(for: pos, in: prices))
+        }
+        let total = valueBySymbol.values.reduce(0, +)
+        guard total > 0, let top = valueBySymbol.max(by: { $0.value < $1.value }) else { return nil }
+        return ConcentrationInsight(topSymbol: top.key, topFraction: top.value / total, assetCount: valueBySymbol.count)
+    }
+
+    /// The volatility regime for one holding, classified from its own fetched
+    /// history — the same classifier used elsewhere in the app for sketches, so
+    /// "elevated"/"high" means the same thing here as it does there. Nil until
+    /// that asset's history has loaded or there isn't enough of it yet.
+    static func regime(for position: PaperPosition, histories: [String: PriceSeries]) -> VolatilityRegime? {
+        guard let series = histories[position.assetKey] else { return nil }
+        return RegimeClassifier.classify(series: series)
+    }
+
+    /// "What if you'd spread the same day-one dollars over several buys instead
+    /// of all at once?" — dollar-cost averaging, simulated honestly against the
+    /// SAME closes already fetched for the You-vs-hold chart. Splits each
+    /// day-one position's cost into equal chunks bought at evenly spaced dates
+    /// (capped at `maxIntervals` so a long-running portfolio stays cheap), each
+    /// chunk priced at that date's nearest close, then values the resulting
+    /// shares at today's close. Needs no data beyond what's already fetched.
+    /// Nil when there's nothing to compare (no buys yet, or only a single
+    /// possible interval — DCA and lump sum are then the same thing).
+    static func dollarCostAverageValue(
+        _ portfolio: PaperPortfolio, histories: [String: PriceSeries],
+        intervalDays: Int = 7, maxIntervals: Int = 12,
+        now: Date = Date(), calendar: Calendar = .current
+    ) -> Double? {
+        guard let firstOpen = portfolio.positions.map(\.openedAt).min() else { return nil }
+        let start = calendar.startOfDay(for: firstOpen)
+        let today = calendar.startOfDay(for: now)
+        let dayOne = portfolio.positions.filter { calendar.isDate($0.openedAt, inSameDayAs: firstOpen) }
+        guard !dayOne.isEmpty else { return nil }
+
+        var dates: [Date] = [start]
+        var cursor = start
+        while dates.count < maxIntervals {
+            guard let next = calendar.date(byAdding: .day, value: intervalDays, to: cursor), next <= today else { break }
+            dates.append(next)
+            cursor = next
+        }
+        guard dates.count >= 2 else { return nil }   // one possible buy date == lump sum; nothing to compare
+
+        // Falls back to entry price on a missing close — same convention as
+        // valueSeries/buyAndHoldValue's local price helpers, so a data gap
+        // never silently zeroes out a position here while the benchmark it's
+        // compared against stays populated.
+        func price(_ pos: PaperPosition, on day: Date) -> Double {
+            guard let series = histories[pos.assetKey] else { return pos.entryPrice }
+            return PriceResolution.nearestClose(in: series, to: day, toleranceDays: 5) ?? pos.entryPrice
+        }
+
+        let residualCash = portfolio.startingCash - dayOne.reduce(0) { $0 + $1.cost }
+        var investedValue = 0.0
+        for pos in dayOne {
+            let perBuy = pos.cost / Double(dates.count)
+            var shares = 0.0
+            for date in dates {
+                let close = price(pos, on: date)
+                guard close > 0 else { continue }
+                shares += perBuy / close
+            }
+            investedValue += shares * price(pos, on: today)
+        }
+        return residualCash + investedValue
+    }
+
     /// The portfolio's honest record: your value, and how it compares to holding
     /// your day-one basket untouched.
     static func report(_ portfolio: PaperPortfolio, prices: [String: Double],
@@ -125,7 +202,8 @@ enum PaperPortfolioEngine {
             startingCash: portfolio.startingCash,
             openPositionCount: portfolio.openPositions.count,
             comparison: comparison(portfolio, prices: prices, calendar: calendar),
-            leanAccuracy: leanAccuracy
+            leanAccuracy: leanAccuracy,
+            concentration: concentration(portfolio, prices: prices)
         )
     }
 }

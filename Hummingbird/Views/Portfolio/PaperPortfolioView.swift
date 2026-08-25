@@ -73,6 +73,7 @@ struct PaperPortfolioView: View {
         List {
             headerSection
             chartSection
+            concentrationSection
             if store.portfolio.openPositions.isEmpty {
                 startOrCashSection
             } else {
@@ -170,6 +171,10 @@ struct PaperPortfolioView: View {
                 Text("The market (S&P) \(market.asSignedPercent()) — index funds are hard to beat.")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
+            if let dcaReturn {
+                Text("Spread out instead of all at once, it'd be \(dcaReturn.asSignedPercent()) — dollar-cost averaging.")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            }
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
@@ -181,6 +186,17 @@ struct PaperPortfolioView: View {
     private var marketReturn: Double? {
         guard let market = valuePoints.last?.market, report.startingCash != 0 else { return nil }
         return (market - report.startingCash) / report.startingCash
+    }
+
+    /// "What if you'd spread the same day-one dollars over several buys
+    /// instead?" — dollar-cost averaging, computed from data already fetched
+    /// for the chart. Nil until there's enough history to make more than one
+    /// possible buy date (see `PaperPortfolioEngine.dollarCostAverageValue`).
+    private var dcaReturn: Double? {
+        guard report.startingCash != 0,
+              let dca = PaperPortfolioEngine.dollarCostAverageValue(store.portfolio, histories: store.histories)
+        else { return nil }
+        return (dca - report.startingCash) / report.startingCash
     }
 
     private var vsHoldHeadline: String {
@@ -248,6 +264,32 @@ struct PaperPortfolioView: View {
         .accessibilityHint("Unlocks the You versus buy-and-hold chart with Pro")
     }
 
+    // MARK: - Diversification (information, never advice)
+
+    @ViewBuilder private var concentrationSection: some View {
+        if let c = report.concentration {
+            Section {
+                HStack {
+                    Label("Diversification", systemImage: "chart.pie").font(.subheadline)
+                    Spacer()
+                    Text(c.assetCount == 1 ? "1 asset" : "\(c.assetCount) assets")
+                        .font(.subheadline.weight(.semibold)).monospacedDigit()
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Diversification: \(c.assetCount) asset\(c.assetCount == 1 ? "" : "s") held, \(pctText(c.topFraction)) in \(c.topSymbol).")
+            } footer: {
+                Text(concentrationFooter(c))
+            }
+        }
+    }
+
+    private func concentrationFooter(_ c: ConcentrationInsight) -> String {
+        if c.assetCount == 1 {
+            return "All of it is in \(c.topSymbol). Diversification spreads risk across holdings — right now you have none."
+        }
+        return "\(pctText(c.topFraction)) is in \(c.topSymbol), your largest holding. Diversification spreads risk across holdings, for better or worse."
+    }
+
     // MARK: - Holdings
 
     private var holdingsSection: some View {
@@ -273,6 +315,9 @@ struct PaperPortfolioView: View {
                 HStack(spacing: 6) {
                     Text(pos.symbol.uppercased()).font(.body.weight(.semibold))
                     leanChip(pos.direction)
+                    if let regime = PaperPortfolioEngine.regime(for: pos, histories: store.histories), regime.isNoteworthy {
+                        regimeChip(regime)
+                    }
                 }
                 Text("\(pos.shares.formatted(.number.precision(.fractionLength(0...4)))) sh · in at \(pos.entryPrice.asCurrency())")
                     .font(.caption).foregroundStyle(.secondary)
@@ -287,7 +332,15 @@ struct PaperPortfolioView: View {
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(pos.symbol.uppercased()), you leaned \(pos.direction.title), \(value.asCurrency()), \(change.asSignedPercent()). Tap to sell.")
+        .accessibilityLabel(holdingAccessibilityLabel(pos, value: value, change: change))
+    }
+
+    private func holdingAccessibilityLabel(_ pos: PaperPosition, value: Double, change: Double) -> String {
+        var label = "\(pos.symbol.uppercased()), you leaned \(pos.direction.title), \(value.asCurrency()), \(change.asSignedPercent())."
+        if let regime = PaperPortfolioEngine.regime(for: pos, histories: store.histories), regime.isNoteworthy {
+            label += " \(regime.title)."
+        }
+        return label + " Tap to sell."
     }
 
     /// Your stated lean, shown back on the holding so the call you made at buy
@@ -302,6 +355,21 @@ struct PaperPortfolioView: View {
         .foregroundStyle(tint)
         .padding(.horizontal, 6).padding(.vertical, 2)
         .background(tint.opacity(0.14), in: Capsule())
+        .accessibilityHidden(true)
+    }
+
+    /// A quiet heads-up when a holding is currently more volatile than its own
+    /// norm — same classifier and thresholds used for sketches elsewhere, so
+    /// "elevated"/"high" means the same thing here as it does there.
+    private func regimeChip(_ regime: VolatilityRegime) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: regime.symbol)
+            Text(regime.shortLabel)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(regime.tint)
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(regime.tint.opacity(0.14), in: Capsule())
         .accessibilityHidden(true)
     }
 

@@ -20,12 +20,17 @@ struct OpenPositionSheet: View {
     @State private var priceError: String?
     @State private var amount: Double = 0
     @State private var direction: CallDirection?
+    @State private var regime: VolatilityRegime?
 
     var body: some View {
         NavigationStack {
             Form {
                 symbolSection
                 if let price {
+                    if let regime, regime.isNoteworthy {
+                        Section { RegimeBanner(regime: regime) }
+                            .listRowBackground(Color.clear).listRowInsets(EdgeInsets())
+                    }
                     amountSection(price: price)
                     convictionSection
                 }
@@ -161,6 +166,7 @@ struct OpenPositionSheet: View {
     private func invalidatePrice() {
         price = nil
         priceError = nil
+        regime = nil
     }
 
     private func fetchPrice() async {
@@ -169,6 +175,7 @@ struct OpenPositionSheet: View {
         isFetching = true
         priceError = nil
         price = nil
+        regime = nil
         defer { isFetching = false }
         do {
             let series = try await service.history(symbol: sym, assetClass: assetClass)
@@ -176,6 +183,9 @@ struct OpenPositionSheet: View {
                 priceError = "Live price unavailable right now — try again in a bit."
             } else if let close = series.last?.close {
                 price = close
+                // The same classifier used everywhere else in the app for
+                // sketches — surfaced here, before money moves, not after.
+                regime = RegimeClassifier.classify(series: series)
                 if amount > cash { amount = cash }
             } else {
                 priceError = "No price found for \(sym.uppercased())."

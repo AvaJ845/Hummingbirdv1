@@ -42,11 +42,20 @@ enum BackgroundRefresh {
             }
         }
 
+        // Keep the practice portfolio's cached prices warm too — throttled and
+        // capped exactly like the foreground path, so this costs nothing extra
+        // beyond what revalueDue already guards against.
+        let paperStore = PaperPortfolioStore()
+        if !Task.isCancelled {
+            await paperStore.revalueDue(using: MarketDataService())
+        }
+
         if !Task.isCancelled {
             await WeeklyRecap.rescheduleIfEnabled(
                 calls: callStore.calls,
                 streak: callStore.currentStreak,
-                hasJournalActivity: !SharedStorage.snapshots().isEmpty
+                hasJournalActivity: !SharedStorage.snapshots().isEmpty,
+                portfolioComparison: paperStore.hasStarted ? paperStore.report.comparison : nil
             )
         }
 
