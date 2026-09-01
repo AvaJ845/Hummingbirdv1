@@ -86,8 +86,4 @@ enum RetailExplainer {
         }
         return "Your economy toggles make this \(horizon)-day path \(tone) (\(macro.displayBias)). Optional context only."
     }
-
-    static let adviceTitle = "Not financial advice"
-    static let adviceBody =
-        "Hummingbird uses public history and simple on-device models to sketch a future path. Markets can move differently. Use this to explore ideas — not to decide trades."
 }

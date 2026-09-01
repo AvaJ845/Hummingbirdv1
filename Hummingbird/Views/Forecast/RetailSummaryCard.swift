@@ -64,27 +64,3 @@ struct RetailSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-
-struct AdviceCallout: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(RetailExplainer.adviceTitle, systemImage: "info.circle")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-            Text(RetailExplainer.adviceBody)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Theme.accent.opacity(0.08))
-        )
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Details-mode alias — same simple advice note (no academic backtest language).
-typealias HonestyCallout = AdviceCallout

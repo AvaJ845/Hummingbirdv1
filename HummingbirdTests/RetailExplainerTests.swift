@@ -59,10 +59,4 @@ final class RetailExplainerTests: XCTestCase {
         XCTAssertEqual(CryptoSymbolMap.yahooTicker(for: "ETH"), "ETH-USD")
         XCTAssertNil(CryptoSymbolMap.yahooTicker(for: "not-a-real-coin-xyz"))
     }
-
-    func testAdviceCopyIsBeginnerFriendly() {
-        XCTAssertEqual(RetailExplainer.adviceTitle, "Not financial advice")
-        XCTAssertTrue(RetailExplainer.adviceBody.localizedCaseInsensitiveContains("public history"))
-        XCTAssertFalse(RetailExplainer.adviceBody.localizedCaseInsensitiveContains("backtest"))
-    }
 }
