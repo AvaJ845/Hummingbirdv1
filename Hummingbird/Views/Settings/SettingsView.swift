@@ -24,11 +24,12 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Bundle image for the preview swatch. `nil` for `.classic` — the primary
-    /// icon is resolved from `CFBundleIcons` at display time instead.
-    var previewImageName: String? {
+    /// Bundle image for the preview swatch. `.classic` uses `BrandMark`, which
+    /// is rendered from the same master as the primary app icon (see
+    /// `AppStore/icon/render.py`), so the swatch matches the Home Screen icon.
+    var previewImageName: String {
         switch self {
-        case .classic: nil
+        case .classic: "BrandMark"
         case .midnight: "AltIcon-Midnight"
         case .mono: "AltIcon-Mono"
         }
@@ -266,39 +267,13 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private func preview(for option: AppIconOption) -> some View {
-        Group {
-            if let ui = iconImage(for: option) {
-                Image(uiImage: ui).resizable().scaledToFill()
-            } else {
-                Image("BrandMark").resizable().scaledToFill()
-            }
-        }
-        .frame(width: 44, height: 44)
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.quaternary))
-        .accessibilityHidden(true)
-    }
-
-    /// The swatch image for an icon option. Alternate icons load by their
-    /// bundled image name; `.classic` resolves the actual primary app icon
-    /// from `CFBundleIcons` so the swatch matches what's on the Home Screen.
-    private func iconImage(for option: AppIconOption) -> UIImage? {
-        if let name = option.previewImageName {
-            return UIImage(named: name)
-        }
-        // Primary icon: CFBundleIcons → CFBundlePrimaryIcon → last CFBundleIconFiles.
-        if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-           let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
-           let files = primary["CFBundleIconFiles"] as? [String],
-           let last = files.last,
-           let img = UIImage(named: last) {
-            return img
-        }
-        // TODO: project.yml declares CFBundlePrimaryIcon via CFBundleIconName
-        // ("AppIcon"), not CFBundleIconFiles, so there's no reliably-named
-        // bundled raster to load here. UIImage(named: "AppIcon") is attempted
-        // as a best effort; falls back to "BrandMark" in preview(for:).
-        return UIImage(named: "AppIcon")
+        Image(option.previewImageName)
+            .resizable()
+            .scaledToFill()
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.quaternary))
+            .accessibilityHidden(true)
     }
 
     private func setIcon(_ option: AppIconOption) {
