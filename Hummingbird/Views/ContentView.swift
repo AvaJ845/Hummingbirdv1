@@ -1,5 +1,4 @@
 import SwiftUI
-import StoreKit
 import WidgetKit
 
 struct ContentView: View {
