@@ -32,7 +32,7 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     var detail: String {
         switch self {
         case .youVsMethods:
-            "See whether your own calls are beating the app’s methods — scored on the very same calls."
+            "See how your own calls compare with the app’s methods — scored on the very same calls."
         case .portfolioVsHold:
             "Watch your practice trades against buy-and-hold and the market over time — did your trading actually add anything?"
         case .regimeReliability:

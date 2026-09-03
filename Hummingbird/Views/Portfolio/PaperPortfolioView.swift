@@ -286,9 +286,9 @@ struct PaperPortfolioView: View {
 
     private func concentrationFooter(_ c: ConcentrationInsight) -> String {
         if c.assetCount == 1 {
-            return "All of it is in \(c.topSymbol). Diversification spreads risk across holdings — right now you have none."
+            return "All of it is in \(c.topSymbol) — a single holding. Diversification spreads holdings across more assets, for better or worse."
         }
-        return "\(pctText(c.topFraction)) is in \(c.topSymbol), your largest holding. Diversification spreads risk across holdings, for better or worse."
+        return "\(pctText(c.topFraction)) is in \(c.topSymbol), the largest holding. Diversification spreads holdings across more assets, for better or worse."
     }
 
     // MARK: - Holdings
@@ -426,7 +426,7 @@ struct PaperPortfolioView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Your trades vs. the methods", systemImage: "sparkles")
                                 .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
-                            Text("See whether your own trades are beating the app's methods — scored on the very same positions. Pro.")
+                            Text("See how your own trades compare with the app's methods — scored on the very same positions. Pro.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
@@ -436,7 +436,7 @@ struct PaperPortfolioView: View {
                 Text("Your trades vs. the methods")
             } footer: {
                 if entitlements.isPro {
-                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; keep trading.")
+                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; more trades make the picture clearer.")
                 }
             }
         }
