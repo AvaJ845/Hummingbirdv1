@@ -39,7 +39,7 @@ Compare every method in one place and stretch sketches to 90 days. Same free pub
 
 Hummingbird is for learning and exploration only and is **not financial, investment, or trading advice.** Markets are unpredictable; never make money decisions based solely on this app.
 
-## What's New (1.16.0)
+## What's New (1.0)
 First public release: on-device price sketches for stocks & crypto, method comparison with honest backtests, watchlist, widget, Siri, and shareable sketch cards — educational, never advice.
 
 ## URLs
