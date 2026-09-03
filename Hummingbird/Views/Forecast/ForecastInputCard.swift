@@ -10,6 +10,9 @@ struct ForecastInputCard: View {
     let onCallIt: () -> Void
     let onStartDictation: () -> Void
     let onUnlock: () -> Void
+    /// When practice mode is on, offer the optional "call it first" action
+    /// above the sketch. Off by default — the sketch is the only action.
+    var practiceEnabled: Bool = false
 
     var body: some View {
         Card {
@@ -175,10 +178,9 @@ struct ForecastInputCard: View {
 
     private var forecastButton: some View {
         VStack(spacing: 10) {
-            // Loop-first: predicting your own call is the primary action; the
-            // plain sketch is the "skip the call" secondary.
-            Button(action: onCallIt) {
-                Label("Call it — predict first", systemImage: "hand.point.up.left")
+            // Default: the sketch is the one and only action.
+            Button(action: onForecast) {
+                Text(viewModel.isLoading ? "Projecting…" : "Show the sketch")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
@@ -186,17 +188,20 @@ struct ForecastInputCard: View {
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
             .disabled(viewModel.isLoading || dictation.isActive)
-            .accessibilityHint("Log your own Higher or Lower call before the sketch reveals")
+            .accessibilityHint("Fetches history and runs the model")
 
-            Button(action: onForecast) {
-                Text(viewModel.isLoading ? "Projecting…" : "Just show the sketch")
-                    .font(.subheadline.weight(.medium))
-                    .frame(maxWidth: .infinity)
+            // Practice mode only: optionally log your own call before you peek.
+            if practiceEnabled {
+                Button(action: onCallIt) {
+                    Label("Call it first (optional)", systemImage: "hand.point.up.left")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.accentAlt)
+                .disabled(viewModel.isLoading || dictation.isActive)
+                .accessibilityHint("Log your own Higher or Lower call before the sketch reveals")
             }
-            .buttonStyle(.bordered)
-            .tint(Theme.accentAlt)
-            .disabled(viewModel.isLoading || dictation.isActive)
-            .accessibilityHint("Skips the call and just fetches history and runs the model")
         }
     }
 }

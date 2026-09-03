@@ -35,7 +35,7 @@ All key-less; adjusted-close preferred and bad ticks scrubbed (Hampel filter) be
 
 - `Hummingbird/` — app (Models, Services, ViewModels, Views, Support)
 - `HummingbirdWidget/` — WidgetKit extension (App Intent-configurable)
-- `HummingbirdTests/` — unit tests (~85; count shifts with ongoing changes)
+- `HummingbirdTests/` — unit tests (~310; exact count shifts with ongoing changes)
 - `AppStore/` — 6.9″ screenshots, 1024 icon, and listing metadata (`METADATA.md`)
 - `docs/` — GitHub Pages legal site (`privacy.html`, `terms.html`)
 

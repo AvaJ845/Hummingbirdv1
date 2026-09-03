@@ -24,10 +24,11 @@ enum AppIconOption: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Bundle image used for the little preview swatch.
-    var previewImageName: String {
+    /// Bundle image for the preview swatch. `nil` for `.classic` — the primary
+    /// icon is resolved from `CFBundleIcons` at display time instead.
+    var previewImageName: String? {
         switch self {
-        case .classic: "BrandMark"
+        case .classic: nil
         case .midnight: "AltIcon-Midnight"
         case .mono: "AltIcon-Mono"
         }
@@ -45,10 +46,9 @@ struct SettingsView: View {
     @AppStorage("hb.digest.hour") private var digestHour = 8
     @AppStorage("hb.digest.minute") private var digestMinute = 0
     @AppStorage("hb.weeklyRecap.enabled") private var weeklyRecapEnabled = false
-    @AppStorage("hb.streakReminder.enabled") private var streakReminderEnabled = false
-    @AppStorage("hb.economicCalendarCall.enabled") private var economicCalendarCallEnabled = false
     @AppStorage("hb.portfolioAlerts.enabled") private var portfolioAlertsEnabled = false
     @AppStorage("hb.liveActivity.enabled") private var liveActivityEnabled = false
+    @AppStorage("hb.practice.enabled") private var practiceEnabled = false
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
     private var version: String {
@@ -200,44 +200,32 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle("Streak reminder", isOn: Binding(
-                        get: { streakReminderEnabled },
-                        set: { streakReminderEnabled = $0; rescheduleStreakReminder() }
-                    ))
+                    Toggle("Practice tools", isOn: $practiceEnabled)
                 } header: {
-                    Text("Streak reminder")
+                    Text("Practice")
                 } footer: {
-                    Text("A same-day evening nudge, only when you have an active call streak and haven't called anything yet today. About showing up, never about being right.")
+                    Text("Off by default. When on, the home screen adds optional practice tools: call a direction before you peek, a virtual practice portfolio, spaced recall, and a weekly literacy question.")
                 }
 
-                Section {
-                    Toggle("Jobs Report reminder", isOn: Binding(
-                        get: { economicCalendarCallEnabled },
-                        set: { economicCalendarCallEnabled = $0; rescheduleEconomicCalendarCall() }
-                    ))
-                } header: {
-                    Text("Jobs Report reminder")
-                } footer: {
-                    Text("A morning nudge on Jobs Report day (first Friday of the month), only if you haven't called anything yet. Predict which way the market leans before the numbers land — never advice.")
-                }
+                if practiceEnabled {
+                    Section {
+                        Toggle("Portfolio movement alerts", isOn: $portfolioAlertsEnabled)
+                    } header: {
+                        Text("Portfolio movement alerts")
+                    } footer: {
+                        Text("Get notified when a practice-portfolio holding moves \(Int(PortfolioAlerts.defaultThreshold * 100))% or more since you last checked. Movement, not a signal.")
+                    }
 
-                Section {
-                    Toggle("Portfolio movement alerts", isOn: $portfolioAlertsEnabled)
-                } header: {
-                    Text("Portfolio movement alerts")
-                } footer: {
-                    Text("Get notified when a practice-portfolio holding moves \(Int(PortfolioAlerts.defaultThreshold * 100))% or more since you last checked. Movement, not a signal.")
-                }
-
-                Section {
-                    Toggle("Track on Lock Screen", isOn: Binding(
-                        get: { liveActivityEnabled },
-                        set: { liveActivityEnabled = $0; if !$0 { SketchLiveActivityManager.endAll() } }
-                    ))
-                } header: {
-                    Text("Live Activity")
-                } footer: {
-                    Text("When on, a “Track” button appears on a sketch so you can pin its live price and projected path to the Lock Screen and Dynamic Island. Educational sketch — never advice.")
+                    Section {
+                        Toggle("Track on Lock Screen", isOn: Binding(
+                            get: { liveActivityEnabled },
+                            set: { liveActivityEnabled = $0; if !$0 { SketchLiveActivityManager.endAll() } }
+                        ))
+                    } header: {
+                        Text("Live Activity")
+                    } footer: {
+                        Text("When on, a “Track” button appears on a sketch so you can pin its live price and projected path to the Lock Screen and Dynamic Island. Educational sketch — never advice.")
+                    }
                 }
 
                 #if DEBUG
@@ -257,6 +245,8 @@ struct SettingsView: View {
                     LabeledContent("Version", value: version)
                 } footer: {
                     Text("Hummingbird runs entirely on your device. Educational projections only — not financial advice.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Settings")
@@ -277,7 +267,7 @@ struct SettingsView: View {
 
     @ViewBuilder private func preview(for option: AppIconOption) -> some View {
         Group {
-            if let ui = UIImage(named: option.previewImageName) {
+            if let ui = iconImage(for: option) {
                 Image(uiImage: ui).resizable().scaledToFill()
             } else {
                 Image("BrandMark").resizable().scaledToFill()
@@ -287,6 +277,28 @@ struct SettingsView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(.quaternary))
         .accessibilityHidden(true)
+    }
+
+    /// The swatch image for an icon option. Alternate icons load by their
+    /// bundled image name; `.classic` resolves the actual primary app icon
+    /// from `CFBundleIcons` so the swatch matches what's on the Home Screen.
+    private func iconImage(for option: AppIconOption) -> UIImage? {
+        if let name = option.previewImageName {
+            return UIImage(named: name)
+        }
+        // Primary icon: CFBundleIcons → CFBundlePrimaryIcon → last CFBundleIconFiles.
+        if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+           let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+           let files = primary["CFBundleIconFiles"] as? [String],
+           let last = files.last,
+           let img = UIImage(named: last) {
+            return img
+        }
+        // TODO: project.yml declares CFBundlePrimaryIcon via CFBundleIconName
+        // ("AppIcon"), not CFBundleIconFiles, so there's no reliably-named
+        // bundled raster to load here. UIImage(named: "AppIcon") is attempted
+        // as a best effort; falls back to "BrandMark" in preview(for:).
+        return UIImage(named: "AppIcon")
     }
 
     private func setIcon(_ option: AppIconOption) {
@@ -348,39 +360,4 @@ struct SettingsView: View {
         }
     }
 
-    /// (Re)schedule or cancel today's streak reminder. Requests permission the
-    /// first time it's enabled.
-    private func rescheduleStreakReminder() {
-        Task { @MainActor in
-            guard streakReminderEnabled else {
-                NotificationService.cancelStreakReminder()
-                return
-            }
-            var authorized = await NotificationService.isAuthorized()
-            if !authorized { authorized = await NotificationService.requestAuthorization() }
-            guard authorized else {
-                streakReminderEnabled = false
-                return
-            }
-            await StreakReminder.rescheduleIfEnabled(streak: userCalls.currentStreak, calls: userCalls.calls)
-        }
-    }
-
-    /// (Re)schedule or cancel today's Jobs Report reminder. Requests
-    /// permission the first time it's enabled.
-    private func rescheduleEconomicCalendarCall() {
-        Task { @MainActor in
-            guard economicCalendarCallEnabled else {
-                NotificationService.cancelEconomicCalendarCall()
-                return
-            }
-            var authorized = await NotificationService.isAuthorized()
-            if !authorized { authorized = await NotificationService.requestAuthorization() }
-            guard authorized else {
-                economicCalendarCallEnabled = false
-                return
-            }
-            await EconomicCalendarCall.rescheduleIfEnabled(calls: userCalls.calls)
-        }
-    }
 }

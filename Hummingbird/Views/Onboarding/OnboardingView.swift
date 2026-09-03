@@ -13,18 +13,18 @@ struct OnboardingView: View {
     }
 
     private let pages: [Page] = [
-        Page(symbol: "hand.point.up.left.fill",
-             title: "Call it before you peek",
-             body: "Predict Higher or Lower — and how sure you are — before you see the sketch. Hummingbird keeps an honest score of your own calls over time."),
-        Page(symbol: "trophy.fill",
-             title: "See if you beat the methods",
-             body: "Once your calls resolve against real prices, see how you did — and whether you're beating the app's own methods on the same calls. There's also a practice portfolio to test whether your trades beat simply buying and holding."),
         Page(symbol: "scribble.variable",
              title: "Sketches, not predictions",
-             body: "It also draws simple paths from public prices and shows how wrong it's been. A record of the past — never advice, never a signal."),
+             body: "Hummingbird draws a simple statistical sketch of where a stock or coin could drift over the coming days, from public prices. A picture of the math — never advice, never a signal."),
         Page(symbol: "lock.shield.fill",
              title: "Private by design",
-             body: "Everything runs on your device. No account, no tracking — just you and the math.")
+             body: "Everything runs on your device. No account, no tracking — just you and the math."),
+        Page(symbol: "checkmark.seal.fill",
+             title: "See how wrong it's been",
+             body: "As real prices catch up to each sketch, Hummingbird keeps an honest accuracy record — how far off it has been, and which method has tracked each asset closest."),
+        Page(symbol: "hand.point.up.left",
+             title: "Optional: call it first",
+             body: "If you want the practice, you can turn on Practice tools in Settings to call a direction before you peek and keep a private score of your own calls over time.")
     ]
 
     /// Informational pages plus one interactive setup step at the end.
@@ -59,12 +59,12 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
 
-            Button("Skip", action: onFinish)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 16)
-                .opacity(isLastPage ? 0 : 1)
-                .disabled(isLastPage)
+            if !isLastPage {
+                Button("Skip", action: onFinish)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 16)
+            }
         }
         .background(Color(.systemGroupedBackground))
     }

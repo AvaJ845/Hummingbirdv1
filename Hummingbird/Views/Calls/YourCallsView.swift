@@ -21,11 +21,9 @@ struct YourCallsView: View {
     }
     private var freeResolvedLimit: Int { 5 }
 
-    /// The streak shown to the user, including a Pro subscriber's one grace
-    /// day (see `ProFeature.streakFreeze`) — never the raw participation
-    /// count alone once Pro is active.
+    /// The raw participation streak shown to the user — no perks, no grace days.
     private var displayStreak: Int {
-        StreakEngine.currentStreak(store.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
+        StreakEngine.currentStreak(store.calls)
     }
 
     var body: some View {
