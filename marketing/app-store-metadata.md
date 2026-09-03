@@ -58,7 +58,7 @@ ALSO INSIDE
 • Simple, transparent methods (Drift, Trend, Holt, and more) to compare side by side.
 • A private watchlist, Home & Lock Screen widgets, a once-a-day morning read, and an optional Live Activity.
 
-Free to use. Optional Pro goes deeper on your own record — You vs. the methods, your full call history, and calibration by confidence — plus a pay-once Lifetime option. Never better foresight; never advice.
+Free to use. Optional Pro goes deeper on your own record — You vs. the methods, your full call history, and calibration by confidence — as a yearly or monthly subscription. Never better foresight; never advice.
 
 Hummingbird is an educational tool. It draws simple projections from public price history — not predictions, price targets, or financial advice. Markets are unpredictable.
 ```

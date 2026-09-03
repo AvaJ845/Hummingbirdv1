@@ -4,21 +4,7 @@
 
   ],
   "products" : [
-    {
-      "displayPrice" : "49.99",
-      "familyShareable" : false,
-      "internalID" : "55555555-5555-5555-5555-555555555555",
-      "localizations" : [
-        {
-          "description" : "Pay once, keep Pro forever — your full call record, you-vs-the-methods, and depth tools. Educational, never advice.",
-          "displayName" : "Hummingbird Pro — Lifetime",
-          "locale" : "en_US"
-        }
-      ],
-      "productID" : "com.avaresearch.hummingbird.pro.lifetime",
-      "referenceName" : "Pro Lifetime",
-      "type" : "NonConsumable"
-    }
+
   ],
   "settings" : {
     "_applicationInternalID" : "0",

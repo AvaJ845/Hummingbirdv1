@@ -5,12 +5,12 @@ final class PricingTests: XCTestCase {
     func testProductIdentifiers() {
         XCTAssertEqual(EntitlementStore.yearlyProductID, "com.avaresearch.hummingbird.pro.yearly")
         XCTAssertEqual(EntitlementStore.monthlyProductID, "com.avaresearch.hummingbird.pro.monthly")
-        XCTAssertEqual(EntitlementStore.lifetimeProductID, "com.avaresearch.hummingbird.pro.lifetime")
         XCTAssertEqual(EntitlementStore.allProductIDs, [
             "com.avaresearch.hummingbird.pro.yearly",
-            "com.avaresearch.hummingbird.pro.monthly",
-            "com.avaresearch.hummingbird.pro.lifetime"
+            "com.avaresearch.hummingbird.pro.monthly"
         ])
+        // Lifetime was removed — settled on yearly + monthly only.
+        XCTAssertFalse(EntitlementStore.allProductIDs.contains { $0.contains("lifetime") })
     }
 
     func testYearlySavingsVsMonthly() {

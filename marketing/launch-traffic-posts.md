@@ -134,7 +134,7 @@ No signals. No advice. A mirror, not a guru.
 
 $10k of virtual cash → one honest question: did your trades actually beat just buying and holding, and the market?
 
-(Spoiler from my own runs: index funds are hard to beat.)
+The app just shows you the comparison. You draw your own conclusions.
 
 6/ It's early and unproven — which is the whole point. You keep score.
 
