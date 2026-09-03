@@ -48,13 +48,24 @@ First public release: on-device price sketches for stocks & crypto, method compa
 - **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html (or Apple standard EULA)
 
 ## Screenshots (6.9" — 1320×2868, in this folder)
-1. `01_plain_english.png` — "Plain-English, not hype."
-2. `02_best_method.png` — "Which method tracks best?"
-3. `03_watchlist.png` — "Glanceable. Always fresh."
-4. `04_any_asset.png` — "Sketch any stock or crypto."
-5. `05_honest.png` — "Honest by design. Never advice."
+Order leads with the differentiator (radical honesty / the accuracy record),
+then plain-English, then depth:
+1. `01_honest.png` — "See how wrong it's been." (the honest accuracy record — the hook)
+2. `02_plain_english.png` — "Plain-English, not hype."
+3. `03_best_method.png` — "Which method tracks best?"
+4. `04_watchlist.png` — "Glanceable. Always fresh."
+5. `05_any_asset.png` — "Sketch any stock or crypto."
 
-App icon: `AppIcon-1024.png` (1024×1024, no alpha).
+> **Re-shoot required before submission.** All five current images predate the
+> round-1/2 changes: they show the old brand mark and app icon, the old
+> "Run projection" / "Call it first" home screen, and the pre-reorder
+> onboarding. `01_honest.png` is currently the onboarding "Sketches, not
+> predictions" page captioned for honesty — the stronger hero is a real capture
+> of the **Accuracy report** (Settings → Accuracy report) showing the median
+> error / calibration record, captioned "See how wrong it's been."
+
+App icon: `AppIcon-1024.png` (1024×1024, no alpha) — regenerate with
+`sh AppStore/icon/render.sh`.
 
 ## App Privacy (nutrition label)
 - **Data collected:** None. No account, no analytics/tracking SDKs.

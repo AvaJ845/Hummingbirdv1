@@ -35,21 +35,23 @@ New: a practice portfolio. Start with $10,000 and see if your trades actually be
 
 ## Screenshots — upload order
 
-Use the three captioned heroes in `marketing/`… (exported at 6.9″ 1320×2868 and
-6.5″ 1242×2688). Lead with the boldest, most legible hooks — a new, unknown app
-has ~2 seconds to catch a scroller, so slots 1–2 must land on their own.
+There is now **one canonical screenshot set**: `AppStore/` (6.9″ 1320×2868). The
+old bright-green `marketing/appstore-screenshots/hero-*` set was removed — it
+pushed the "beat buy-and-hold?" hook, which reads as an engagement game and not
+the calm honest utility this app is. The canonical order leads with the accuracy
+record instead:
 
-1. **hero-1-beat-buy-and-hold** — "Do you actually beat buy-and-hold?" (the relatable, scroll-stopping hook + the new feature)
-2. **hero-3-call-it** — "Call it before you peek." (the app's signature accountability loop)
-3. **hero-2-scored-honestly** — "Every trade, scored honestly." (the receipts)
-4. Accuracy report — "shows its work, misses and all."
-5. A sketch + reliability meter — the honest forecast.
+1. `01_honest.png` — "See how wrong it's been." (the accuracy record — the hook)
+2. `02_plain_english.png` — the plain-English read
+3. `03_best_method.png` — the "best recent" backtest receipts
+4. `04_watchlist.png` — glanceable value
+5. `05_any_asset.png` — the simple input
 
-Keep "never advice" visible somewhere in the caption band. A/B worth testing:
-swap slots 1↔2 (portfolio hook vs. app identity) and measure tap-through.
+The practice portfolio is a secondary, opt-in surface (round-2 change) and is
+**not** a screenshot hero. Keep "never advice" visible in every caption band.
 
-*(Both size buckets required by App Store Connect are provided; the 6.9″ set is
-primary.)*
+> All five images need re-shooting against the current UI/icon before submission —
+> see `AppStore/METADATA.md`.
 
 ---
 

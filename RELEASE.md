@@ -8,7 +8,7 @@ tests, assets, and legal pages are done — the rest is account/config work
 - Bundle ID: `com.avaresearch.hummingbird`
 - Subscriptions (IAP), group `Hummingbird Pro`: `com.avaresearch.hummingbird.pro.yearly` ($19.99/yr, 7-day free trial) · `com.avaresearch.hummingbird.pro.monthly` ($2.99/mo)
 - Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
-- Assets: `AppStore/` (five 1320×2868 screenshots, `AppIcon-1024.png`, `METADATA.md`)
+- Assets: `AppStore/` (five 1320×2868 screenshots — need re-shooting, see below; `AppIcon-1024.png` + `icon/` render step; `METADATA.md`)
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
 
 ---
@@ -34,7 +34,7 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] Description / promo text / keywords → paste from `AppStore/METADATA.md`
 - [ ] **Privacy Policy URL:** `https://avaj845.github.io/Hummingbirdv1/privacy.html`
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
-- [ ] Upload the **5 screenshots** from `AppStore/` to the **6.9″** slot + set the 1024 icon
+- [ ] **Re-shoot the 5 screenshots** — the ones in `AppStore/` predate the round-1/2 UI + icon and must not ship. Order: `01_honest` (Accuracy report — "See how wrong it's been"), `02_plain_english`, `03_best_method`, `04_watchlist`, `05_any_asset`. Upload to the **6.9″** slot + set the 1024 icon (`sh AppStore/icon/render.sh`).
 
 ## 4 · Create the subscriptions
 Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**, then two products:

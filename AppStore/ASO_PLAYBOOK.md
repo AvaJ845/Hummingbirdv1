@@ -32,15 +32,19 @@ lowest-ranking hidden keyword each update; re-validate ideas with an LLM.
 You have **3–5 seconds**. The deck's proven rule: **authentic, functional UI beats
 polished abstraction**; lead with your best *real* feature; never a welcome/lifestyle screen.
 
-**Recommended order** (assets in this folder):
-1. **`01_plain_english.png`** — the honest multi-method read. Immediate differentiation.
-2. **`02_best_method.png`** — the "best recent" backtest receipts (unique to Hummingbird).
-3. **`03_watchlist.png`** — glanceable value + widget/live angle.
-4. **`04_any_asset.png`** — the simple input (what they'll do).
-5. **`05_honest.png`** — the honesty promise (brand close).
+**Recommended order** (assets in this folder) — lead with the differentiator:
+1. **`01_honest.png`** — "See how wrong it's been." The accuracy record IS the hook.
+2. **`02_plain_english.png`** — the honest multi-method read in plain English.
+3. **`03_best_method.png`** — the "best recent" backtest receipts (unique to Hummingbird).
+4. **`04_watchlist.png`** — glanceable value + widget/live angle.
+5. **`05_any_asset.png`** — the simple input (what they'll do).
 
 Each already carries a bold caption + the not-advice line — good; the caption is
 read faster than the screen.
+
+> ⚠️ All five images are **stale** (pre round-1/2 UI + old icon/mark) and must be
+> re-shot. `01_honest.png` should be a real capture of the **Accuracy report**
+> screen, not the onboarding page it currently shows.
 
 **Action items**
 - [ ] **A/B test via Product Page Optimization** once live (App Store Connect → up to 3 treatments). First test to run: **#1 = the price-sketch chart with the confidence band** vs the current comparison card. The chart is the more *visually* striking hero; the deck says *don't assume — test.*
