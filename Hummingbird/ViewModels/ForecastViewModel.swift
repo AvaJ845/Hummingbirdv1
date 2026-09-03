@@ -72,10 +72,6 @@ final class ForecastViewModel {
     private(set) var priceUpdateToken = 0
     /// Set when the user hits a Pro gate — UI presents the paywall.
     var pendingPaywallReason: String?
-    /// Set once, right when a streak first reaches 2 days — UI offers the
-    /// reminder opt-in at the moment it's actually earned, instead of leaving
-    /// it to be found in Settings. Carries the streak count for the message.
-    var pendingStreakReminderOffer: Int?
 
     enum PriceDirection { case up, down, unchanged }
 
@@ -514,19 +510,6 @@ final class ForecastViewModel {
                              horizonDays: loggingCall.horizonDays, symbol: fetched.symbol,
                              assetClass: fetched.assetClass, spot: spot,
                              methodDirections: methodDirectionSnapshot(series: fetched, horizon: loggingCall.horizonDays))
-                // Today's call is in — cancel any pending "don't lose your
-                // streak" reminder right away rather than waiting on the next
-                // background cycle to notice.
-                let streak = calls.store.currentStreak
-                Task { await StreakReminder.rescheduleIfEnabled(streak: streak, calls: calls.store.calls) }
-
-                // Offer the reminder opt-in at the exact moment it's earned —
-                // right after the call that first builds a 2-day streak —
-                // rather than leaving it to be found in Settings later.
-                if StreakReminder.shouldOfferPrompt(streak: streak) {
-                    StreakReminder.recordOffered()
-                    pendingStreakReminderOffer = streak
-                }
             }
         } catch is CancellationError {
             return

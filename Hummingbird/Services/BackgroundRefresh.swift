@@ -60,14 +60,6 @@ enum BackgroundRefresh {
         }
 
         if !Task.isCancelled {
-            await StreakReminder.rescheduleIfEnabled(streak: callStore.currentStreak, calls: callStore.calls)
-        }
-
-        if !Task.isCancelled {
-            await EconomicCalendarCall.rescheduleIfEnabled(calls: callStore.calls)
-        }
-
-        if !Task.isCancelled {
             let report = callStore.report
             SharedStorage.saveTrackRecord(TrackRecordSnapshot(
                 streak: callStore.currentStreak,

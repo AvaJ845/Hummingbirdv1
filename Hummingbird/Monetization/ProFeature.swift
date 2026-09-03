@@ -5,9 +5,7 @@ import Foundation
 /// a single price tier, so the actual gate everywhere is `EntitlementStore.isPro`
 /// — this enum doesn't (and shouldn't) drive gating itself.
 enum ProFeature: String, CaseIterable, Identifiable, Sendable {
-    // Protecting progress already made is the most concrete hook — leads.
-    case streakFreeze
-    // Self-knowledge next — the reason to pay is an honest mirror, not foresight.
+    // Self-knowledge leads — the reason to pay is an honest mirror, not foresight.
     case youVsMethods
     case portfolioVsHold
     case regimeReliability
@@ -21,7 +19,6 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .streakFreeze: "Streak freeze"
         case .youVsMethods: "You vs. the methods"
         case .portfolioVsHold: "Your portfolio vs. buy-and-hold"
         case .regimeReliability: "Best method by conditions"
@@ -34,8 +31,6 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
 
     var detail: String {
         switch self {
-        case .streakFreeze:
-            "Miss a day without losing your call streak — one grace day, automatically, so a busy day doesn't erase your progress."
         case .youVsMethods:
             "See whether your own calls are beating the app’s methods — scored on the very same calls."
         case .portfolioVsHold:
@@ -55,7 +50,6 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
 
     var systemImage: String {
         switch self {
-        case .streakFreeze: "snowflake"
         case .youVsMethods: "trophy"
         case .portfolioVsHold: "chart.xyaxis.line"
         case .regimeReliability: "waveform.path.ecg"

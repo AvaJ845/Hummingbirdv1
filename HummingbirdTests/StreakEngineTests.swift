@@ -63,49 +63,4 @@ final class StreakEngineTests: XCTestCase {
         }
         XCTAssertEqual(StreakEngine.currentStreak(losingStreak, asOf: today, calendar: calendar), 2)
     }
-
-    // MARK: - Streak freeze (Pro perk)
-
-    func testDefaultHasNoFreezeAndMatchesOriginalBehavior() {
-        let calls = [call(daysAgo: 0), call(daysAgo: 1), call(daysAgo: 3)]
-        XCTAssertEqual(StreakEngine.currentStreak(calls, asOf: today, calendar: calendar), 2)
-    }
-
-    func testFreezeBridgesOneGapDay() {
-        // Called today and yesterday, skipped 2 days ago, called 3 and 4 days ago.
-        let calls = [call(daysAgo: 0), call(daysAgo: 1), call(daysAgo: 3), call(daysAgo: 4)]
-        XCTAssertEqual(
-            StreakEngine.currentStreak(calls, freezesAvailable: 1, asOf: today, calendar: calendar), 4,
-            "One freeze should bridge the single missed day (2 days ago) and keep counting."
-        )
-    }
-
-    func testFreezeDoesNotBridgeTwoGapDays() {
-        // Gaps at both 2 and 4 days ago — only the nearer one gets forgiven.
-        let calls = [call(daysAgo: 0), call(daysAgo: 1), call(daysAgo: 3), call(daysAgo: 5)]
-        XCTAssertEqual(
-            StreakEngine.currentStreak(calls, freezesAvailable: 1, asOf: today, calendar: calendar), 3,
-            "A single freeze must not forgive a second gap — the chain still breaks there."
-        )
-    }
-
-    func testUnusedFreezeDoesNotInflateAPerfectStreak() {
-        let calls = [call(daysAgo: 0), call(daysAgo: 1), call(daysAgo: 2)]
-        XCTAssertEqual(StreakEngine.currentStreak(calls, freezesAvailable: 1, asOf: today, calendar: calendar), 3)
-    }
-
-    func testMultipleFreezesBridgeMultipleGaps() {
-        // Called days 0, 2, 4 ago — gaps at 1 and 3 days ago. The streak counts
-        // actual call days reached (3), not the calendar span bridged — frozen
-        // gap days don't themselves count toward the length.
-        let calls = [call(daysAgo: 0), call(daysAgo: 2), call(daysAgo: 4)]
-        XCTAssertEqual(
-            StreakEngine.currentStreak(calls, freezesAvailable: 2, asOf: today, calendar: calendar), 3,
-            "Two freezes should bridge both gap days (1 and 3 days ago) without breaking the chain."
-        )
-        XCTAssertEqual(
-            StreakEngine.currentStreak(calls, freezesAvailable: 1, asOf: today, calendar: calendar), 2,
-            "One freeze only bridges the first gap (1 day ago); the chain still breaks at the second."
-        )
-    }
 }

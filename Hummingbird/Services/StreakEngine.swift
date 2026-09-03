@@ -13,16 +13,10 @@ enum StreakEngine {
     /// "alive" through yesterday (it isn't broken until a full day passes with
     /// no call). Returns 0 for no calls or a lapsed streak.
     ///
-    /// `freezesAvailable` forgives that many missed days along the walk back
-    /// (a Pro perk — see `ProFeature.streakFreeze`) without counting them
-    /// toward the streak length. It's a pure function of the current calls,
-    /// not a persisted, depleting resource: pass `isPro ? 1 : 0` fresh each
-    /// call. A single freeze bridges at most one recent gap; a second gap
-    /// still breaks the chain, so daily habit pressure survives an occasional
-    /// miss without becoming skippable-every-other-day.
+    /// This is the raw participation streak — no grace days, no perks. It is
+    /// shown for display only and never gated behind Pro.
     static func currentStreak(
         _ calls: [UserCall],
-        freezesAvailable: Int = 0,
         asOf: Date = Date(),
         calendar: Calendar = .current
     ) -> Int {
@@ -37,15 +31,8 @@ enum StreakEngine {
         }
 
         var streak = 0
-        var freezesLeft = freezesAvailable
-        while true {
-            if days.contains(cursor) {
-                streak += 1
-            } else if freezesLeft > 0 {
-                freezesLeft -= 1
-            } else {
-                break
-            }
+        while days.contains(cursor) {
+            streak += 1
             guard let prior = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
             cursor = prior
         }
