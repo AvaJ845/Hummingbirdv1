@@ -44,7 +44,7 @@ struct PaperPortfolioCard: View {
         if c.tradeCount == 0 { return "Holding your first picks · vs. buy-and-hold" }
         if abs(c.edge) < 0.0005 { return "Even with buy-and-hold" }
         return c.isBeatingHold
-            ? "Beating buy-and-hold by \(c.edge.asSignedPercent())"
+            ? "Ahead of buy-and-hold by \(c.edge.asSignedPercent())"
             : "Behind buy-and-hold by \((-c.edge).asPercent())"
     }
 }
@@ -154,7 +154,7 @@ struct PaperPortfolioView: View {
             }
         } footer: {
             if store.hasStarted, report.comparison.tradeCount > 0 {
-                Text("You've made \(report.comparison.tradeCount) trade\(report.comparison.tradeCount == 1 ? "" : "s"). Buy-and-hold makes zero — activity rarely wins.")
+                Text("You've made \(report.comparison.tradeCount) trade\(report.comparison.tradeCount == 1 ? "" : "s"). The buy-and-hold comparison makes none.")
             }
         }
     }
@@ -169,7 +169,7 @@ struct PaperPortfolioView: View {
             Text("Your return \(c.yourReturn.asSignedPercent()) · holding your first picks \(c.holdReturn.asSignedPercent())")
                 .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             if let market = marketReturn {
-                Text("The market (S&P) \(market.asSignedPercent()) — index funds are hard to beat.")
+                Text("The market (S&P) \(market.asSignedPercent()) over the same period.")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
             if let dcaReturn {
@@ -202,11 +202,11 @@ struct PaperPortfolioView: View {
 
     private var vsHoldHeadline: String {
         let c = report.comparison
-        if c.tradeCount == 0 { return "You're holding your first picks — a real strategy." }
-        if abs(c.edge) < 0.0005 { return "You're even with buy-and-hold." }
+        if c.tradeCount == 0 { return "You're holding your first picks." }
+        if abs(c.edge) < 0.0005 { return "Even with buy-and-hold." }
         return c.isBeatingHold
-            ? "You're beating buy-and-hold by \(c.edge.asSignedPercent())."
-            : "Buy-and-hold is ahead by \((-c.edge).asPercent()) — trading isn't free."
+            ? "Ahead of buy-and-hold by \(c.edge.asSignedPercent())."
+            : "Behind buy-and-hold by \((-c.edge).asPercent())."
     }
 
     private var headlineColor: Color {
