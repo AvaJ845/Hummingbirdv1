@@ -28,6 +28,7 @@ struct ContentView: View {
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
+    @State private var lastLiveRefresh: Date = .distantPast
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -173,13 +174,9 @@ struct ContentView: View {
         }
         .task {
             await entitlements.loadProducts()
-            // Practice-only upkeep — skipped entirely when practice mode is off.
-            if practiceEnabled {
-                await viewModel.resolveDueCalls()
-                await paper.revalueDue(using: MarketDataService())
-                updateTrackRecordSnapshot()
-                updatePortfolioSnapshot()
-            }
+            // Once per launch, regardless of practice mode, so calls made before
+            // practice was turned off still resolve and aren't left frozen.
+            await refreshLiveData(force: true)
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
@@ -215,6 +212,41 @@ struct ContentView: View {
             updatedAt: Date()
         ))
         WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
+    }
+
+    /// Single debounced entry point for "catch up on anything that may have gone
+    /// stale while we were away" — resolve due calls, revalue the practice
+    /// portfolio, refresh the widget snapshots. Every trigger (launch, return to
+    /// foreground) routes through here instead of firing its own overlapping
+    /// tasks; a call within `Self.liveRefreshInterval` of the last one no-ops.
+    /// `force` (used once per launch) bypasses the interval so old unresolved
+    /// calls are never left frozen, even when practice mode is off.
+    private static let liveRefreshInterval: TimeInterval = 30
+    private func refreshLiveData(force: Bool = false) async {
+        guard force || Date().timeIntervalSince(lastLiveRefresh) > Self.liveRefreshInterval else { return }
+        lastLiveRefresh = Date()
+        await viewModel.resolveDueCalls()
+        await paper.revalueDue(using: MarketDataService())
+        updateTrackRecordSnapshot()
+        updatePortfolioSnapshot()
+    }
+
+    /// Recompose the on-device notification content (morning read, weekly recap)
+    /// so it never goes stale between opens — throttled so a rapid
+    /// background/foreground flap can't reschedule repeatedly.
+    private func rescheduleNotificationsIfDue() {
+        let key = "hb.notifications.lastReschedule"
+        let last = UserDefaults.standard.double(forKey: key)
+        guard Date().timeIntervalSince1970 - last > 300 else { return }
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: key)
+        Task { await MorningDigest.rescheduleIfEnabled() }
+        Task {
+            await WeeklyRecap.rescheduleIfEnabled(
+                calls: viewModel.userCalls.calls,
+                streak: viewModel.userCalls.currentStreak,
+                hasJournalActivity: !SharedStorage.snapshots().isEmpty
+            )
+        }
     }
 
     /// Keep the widget/watchlist snapshot fresh whenever a watched asset is projected.
@@ -464,32 +496,25 @@ struct ContentView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
                 if viewModel.hasResult { viewModel.beginAutoRefresh() }
+                // Recurring catch-up only while practice mode is on; debounced
+                // inside refreshLiveData so a foreground flap can't swarm it.
                 if practiceEnabled {
-                    Task { await viewModel.resolveDueCalls() }
-                    Task { await paper.revalueDue(using: MarketDataService()) }
+                    Task { await refreshLiveData() }
                 }
-            } else if phase != .active {
+            case .background:
                 viewModel.endAutoRefresh()
-            }
-            if phase == .background {
-                // Refresh the morning-digest and weekly-recap content so neither
-                // ever goes stale between app opens.
-                Task { await MorningDigest.rescheduleIfEnabled() }
-                Task {
-                    await WeeklyRecap.rescheduleIfEnabled(
-                        calls: viewModel.userCalls.calls,
-                        streak: viewModel.userCalls.currentStreak,
-                        hasJournalActivity: !SharedStorage.snapshots().isEmpty
-                    )
-                }
+                rescheduleNotificationsIfDue()
                 // Never leave the mic + audio engine running off-screen. Only on
                 // .background (not .inactive) so the first-run permission prompt,
                 // which briefly deactivates the scene, doesn't cancel listening.
                 if dictation.isActive {
                     Task { await dictation.cancel() }
                 }
+            default:
+                viewModel.endAutoRefresh()
             }
         }
         .sensoryFeedback(.success, trigger: viewModel.forecastGeneration)
