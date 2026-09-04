@@ -35,8 +35,10 @@ All key-less; adjusted-close preferred and bad ticks scrubbed (Hampel filter) be
 
 - `Hummingbird/` — app (Models, Services, ViewModels, Views, Support)
 - `HummingbirdWidget/` — WidgetKit extension (App Intent-configurable)
+- `HummingbirdWatch/` — watchOS companion app (read-only watchlist mirror, no network of its own); embeds automatically into `Hummingbird.app` on device/archive builds — see `RELEASE.md` §Apple Watch app embedding
+- `HummingbirdWatchWidget/` — the watch's complication, embedded inside `HummingbirdWatch`
 - `HummingbirdTests/` — unit tests (~310; exact count shifts with ongoing changes)
-- `AppStore/` — iPhone screenshots at 6.5″/6.7″/6.9″ + 13″ iPad, 1024 icon, and listing metadata (`METADATA.md`)
+- `AppStore/` — iPhone screenshots at 6.5″/6.7″/6.9″ + 13″ iPad, watch screenshots (`raw-screens-watch/`), 1024 icon, and listing metadata (`METADATA.md`)
 - `docs/` — GitHub Pages legal site (`privacy.html`, `terms.html`)
 
 Bundle id `com.avaresearch.hummingbird` · App Group `group.com.avaresearch.hummingbird` · iOS 17+.

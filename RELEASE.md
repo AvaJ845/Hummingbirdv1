@@ -39,6 +39,7 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] **Both URLs return HTTP 200** — check in a browser before submitting. If the repo is private, GitHub Pages needs GitHub Pro; make the repo public or enable Pages (§1).
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
 - [ ] **Screenshots** — raw re-shoot is **done** across four sets, all real device captures from the `HummingbirdUITests` harness (regenerate with the commands in `AppStore/METADATA.md` §Screenshots): `raw-screens-6.5in/` (1242×2688), `raw-screens-6.7in/` (1284×2778), `raw-screens/` (1320×2868, 6.9″), `raw-screens-ipad/` (2064×2752, 13″). **⚠️ If ASC's upload rejects a set for "wrong dimensions," it will name the exact accepted sizes — match the set above to that error message rather than assuming 6.9″.** (This happened on the first upload attempt: ASC asked for 1242×2688/1284×2778, not 1320×2868.) What's left is a **design pass**: add marketing frames + captions, pick the 3–5 strongest, order honesty-first (`11_accuracy_report` → `05_sketch_result` → `06_reliability` → `12_watchlist` → `04_home_empty`). Upload whichever iPhone size ASC accepts **plus the 13″ iPad set** (required once the app declares iPad support) + set the 1024 icon (`sh AppStore/icon/render.sh`). The old `AppStore/0*_*.png` predate the round-1/2 UI and must not ship.
+- [ ] **Watch screenshots** — the app record's Apple Watch tab needs its own set, separate from the iPhone/iPad ones above. 4 of the 5 ASC-required sizes are captured and ready in `AppStore/raw-screens-watch/` (`ultra3.png` 422×514, `series11.png` 416×496, `series9.png` 396×484, `series6.png` 368×448) — real simulator captures of the populated watchlist via `-WATCH_UITEST_SEED`, see `AppStore/METADATA.md` §Watch screenshots for what each maps to and the regen commands. **Series 3 (312×390) has no capture** — no installed simulator in this environment supports it (see that section for why); check whether ASC's upload UI still asks for it before submitting, and generate it separately if so.
 
 ## 4 · Create the Pro products (3 total)
 
@@ -56,7 +57,10 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] EULA: leave it on the **custom** Terms URL set in §3 (App Information → License Agreement). Do **not** switch to Apple's Standard EULA — see the 3.1.2 pre-flight in §6.
 
 ## 5 · Build & upload (Release)
-The `xattr` pre-codesign phase is already wired, so signing is clean.
+The `xattr` pre-codesign phase is already wired, so signing is clean. The
+Apple Watch companion app embeds automatically too — see **Apple Watch app
+embedding** below; no extra manual step, and plain `xcodegen generate` is all
+you need (no wrapper script).
 
 **Easiest (recommended for a first submission):**
 - [ ] Open the project → in Xcode, select **Any iOS Device (arm64)**, then **Product → Archive** → **Distribute App → App Store Connect → Upload**. Xcode handles signing/export.
@@ -89,6 +93,64 @@ The last app was rejected on 3.1.2 for a missing Terms-of-Use link. All of these
 
 ---
 
+## Apple Watch app embedding
+`HummingbirdWatch` (companion app) and `HummingbirdWatchWidget` (its
+complication) now ship **inside** `Hummingbird.app` on every device/archive
+build — `Hummingbird.app/PlugIns/HummingbirdWatch.app/PlugIns/HummingbirdWatchWidget.appex`
+— with no manual Xcode step, and it survives a fresh `xcodegen generate` since
+the mechanism lives entirely in `project.yml` + a checked-in script (nothing
+you have to redo by hand in the `.xcodeproj`, which stays gitignored).
+
+**Why this isn't a plain XcodeGen `dependencies: [{target: HummingbirdWatch,
+embed: true}]`:** that *does* generate a working native "Embed Watch Content"
+build phase + target dependency, and it builds and embeds correctly under
+`xcodebuild build -destination '...'` alone. It breaks, however, the instant
+`-sdk iphonesimulator` is passed explicitly on the command line — which is
+exactly what this repo's baseline test command does. `-sdk` on the CLI forces
+`SDKROOT=iphonesimulator` for **every** target in the build graph, including
+nested watchOS-only ones, so `HummingbirdWatchWidget`'s watchOS-only APIs
+(e.g. `WidgetFamily.accessoryCorner`) fail to compile under the iOS SDK. This
+is an `xcodebuild -sdk` limitation, not a project misconfiguration — there's
+no `platformFilter` (XcodeGen's is Mac-Catalyst-only: `iOS`/`macOS`/`all`,
+confirmed against XcodeGen 2.44.1's docs) or other `project.yml` knob that
+fixes it. This matches the two earlier failed attempts noted in this file's
+history.
+
+**The fix:** `HummingbirdWatch` is deliberately **not** an Xcode target
+dependency of `Hummingbird` at all, so a plain
+`xcodebuild build -scheme Hummingbird -sdk iphonesimulator ...` (the baseline
+test command) never touches it — zero impact on the 315 unit + 6 UI test
+suite. Instead, `Scripts/embed_watch_content.sh` runs as a Run Script build
+phase on the `Hummingbird` target (wired via `postBuildScripts` in
+`project.yml`, so it's regenerated automatically by every `xcodegen
+generate` — no wrapper needed):
+- No-ops immediately for simulator builds (`PLATFORM_NAME != iphoneos`) — the
+  Watch companion has no meaning there; Watch Simulator pairing is a
+  separate, independent flow.
+- For device/archive builds, it runs a **separate nested `xcodebuild`**
+  invocation (`-scheme HummingbirdWatch -sdk watchos`, its own
+  `-derivedDataPath`) — always the correct watchOS SDK, regardless of what
+  SDK the outer build was invoked with — then `ditto`s the built
+  `HummingbirdWatch.app` into `Hummingbird.app/PlugIns/` (the Xcode 26
+  location for companion watch apps — Xcode ≤25 used `Watch/`; see
+  [XcodeGen#1613](https://github.com/yonaskolb/XcodeGen/issues/1613)) and
+  re-signs it when signing is enabled.
+
+Verified: `xcodebuild build test -sdk iphonesimulator -destination 'platform=iOS
+Simulator,name=iPhone 17 Pro' ...` still passes 315+6 green with zero
+warnings; `xcodebuild build -destination 'generic/platform=iOS'
+CODE_SIGNING_ALLOWED=NO` succeeds and the built `.app` contains the full
+nested bundle; `xcodebuild archive -destination 'generic/platform=iOS'
+CODE_SIGNING_ALLOWED=NO` succeeds end-to-end (no signing required since
+signing was disabled) with the same nested bundle present in the archive.
+
+Along the way this also surfaced (and fixed) a pre-existing, unrelated bug:
+`HummingbirdWatch` and `HummingbirdWatchWidget`'s `project.yml` source lists
+included `Hummingbird/Services/SharedStorage.swift` but not
+`Hummingbird/Models/PortfolioSnapshot.swift`, which `SharedStorage.swift`
+references — meaning neither target actually compiled before now (only
+`HummingbirdWidget` had the fix). Both target source lists now include it.
+
 ## Sanity checks (all already true in the repo)
 - [x] Release build **omits** the debug QA unlock — the `debugUnlocked` property, `setDebugUnlocked`, and both toggle UIs are fully `#if DEBUG`; re-verified with `strings`/`nm` on a Release build (0 occurrences of `debugUnlock` / `proUnlocked` / `TestSupport` / `UITEST_`). Even in a Debug build the toggles need `-DEBUG_MENU`.
 - [x] `isPro` in Release = real StoreKit purchases (or a TestFlight sandbox receipt — never a production App Store install).
@@ -100,22 +162,3 @@ The last app was rejected on 3.1.2 for a missing Terms-of-Use link. All of these
 ## Optional after launch
 - [ ] Add a 6.5″ screenshot set (some older listings still ask) — I can generate it.
 - [ ] Push the CI workflow (`ci-workflow` branch) with a `workflow`-scoped token.
-- [ ] **Apple Watch app — one manual step left.** `HummingbirdWatch` (companion app) and
-      `HummingbirdWatchWidget` (watch face complication) both exist and build clean
-      standalone:
-      ```bash
-      xcodebuild build -project Hummingbird.xcodeproj -target HummingbirdWatch \
-        -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)'
-      ```
-      What's missing is embedding `HummingbirdWatch` as companion content inside the
-      `Hummingbird` iOS target, so it ships as one bundle. Two XcodeGen-level attempts
-      (`embed: true`, and the same with `platformFilter: ios`) both made the iOS scheme
-      try to compile the watchOS-only widget under the iPhone SDK — a hard build
-      failure. Fix it once, in Xcode itself: open `Hummingbird.xcodeproj`, select the
-      `Hummingbird` target → **General** → **Frameworks, Libraries, and Embedded
-      Content**, add `HummingbirdWatch.app`, and let Xcode wire the "Embed Watch
-      Content" phase and its `platformFilters` itself (this is exactly the piece
-      XcodeGen can't be told to do blind). Re-export `xcodegen dump` afterward isn't
-      needed — Xcode's edit lives in the `.xcodeproj`, which is gitignored, so redo
-      this step once per fresh `xcodegen generate` unless you move the wiring into
-      `project.yml` by hand once you've seen the working pbxproj diff.
