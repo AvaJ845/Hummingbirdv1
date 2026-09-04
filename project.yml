@@ -64,7 +64,7 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSHumanReadableCopyright: "Educational projections — not financial advice."
+        NSHumanReadableCopyright: "2026 AvaResearch LLC"
         NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
         NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
         ITSAppUsesNonExemptEncryption: false

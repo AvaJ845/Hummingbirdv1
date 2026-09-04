@@ -56,7 +56,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Educational projections — not financial advice.</string>
+	<string>2026 AvaResearch LLC</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
