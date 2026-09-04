@@ -32,7 +32,10 @@ final class ScreenshotTests: XCTestCase {
 
     // MARK: - Infrastructure
 
-    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+    /// iPad if the captured screen is wider than any iPhone (13" iPad portrait is
+    /// ~1032pt; the widest iPhone is ~440pt). Measured from an actual screenshot
+    /// rather than `UIDevice.current`, which is unreliable in the XCTest runner.
+    private lazy var isPad: Bool = XCUIScreen.main.screenshot().image.size.width > 700
 
     private var screenshotDir: URL {
         let env = ProcessInfo.processInfo.environment

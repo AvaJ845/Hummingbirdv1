@@ -8,7 +8,8 @@ tests, assets, and legal pages are done — the rest is account/config work
 - Bundle ID: `com.avaresearch.hummingbird`
 - Pro products: `…pro.yearly` ($19.99/yr, 7-day free trial) · `…pro.monthly` ($2.99/mo) — auto-renewable subs in group `Hummingbird Pro`; plus `…pro.lifetime` ($49.99, non-consumable one-time unlock)
 - Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
-- Assets: `AppStore/raw-screens/` (12 real 1320×2868 device captures of the current UI — from the `HummingbirdUITests` screenshot harness; still need marketing frames + captions before upload); `AppIcon-1024.png` + `icon/` render step; `METADATA.md`
+- Device support: **Universal (iPhone + iPad)**, portrait-only, `UIRequiresFullScreen` (no Split View) — see `project.yml`
+- Assets: `AppStore/raw-screens/` (12 real 1320×2868 iPhone captures) + `AppStore/raw-screens-ipad/` (12 real 2064×2752 iPad captures) of the current UI — from the `HummingbirdUITests` screenshot harness; both still need marketing frames + captions before upload; `AppIcon-1024.png` + `icon/` render step; `METADATA.md`
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
 
 ---
@@ -37,7 +38,7 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] **License Agreement** (App Information) → **Custom** → `https://avaj845.github.io/Hummingbirdv1/terms.html` — **NOT "Standard Apple EULA".** ⚠️ **Skipping this = automatic 3.1.2 rejection** for a subscription app.
 - [ ] **Both URLs return HTTP 200** — check in a browser before submitting. If the repo is private, GitHub Pages needs GitHub Pro; make the repo public or enable Pages (§1).
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
-- [ ] **Screenshots** — raw re-shoot is **done**: `AppStore/raw-screens/*.png` are 12 real captures of the *current* UI (1320×2868, from the `HummingbirdUITests` harness — regenerate with the command in `AppStore/METADATA.md` §Screenshots). What's left is a **design pass**: add marketing frames + captions, pick the 3–5 strongest, order honesty-first (`11_accuracy_report` → `05_sketch_result` → `06_reliability` → `12_watchlist` → `04_home_empty`). Upload to the **6.9″** slot + set the 1024 icon (`sh AppStore/icon/render.sh`). The old `AppStore/0*_*.png` predate the round-1/2 UI and must not ship.
+- [ ] **Screenshots** — raw re-shoot is **done** for both required sets: `AppStore/raw-screens/*.png` (12 real 6.9″ iPhone captures, 1320×2868) and `AppStore/raw-screens-ipad/*.png` (12 real 13″ iPad captures, 2064×2752) — both from the `HummingbirdUITests` harness, regenerate with the commands in `AppStore/METADATA.md` §Screenshots. What's left is a **design pass** on both sets: add marketing frames + captions, pick the 3–5 strongest, order honesty-first (`11_accuracy_report` → `05_sketch_result` → `06_reliability` → `12_watchlist` → `04_home_empty`). **Upload 6.9″ iPhone screenshots AND 13″ iPad screenshots** (the iPad slot is required once the app declares iPad support) + set the 1024 icon (`sh AppStore/icon/render.sh`). The old `AppStore/0*_*.png` predate the round-1/2 UI and must not ship.
 
 ## 4 · Create the Pro products (3 total)
 

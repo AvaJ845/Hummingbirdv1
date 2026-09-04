@@ -73,12 +73,11 @@ enum TestSupport {
     }
 
     /// Kill every implicit animation for the process so screenshot captures are
-    /// deterministic: no UIKit view animations, no navigation-bar / push-pop
-    /// transition, and Core Animation's own speed cranked so any already-scheduled
-    /// transition finishes instantly. The SwiftUI side is handled separately by
-    /// `animationsDisabled` gating the app's `withAnimation` / `.animation(...)`
+    /// deterministic: no UIKit view animations, and an opaque nav bar so no
+    /// scroll content smears through it. The SwiftUI side is handled separately
+    /// by `animationsDisabled` gating the app's `withAnimation` / `.animation(...)`
     /// call sites (`NavigationMotion`, `ContentView`). Safe to call before the
-    /// scene is up — these are global switches.
+    /// scene is up — these are global switches / appearance-proxy writes.
     private static func disableAnimationsForUITests() {
         #if canImport(UIKit)
         UIView.setAnimationsEnabled(false)

@@ -5,6 +5,11 @@ import UserNotifications
 enum NotificationService {
     @discardableResult
     static func requestAuthorization() async -> Bool {
+        #if DEBUG
+        // Never raise the system permission alert during a screenshot run — it
+        // pops asynchronously over whatever screen is being captured.
+        if TestSupport.isUITest { return false }
+        #endif
         do {
             return try await UNUserNotificationCenter.current()
                 .requestAuthorization(options: [.alert, .sound, .badge])
