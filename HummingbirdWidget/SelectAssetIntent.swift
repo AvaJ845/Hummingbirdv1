@@ -7,7 +7,7 @@ struct WatchlistItemEntity: AppEntity, Identifiable {
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation { "Asset" }
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(title)") }
-    static var defaultQuery = WatchlistItemQuery()
+    static var defaultQuery: WatchlistItemQuery { WatchlistItemQuery() }
 }
 
 /// Feeds the widget's asset picker from the saved watchlist.

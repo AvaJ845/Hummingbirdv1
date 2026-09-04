@@ -71,7 +71,6 @@ targets:
         NSSupportsLiveActivities: true
         UIBackgroundModes:
           - fetch
-          - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.avaresearch.hummingbird.refresh
         CFBundleIcons:

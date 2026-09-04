@@ -7,3 +7,4 @@ build-device/
 build-watch/
 build-rel/
 Config/Signing.xcconfig
+xcuserdata/
