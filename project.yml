@@ -143,7 +143,7 @@ targets:
           PROVISIONING_PROFILE_SPECIFIER: Hummingbird App Store
     postBuildScripts:
       - name: Embed Watch Content (device/archive builds only)
-        script: "$SRCROOT/Scripts/embed_watch_content.sh"
+        script: "\"$SRCROOT/Scripts/embed_watch_content.sh\""
         basedOnDependencyAnalysis: false
         outputFiles:
           - "$(CODESIGNING_FOLDER_PATH)/PlugIns/HummingbirdWatch.app"
