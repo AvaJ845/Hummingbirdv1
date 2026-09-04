@@ -28,8 +28,9 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 
 ## 3 · Create the app record
 [App Store Connect](https://appstoreconnect.apple.com) → **Apps → +**
-- [ ] Platform iOS · Name **Hummingbird** · Primary language English · Bundle ID `com.avaresearch.hummingbird` · SKU (any, e.g. `hummingbird-001`)
+- [ ] Platform iOS · Name **`Stocks & Crypto - Hummingbird`** (listing name; Home Screen name stays `Hummingbird` via `CFBundleDisplayName`) · Primary language English · Bundle ID `com.avaresearch.hummingbird` · SKU (any, e.g. `hummingbird-001`)
 - [ ] **Subtitle:** `Honest on-device price sketch` (29 chars — see `AppStore/METADATA.md`)
+- [ ] **Keywords:** `bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` (98 chars)
 - [ ] **Category:** Finance (primary), Education (secondary) · **Age:** 4+
 - [ ] Description / promo text / keywords → paste from `AppStore/METADATA.md`
 - [ ] **Privacy Policy URL:** `https://avaj845.github.io/Hummingbirdv1/privacy.html`

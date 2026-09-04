@@ -12,9 +12,9 @@ risk and protect the "not advice" brand.
 ## ① Discovery (keywords) — *get found*  ✅ done
 Full strings live in **`METADATA.md`**. Summary:
 
-- **App Store Name** (heaviest field): `Hummingbird` — clean brand name. Search terms live in the Subtitle + keyword array, which Apple indexes alongside the Name anyway. Home Screen name is also `Hummingbird`.
+- **App Store Name** (heaviest field): `Stocks & Crypto - Hummingbird` (29 chars) — keyword-forward: highest-intent category terms first, brand last. Home Screen name stays `Hummingbird` (`CFBundleDisplayName`).
 - **Subtitle**: `Honest on-device price sketch` — honesty-first promise; carries `on-device` / `price` / `sketch`. (29 chars; singular `sketch` to fit the 30-char field, Apple stems it to `sketches`.)
-- **Keyword array** (95/100): `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto` — no repeats, singulars, no competitors.
+- **Keyword array** (98/100, live): `bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` — no repeat of the Name (`stocks`/`crypto`), singulars, no competitors. (`price` is also in the Subtitle — redundant slot, swap for `chart`/`coin` on a later pass.)
 
 Because Apple indexes Name + Subtitle + Keywords as **one string**, the unique
 terms combine into phrases we rank for: `crypto tracker`, `bitcoin price`,

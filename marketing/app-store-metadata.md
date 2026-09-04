@@ -8,10 +8,10 @@ convenience mirror of the paste-ready blocks; if anything here disagrees with
 
 ## App Store Name (≤30)
 ```
-Hummingbird
+Stocks & Crypto - Hummingbird
 ```
-Clean brand name (11 chars). Search terms live in the Subtitle + the hidden keyword
-field, which Apple indexes alongside the Name anyway. Home Screen name is also `Hummingbird`.
+29 chars. Keyword-forward — highest-intent category terms first, brand last. This is the
+**listing name only**; the Home Screen name stays `Hummingbird` (`CFBundleDisplayName`).
 
 ## Subtitle (≤30)
 ```
@@ -26,9 +26,9 @@ The rare forecast app that shows you how wrong it's been. Honest, on-device pric
 
 ## Keywords (≤100, comma-separated, no spaces)
 ```
-bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto
+bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast
 ```
-95 chars. No word repeated from the Name or Subtitle.
+98 chars (live value). No repeat of the Name (`stocks`/`crypto`). `price` also appears in the Subtitle — redundant slot, swap later.
 
 ## Description
 ```
