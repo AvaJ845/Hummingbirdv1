@@ -46,6 +46,7 @@ struct ForecastInputCard: View {
                     .focused($symbolFocused)
                     .submitLabel(.go)
                     .onSubmit(onForecast)
+                    .accessibilityIdentifier("symbol.field")
 
                 Button(action: onStartDictation) {
                     Image(systemName: dictation.isActive ? "mic.fill" : "mic")
@@ -189,6 +190,7 @@ struct ForecastInputCard: View {
             .tint(Theme.accent)
             .disabled(viewModel.isLoading || dictation.isActive)
             .accessibilityHint("Fetches history and runs the model")
+            .accessibilityIdentifier("sketch.run")
 
             // Practice mode only: optionally log your own call before you peek.
             if practiceEnabled {

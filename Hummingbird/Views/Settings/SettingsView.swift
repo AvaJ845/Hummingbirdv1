@@ -146,6 +146,7 @@ struct SettingsView: View {
                     } label: {
                         Label("Accuracy report", systemImage: "checkmark.seal")
                     }
+                    .accessibilityIdentifier("settings.accuracyReport")
                     NavigationLink {
                         SketchJournalView(scorecard: scorecard, entitlements: entitlements)
                     } label: {
@@ -202,6 +203,7 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Practice tools", isOn: $practiceEnabled)
+                        .accessibilityIdentifier("settings.practice.toggle")
                 } header: {
                     Text("Practice")
                 } footer: {
@@ -230,15 +232,17 @@ struct SettingsView: View {
                 }
 
                 #if DEBUG
-                Section {
-                    Toggle("Unlock Pro (testing)", isOn: Binding(
-                        get: { entitlements.debugUnlocked },
-                        set: { entitlements.setDebugUnlocked($0) }
-                    ))
-                } header: {
-                    Text("Developer")
-                } footer: {
-                    Text("Testing only — unlocks all Pro models and features on this dev build. Compiled out of the App Store build.")
+                if TestSupport.isDebugMenuEnabled {
+                    Section {
+                        Toggle("Unlock Pro (testing)", isOn: Binding(
+                            get: { entitlements.debugUnlocked },
+                            set: { entitlements.setDebugUnlocked($0) }
+                        ))
+                    } header: {
+                        Text("Developer")
+                    } footer: {
+                        Text("Testing only — unlocks all Pro models and features on this dev build. Compiled out of the App Store build.")
+                    }
                 }
                 #endif
 
@@ -279,7 +283,9 @@ struct SettingsView: View {
     private func setIcon(_ option: AppIconOption) {
         guard UIApplication.shared.supportsAlternateIcons else { return }
         UIApplication.shared.setAlternateIconName(option.alternateName) { _ in
-            currentAlternate = UIApplication.shared.alternateIconName
+            Task { @MainActor in
+                currentAlternate = UIApplication.shared.alternateIconName
+            }
         }
     }
 

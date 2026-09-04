@@ -51,6 +51,11 @@ actor MarketDataService: MarketDataProviding {
     }
 
     private func fetchFresh(symbol: String, assetClass: AssetClass, days: Int) async throws -> PriceSeries {
+        #if DEBUG
+        if TestSupport.forceSampleData {
+            return sampleProvider(symbol, assetClass, days)
+        }
+        #endif
         do {
             let series: PriceSeries
             switch assetClass {

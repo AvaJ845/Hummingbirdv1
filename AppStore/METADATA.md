@@ -46,22 +46,52 @@ First public release: on-device price sketches for stocks & crypto, method compa
 - **Privacy Policy:** https://avaj845.github.io/Hummingbirdv1/privacy.html
 - **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html (or Apple standard EULA)
 
-## Screenshots (6.9" — 1320×2868, in this folder)
-Order leads with the differentiator (radical honesty / the accuracy record),
-then plain-English, then depth:
-1. `01_honest.png` — "See how wrong it's been." (the honest accuracy record — the hook)
-2. `02_plain_english.png` — "Plain-English, not hype."
-3. `03_best_method.png` — "Which method tracks best?"
-4. `04_watchlist.png` — "Glanceable. Always fresh."
-5. `05_any_asset.png` — "Sketch any stock or crypto."
+## Screenshots (6.9" — 1320×2868)
 
-> **Re-shoot required before submission.** All five current images predate the
-> round-1/2 changes: they show the old brand mark and app icon, the old
-> "Run projection" / "Call it first" home screen, and the pre-reorder
-> onboarding. `01_honest.png` is currently the onboarding "Sketches, not
-> predictions" page captioned for honesty — the stronger hero is a real capture
-> of the **Accuracy report** (Settings → Accuracy report) showing the median
-> error / calibration record, captioned "See how wrong it's been."
+### Raw source — `AppStore/raw-screens/`
+Real iPhone 17 Pro Max device captures, driven by the `HummingbirdUITests`
+screenshot harness (`ScreenshotTests.swift`) against sample data
+(`-UITEST_FORCE_SAMPLE`), so they match the *current* UI, brand mark and icon.
+Regenerate any time with:
+
+```bash
+xcodegen generate
+TEST_RUNNER_SCREENSHOT_DIR="$PWD/AppStore/raw-screens" \
+xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -only-testing:HummingbirdUITests CODE_SIGNING_ALLOWED=NO
+```
+
+12 frames, all 1320×2868:
+
+| File | Screen |
+| --- | --- |
+| `01_onboarding_sketches.png` | Onboarding 1 — "Sketches, not predictions" |
+| `02_onboarding_private.png` | Onboarding 2 — "Private by design" |
+| `03_onboarding_honest.png` | Onboarding 3 — "See how wrong it's been" |
+| `04_home_empty.png` | Fresh home, calm default state |
+| `05_sketch_result.png` | Plain-English result card after a sketch |
+| `06_reliability.png` | Price-sketch chart + reliability meter |
+| `07_paywall_top.png` | Pro paywall — value prop + "Always free" / "Pro adds" |
+| `08_paywall_plans.png` | Pro paywall — plans ($19.99/yr, 7-day trial, $2.99/mo) — **use as the IAP review screenshot** |
+| `09_settings.png` | Settings — appearance, icon picker, Siri, Accuracy report |
+| `10_practice_home.png` | Home with Practice tools on |
+| `11_accuracy_report.png` | Settings → Accuracy report (seeded track record) |
+| `12_watchlist.png` | Watchlist sheet with saved assets |
+
+### Store upload — still a design task
+These raw frames are **un-framed device captures**. The final App Store set
+still needs marketing frames + captions (add the caption/device-bezel treatment,
+pick the 3–5 strongest, order honesty-first). Suggested hero order for the store:
+`11_accuracy_report` ("See how wrong it's been") → `05_sketch_result`
+("Plain-English, not hype") → `06_reliability` ("Which method tracks best?") →
+`12_watchlist` ("Glanceable. Always fresh") → `04_home_empty`
+("Sketch any stock or crypto").
+
+> **Re-shoot at the raw level is done** (2026-09-03 — real captures of the
+> current UI). What remains is the marketing-frame/caption pass on top of
+> `AppStore/raw-screens/`. The older `0*_*.png` files in `AppStore/` predate the
+> round-1/2 UI and must not ship.
 
 App icon: `AppIcon-1024.png` (1024×1024, no alpha) — regenerate with
 `sh AppStore/icon/render.sh`.

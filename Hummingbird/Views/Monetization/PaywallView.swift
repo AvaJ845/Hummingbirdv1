@@ -121,9 +121,11 @@ struct PaywallView: View {
                             note: "Lower commitment · cancel anytime"
                         )
                         #if DEBUG
-                        Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if !TestSupport.isUITest {
+                            Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         #endif
                     }
                     .padding(.vertical, 4)
@@ -159,14 +161,16 @@ struct PaywallView: View {
             }
 
             #if DEBUG
-            Section("Debug") {
-                Toggle(
-                    "Unlock Pro (local QA)",
-                    isOn: Binding(
-                        get: { entitlements.debugUnlocked },
-                        set: { entitlements.setDebugUnlocked($0) }
+            if TestSupport.isDebugMenuEnabled {
+                Section("Debug") {
+                    Toggle(
+                        "Unlock Pro (local QA)",
+                        isOn: Binding(
+                            get: { entitlements.debugUnlocked },
+                            set: { entitlements.setDebugUnlocked($0) }
+                        )
                     )
-                )
+                }
             }
             #endif
         }
@@ -239,6 +243,7 @@ struct PaywallView: View {
         // without buying first, but the buy buttons must stay tappable so
         // the actual purchase flow itself is still testable end to end.
         .disabled(entitlements.hasRealPurchase)
+        .accessibilityIdentifier(highlighted ? "paywall.buy.yearly" : "paywall.buy.monthly")
         .accessibilityLabel("\(product.displayName)\(highlighted ? ", best value" : ""), \(badge)")
         .accessibilityHint(product.subscription != nil ? "Auto-renewable subscription" : "One-time purchase")
     }

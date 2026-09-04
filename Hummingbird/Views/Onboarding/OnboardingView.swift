@@ -56,6 +56,7 @@ struct OnboardingView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
+            .accessibilityIdentifier("onboarding.continue")
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
 

@@ -99,7 +99,11 @@ struct ContentView: View {
             // Ask for a rating only at a "happy moment" — a completed projection,
             // never at launch or after an error (forecastGeneration bumps only on
             // a successful run).
-            if ReviewPrompt.registerSuccessAndShouldRequest() {
+            var suppressReview = false
+            #if DEBUG
+            suppressReview = TestSupport.isUITest
+            #endif
+            if !suppressReview, ReviewPrompt.registerSuccessAndShouldRequest() {
                 requestReview()
             }
         }
@@ -441,6 +445,7 @@ struct ContentView: View {
                 }
                 .disabled(dictation.isActive)
                 .accessibilityLabel("Watchlist")
+                .accessibilityIdentifier("toolbar.watchlist")
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if !entitlements.isPro {
@@ -451,6 +456,7 @@ struct ContentView: View {
                             .font(.caption.weight(.bold))
                     }
                     .accessibilityLabel("Hummingbird Pro")
+                    .accessibilityIdentifier("toolbar.pro")
                 }
 
                 Button {
@@ -482,6 +488,7 @@ struct ContentView: View {
                 }
                 .disabled(dictation.isActive)
                 .accessibilityLabel("Settings")
+                .accessibilityIdentifier("toolbar.settings")
             }
         }
         .task {
