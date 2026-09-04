@@ -142,6 +142,11 @@ targets:
           CODE_SIGN_IDENTITY: Apple Distribution
           PROVISIONING_PROFILE_SPECIFIER: Hummingbird App Store
     postBuildScripts:
+      - name: Embed Watch Content (device/archive builds only)
+        script: "$SRCROOT/Scripts/embed_watch_content.sh"
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - "$(CODESIGNING_FOLDER_PATH)/PlugIns/HummingbirdWatch.app"
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
         basedOnDependencyAnalysis: false
@@ -201,6 +206,7 @@ targets:
       - path: Hummingbird/Models/Asset.swift
       - path: Hummingbird/Models/WatchlistItem.swift
       - path: Hummingbird/Models/TrackRecordSnapshot.swift
+      - path: Hummingbird/Models/PortfolioSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
     dependencies:
       - target: HummingbirdWatchWidget
@@ -253,6 +259,7 @@ targets:
       - path: Hummingbird/Models/Asset.swift
       - path: Hummingbird/Models/WatchlistItem.swift
       - path: Hummingbird/Models/TrackRecordSnapshot.swift
+      - path: Hummingbird/Models/PortfolioSnapshot.swift
       - path: Hummingbird/Services/SharedStorage.swift
     settings:
       base:
