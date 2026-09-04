@@ -151,10 +151,14 @@ struct PaywallView: View {
                 Text(subscriptionFooter)
             }
 
+            // Guideline 3.1.2: an auto-renewable subscription needs functional
+            // Privacy Policy + Terms of Use (EULA) links right by the purchase.
+            // "Terms of Use" opens the bundled custom EULA, which itself
+            // incorporates Apple's standard Licensed Application EULA by
+            // reference — so a separate Apple-EULA link would be redundant.
             Section("Legal") {
                 Button("Privacy Policy") { legalPath = .privacy }
-                Button("Terms of Use") { legalPath = .terms }
-                Link("Apple Standard EULA", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                Button("Terms of Use (EULA)") { legalPath = .terms }
             }
 
             Section {

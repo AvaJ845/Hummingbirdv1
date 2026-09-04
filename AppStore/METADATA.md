@@ -34,17 +34,28 @@ Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency *
 • Get an optional "it moved" alert — movement, never a signal.
 
 **Hummingbird Pro (optional)**
-Compare every method in one place and stretch sketches to 90 days. Same free public data — Pro is convenience, not better foresight.
+Compare every method in one place and stretch sketches to 90 days. Same free public data — Pro is convenience, not better foresight. Hummingbird Pro is offered as an auto-renewable subscription — $19.99/year (7-day free trial) or $2.99/month — or as a one-time Lifetime purchase ($49.99). Payment is charged to your Apple ID at confirmation; a subscription renews unless cancelled at least 24 hours before the period ends, and you can manage or cancel it in your Apple ID settings.
 
 Hummingbird is for learning and exploration only and is **not financial, investment, or trading advice.** Markets are unpredictable; never make money decisions based solely on this app.
+
+Privacy Policy: https://avaj845.github.io/Hummingbirdv1/privacy.html
+Terms of Use (EULA): https://avaj845.github.io/Hummingbirdv1/terms.html
 
 ## What's New (1.0)
 First public release: on-device price sketches for stocks & crypto, method comparison with honest backtests, watchlist, widget, Siri, and shareable sketch cards — educational, never advice.
 
 ## URLs
 - **Support / Marketing:** https://avaj845.github.io/Hummingbirdv1/
-- **Privacy Policy:** https://avaj845.github.io/Hummingbirdv1/privacy.html
-- **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html (or Apple standard EULA)
+- **Privacy Policy:** https://avaj845.github.io/Hummingbirdv1/privacy.html  *(paste into the App Store Connect "Privacy Policy URL" field)*
+- **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html  *(use as the CUSTOM EULA — see 3.1.2 below)*
+
+## ⚠️ Guideline 3.1.2 — Terms of Use / EULA (this is what gets subscription apps rejected)
+An auto-renewable subscription (or non-consumable IAP alongside subs) requires a **functional Terms of Use link on the App Store product page** AND the EULA set in App Store Connect. Do ALL of:
+1. **App Description** — the two links above (`Privacy Policy:` and `Terms of Use (EULA):`) are already in the Description text above its final paragraph. Keep them there, as plain `https://` text — Apple renders them as tappable links on the product page. Do **not** remove them.
+2. **App Store Connect → App Information → License Agreement** → choose **Custom** → paste `https://avaj845.github.io/Hummingbirdv1/terms.html`. (Do not leave it on "Standard Apple EULA" — the custom terms carry the subscription/refund/renewal specifics Apple 3.1.2 looks for.)
+3. **App Store Connect → Privacy Policy URL** (App Information) → `https://avaj845.github.io/Hummingbirdv1/privacy.html`
+4. **Both URLs must return HTTP 200 before submission** — if the repo is private, GitHub Pages needs GitHub Pro; make the repo public or enable Pages.
+5. In-app: the paywall already shows working **Privacy Policy** and **Terms of Use** links right by the purchase buttons (`PaywallView` → Legal section) — that covers 3.1.2's in-binary requirement. Don't remove them.
 
 ## Screenshots (6.9" — 1320×2868)
 
@@ -103,3 +114,5 @@ App icon: `AppIcon-1024.png` (1024×1024, no alpha) — regenerate with
 
 ## Review notes (paste into App Review)
 Hummingbird is an **educational** tool. It produces statistical "sketches" from public historical prices and clearly labels them as not predictions and **not financial advice** throughout (onboarding, results, share card, alerts, paywall). It contains no buy/sell signals, no brokerage, and no real-money trading. Pro (a yearly/monthly auto-renewable subscription or a one-time non-consumable "Lifetime" unlock — same features) unlocks on-device comparison convenience only, on identical public data to the free tier.
+
+Terms of Use (EULA) and Privacy Policy: linked at the end of the App Description, set in App Store Connect (License Agreement = custom terms.html), and shown in-app on the paywall (Pro screen → Legal). Subscription price, length, and renewal terms are stated in the App Description and on the paywall.
