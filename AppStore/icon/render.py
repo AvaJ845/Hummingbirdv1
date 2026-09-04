@@ -196,12 +196,15 @@ def main():
     tinted = compose(BOX, ground=(0, 0, 0), mark=TINT_MARK, transparent=True)
     save(tinted, "Hummingbird/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted.png")
 
-    # Alternate icons — same master, different colourway. @2x = 120, @3x = 180.
+    # Alternate icons — same master, different colourway.
+    #   iPhone: @2x = 120, @3x = 180
+    #   iPad:   @2x~ipad = 152 (also covers iPad Pro's 167pt slot — iOS scales)
     midnight = compose(180, ground=NIGHT, mark=MINT_LIGHT)
     mono = compose(180, ground=MONO_GROUND, mark=MONO_MARK)
     for img, name, px in ((midnight, "Midnight", 180), (mono, "Mono", 180)):
         save(img.resize((120, 120), Image.LANCZOS), f"Hummingbird/Resources/AltIcons/AltIcon-{name}@2x.png")
         save(img, f"Hummingbird/Resources/AltIcons/AltIcon-{name}@3x.png")
+        save(img.resize((152, 152), Image.LANCZOS), f"Hummingbird/Resources/AltIcons/AltIcon-{name}@2x~ipad.png")
 
 
 if __name__ == "__main__":
