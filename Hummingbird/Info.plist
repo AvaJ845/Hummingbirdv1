@@ -84,6 +84,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.finance</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>2026 AvaResearch LLC</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -74,6 +74,11 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
         NSHumanReadableCopyright: "2026 AvaResearch LLC"
+        # Mac Catalyst / visionOS "Designed for iPad" compatibility-mode
+        # category — distinct from App Store Connect's own Primary Category
+        # field (Finance, set separately in ASC's web UI), which is what
+        # users actually see on the listing. Matches it for consistency.
+        LSApplicationCategoryType: public.app-category.finance
         NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
         NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
         ITSAppUsesNonExemptEncryption: false
