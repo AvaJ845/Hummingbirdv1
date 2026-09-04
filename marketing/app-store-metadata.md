@@ -15,10 +15,9 @@ field, which Apple indexes alongside the Name anyway. Home Screen name is also `
 
 ## Subtitle (≤30)
 ```
-Honest on-device price sketches
+Honest on-device price sketch
 ```
-31 chars — 1 over Apple's 30-char limit. Trim when pasting: `On-device price sketches` (24)
-or `Honest on-device price sketch` (29).
+29 chars. Singular `sketch` so it fits Apple's 30-char limit — Apple stems it to `sketches`.
 
 ## Promotional Text (≤170, editable anytime without review)
 ```

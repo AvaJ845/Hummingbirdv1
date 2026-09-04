@@ -13,7 +13,7 @@ risk and protect the "not advice" brand.
 Full strings live in **`METADATA.md`**. Summary:
 
 - **App Store Name** (heaviest field): `Hummingbird` — clean brand name. Search terms live in the Subtitle + keyword array, which Apple indexes alongside the Name anyway. Home Screen name is also `Hummingbird`.
-- **Subtitle**: `Honest on-device price sketches` — honesty-first promise; carries `on-device` / `price` / `sketches`. (31 chars — trim 1 to fit the field; see `METADATA.md`.)
+- **Subtitle**: `Honest on-device price sketch` — honesty-first promise; carries `on-device` / `price` / `sketch`. (29 chars; singular `sketch` to fit the 30-char field, Apple stems it to `sketches`.)
 - **Keyword array** (95/100): `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto` — no repeats, singulars, no competitors.
 
 Because Apple indexes Name + Subtitle + Keywords as **one string**, the unique

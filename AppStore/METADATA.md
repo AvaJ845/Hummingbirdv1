@@ -4,7 +4,7 @@
 - **App Store Name (≤30):** `Hummingbird`  *(11 chars — clean brand name)*
   - **Decision:** the listing name is just the brand. Apple indexes App Store Name + Subtitle + the backend keyword field as one search string, so the search terms live in the Subtitle and the hidden keyword array — the name stays editorially clean and matches `CFBundleDisplayName`, which is already `Hummingbird`.
   - Note: the **Home Screen name is also `Hummingbird`** (CFBundleDisplayName) — listing name and device name match.
-- **Subtitle (≤30):** `Honest on-device price sketches`  *(31 chars — leads with the honesty-first promise and carries the search terms `on-device` / `price` / `sketches`. NOTE: this is 1 char over Apple's 30-char subtitle limit — trim to `On-device price sketches` (24) or `Honest on-device price sketch` (29) when pasting into App Store Connect.)*
+- **Subtitle (≤30):** `Honest on-device price sketch`  *(29 chars — leads with the honesty-first promise and carries the search terms `on-device` / `price` / `sketch`. Singular `sketch` (not `sketches`) so it fits Apple's 30-char limit; Apple stems it to cover `sketches` too.)*
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
@@ -16,7 +16,7 @@ The rare forecast app that shows you how wrong it's been. Honest, on-device pric
 ## Keywords (≤100) — the hidden backend array
 `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto`  *(95 chars)*
 
-Rules applied: comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only**, and **no competitor names**. `price` was removed because it now lives in the Subtitle (`Honest on-device price sketches`) and Apple indexes Name + Subtitle + Keywords as one set — repeating a word buys nothing. `crypto` was added with the freed space: it's a distinct high-volume term not covered by stemming `bitcoin`/`ethereum`. The unique terms combine into phrases like `crypto tracker`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
+Rules applied: comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only**, and **no competitor names**. `price` was removed because it now lives in the Subtitle (`Honest on-device price sketch`) and Apple indexes Name + Subtitle + Keywords as one set — repeating a word buys nothing. `crypto` was added with the freed space: it's a distinct high-volume term not covered by stemming `bitcoin`/`ethereum`. The unique terms combine into phrases like `crypto tracker`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
 
 > **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). `coin`/`invest` stay out — well covered by `bitcoin`/`portfolio`/`finance` via stemming.
 
