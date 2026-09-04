@@ -128,7 +128,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Hummingbird Pro"].waitForExistence(timeout: 5))
         capture("07_paywall_top", app: app)
 
-        // Scroll to the plan buttons ($19.99/year, 7-day trial, $2.99/month).
+        // Scroll to the plan buttons ($19.99/year + 7-day trial, $2.99/month, $49.99 Lifetime).
         for _ in 0..<4 {
             if app.buttons["paywall.buy.yearly"].exists || app.staticTexts["Choose your plan"].exists {
                 break

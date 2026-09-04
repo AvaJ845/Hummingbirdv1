@@ -186,13 +186,21 @@ values are logged anywhere. Release paths are silent.
 ## 8 · StoreKit config sanity · PASS
 
 `Products.storekit` — group `Hummingbird Pro` (`id: HummingbirdPro`), two
-auto-renewable subscriptions:
+auto-renewable subscriptions plus one non-consumable unlock (added after this
+audit's first pass — the "offer Lifetime, keep yearly + monthly" decision):
 
-| Product | ID | Matches `EntitlementStore`? | Price | Period | Intro |
-|---------|----|--------------------------|-------|--------|-------|
-| Yearly | `com.avaresearch.hummingbird.pro.yearly` | ✓ (`yearlyProductID`) | 19.99 | P1Y | 1-week free (`paymentMode: free`) |
-| Monthly | `com.avaresearch.hummingbird.pro.monthly` | ✓ (`monthlyProductID`) | 2.99 | P1M | none |
+| Product | ID | Matches `EntitlementStore`? | Price | Type | Intro |
+|---------|----|--------------------------|-------|------|-------|
+| Yearly | `com.avaresearch.hummingbird.pro.yearly` | ✓ (`yearlyProductID`) | 19.99 | RecurringSubscription P1Y | 1-week free (`paymentMode: free`) |
+| Monthly | `com.avaresearch.hummingbird.pro.monthly` | ✓ (`monthlyProductID`) | 2.99 | RecurringSubscription P1M | none |
+| Lifetime | `com.avaresearch.hummingbird.pro.lifetime` | ✓ (`lifetimeProductID`) | 49.99 | NonConsumable | n/a |
 
+- The non-consumable needs **no special entitlement code**: once purchased it
+  stays in `Transaction.currentEntitlements` permanently, so `refreshPurchases()`
+  → `purchasedProductIDs` → `hasRealPurchase` / `isPro` pick it up through the
+  same path as the subscriptions. `restore()` (`AppStore.sync()`) covers it.
+- In App Store Connect the Lifetime product is created under **In-App Purchases**
+  (Non-Consumable), not inside the subscription group — see `RELEASE.md` §4b.
 - Product IDs match `EntitlementStore.swift` **exactly**. **PASS.**
 - `groupNumber` 1 (yearly) vs 2 (monthly): this is the **rank within the
   subscription group**, i.e. yearly is the higher service level. Both products

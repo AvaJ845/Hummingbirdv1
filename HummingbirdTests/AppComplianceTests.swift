@@ -2,18 +2,20 @@ import XCTest
 @testable import Hummingbird
 
 final class AppComplianceTests: XCTestCase {
-    func testPricingIsYearlyAndMonthlyOnly() {
+    func testPricingTiers() {
         XCTAssertEqual(AppPricing.yearlyUSD, "19.99")
+        XCTAssertEqual(AppPricing.monthlyUSD, "2.99")
+        XCTAssertEqual(AppPricing.lifetimeUSD, "49.99")
         let yearly = Double(AppPricing.yearlyUSD)!
         XCTAssertEqual(yearly, 19.99, accuracy: 0.001)
         // Yearly monthly-equivalent (~$1.67/mo) stays under $2 — fair for untested sketches.
         XCTAssertLessThan(yearly / 12, 2.0)
-        // Product set is exactly {yearly, monthly}; no lifetime ID anywhere.
+        // Product set is exactly {yearly, monthly, lifetime}.
         XCTAssertEqual(Set(EntitlementStore.allProductIDs), [
             EntitlementStore.yearlyProductID,
-            EntitlementStore.monthlyProductID
+            EntitlementStore.monthlyProductID,
+            EntitlementStore.lifetimeProductID
         ])
-        XCTAssertFalse(EntitlementStore.allProductIDs.contains { $0.lowercased().contains("lifetime") })
     }
 
     func testFreeTierKeepsClassicMethods() {
@@ -41,9 +43,10 @@ final class AppComplianceTests: XCTestCase {
         XCTAssertTrue(AppNetwork.userAgent.contains("(iOS; educational)"))
     }
 
-    func testProProductIDsAreYearlyAndMonthly() {
+    func testProProductIDs() {
         XCTAssertEqual(EntitlementStore.yearlyProductID, "com.avaresearch.hummingbird.pro.yearly")
         XCTAssertEqual(EntitlementStore.monthlyProductID, "com.avaresearch.hummingbird.pro.monthly")
+        XCTAssertEqual(EntitlementStore.lifetimeProductID, "com.avaresearch.hummingbird.pro.lifetime")
     }
 
     func testMethodNamesLeadNotBirdNicknames() {

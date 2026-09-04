@@ -18,7 +18,7 @@ Where the original ran Python + Prophet on a server, Hummingbird runs everything
 - **Presence** — configurable **WidgetKit** widget, **Siri/App Intents** ("Project an asset in Hummingbird"), and honest **movement alerts** (local notifications — movement, never signals).
 - **Share** — export a projection as a branded image card with the not-advice caveat baked in.
 - **Polish** — honesty-first onboarding, alternate app icons (Classic/Midnight/Mono), full accessibility pass (Dynamic Type to AX5 + VoiceOver).
-- **Hummingbird Pro** — StoreKit 2; **$19.99/year** (7-day free trial) or **$2.99/month**; unlocks comparison depth (more methods, 90-day horizons), not better data.
+- **Hummingbird Pro** — StoreKit 2; **$19.99/year** (7-day free trial), **$2.99/month**, or a one-time **$49.99 Lifetime** unlock; unlocks comparison depth (more methods, 90-day horizons), not better data.
 - **Private by design** — privacy manifest, no accounts, no tracking; graceful offline sample data with clear banners.
 
 ## Data sources

@@ -4,7 +4,21 @@
 
   ],
   "products" : [
-
+    {
+      "displayPrice" : "49.99",
+      "familyShareable" : false,
+      "internalID" : "11111111-1111-1111-1111-111111111111",
+      "localizations" : [
+        {
+          "description" : "One-time unlock of every on-device comparison tool — no renewal, no expiry. Same free public data as Free; no premium feeds.",
+          "displayName" : "Hummingbird Pro — Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.avaresearch.hummingbird.pro.lifetime",
+      "referenceName" : "Pro Lifetime",
+      "type" : "NonConsumable"
+    }
   ],
   "settings" : {
     "_applicationInternalID" : "0",

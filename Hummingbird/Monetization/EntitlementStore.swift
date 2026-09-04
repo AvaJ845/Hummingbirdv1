@@ -9,7 +9,11 @@ import StoreKit
 final class EntitlementStore {
     nonisolated static let yearlyProductID = "com.avaresearch.hummingbird.pro.yearly"
     nonisolated static let monthlyProductID = "com.avaresearch.hummingbird.pro.monthly"
-    nonisolated static var allProductIDs: [String] { [yearlyProductID, monthlyProductID] }
+    /// One-time, non-consumable unlock — no renewal, no expiry. Once purchased it
+    /// stays in `Transaction.currentEntitlements` forever, so `hasRealPurchase`
+    /// and `isPro` pick it up through the same path as the subscriptions.
+    nonisolated static let lifetimeProductID = "com.avaresearch.hummingbird.pro.lifetime"
+    nonisolated static var allProductIDs: [String] { [yearlyProductID, monthlyProductID, lifetimeProductID] }
 
     #if DEBUG
     private static let debugUnlockKey = "hummingbird.debug.proUnlocked"
@@ -60,6 +64,10 @@ final class EntitlementStore {
 
     var monthlyProduct: Product? {
         products.first { $0.id == Self.monthlyProductID }
+    }
+
+    var lifetimeProduct: Product? {
+        products.first { $0.id == Self.lifetimeProductID }
     }
 
     /// How much cheaper (per month) the yearly plan is vs 12× the monthly plan.

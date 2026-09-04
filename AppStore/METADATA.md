@@ -8,7 +8,7 @@
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
-- **Price:** Free. Optional **Hummingbird Pro** auto-renewable subscription — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%). Group `Hummingbird Pro`.
+- **Price:** Free. Optional **Hummingbird Pro** — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%) as an auto-renewable subscription (group `Hummingbird Pro`), **or a one-time $49.99 Lifetime unlock** (non-consumable, no renewal).
 
 ## Promotional text (≤170)
 The rare forecast app that shows you how wrong it's been. Honest, on-device price sketches with a live accuracy track record. Educational only — never advice.  *(≈150 chars; leads with the radical-honesty differentiator per the Evangelism Fellow's note)*
@@ -73,7 +73,7 @@ xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird -sdk iphonesi
 | `05_sketch_result.png` | Plain-English result card after a sketch |
 | `06_reliability.png` | Price-sketch chart + reliability meter |
 | `07_paywall_top.png` | Pro paywall — value prop + "Always free" / "Pro adds" |
-| `08_paywall_plans.png` | Pro paywall — plans ($19.99/yr, 7-day trial, $2.99/mo) — **use as the IAP review screenshot** |
+| `08_paywall_plans.png` | Pro paywall — plans ($19.99/yr, 7-day trial · $2.99/mo · $49.99 Lifetime) — **use as the IAP review screenshot** (re-capture: predates the Lifetime tier) |
 | `09_settings.png` | Settings — appearance, icon picker, Siri, Accuracy report |
 | `10_practice_home.png` | Home with Practice tools on |
 | `11_accuracy_report.png` | Settings → Accuracy report (seeded track record) |
@@ -102,4 +102,4 @@ App icon: `AppIcon-1024.png` (1024×1024, no alpha) — regenerate with
 - Subscriptions handled by Apple (StoreKit); Hummingbird only learns whether Pro is active.
 
 ## Review notes (paste into App Review)
-Hummingbird is an **educational** tool. It produces statistical "sketches" from public historical prices and clearly labels them as not predictions and **not financial advice** throughout (onboarding, results, share card, alerts, paywall). It contains no buy/sell signals, no brokerage, and no real-money trading. The subscription unlocks on-device comparison convenience only — identical public data to the free tier.
+Hummingbird is an **educational** tool. It produces statistical "sketches" from public historical prices and clearly labels them as not predictions and **not financial advice** throughout (onboarding, results, share card, alerts, paywall). It contains no buy/sell signals, no brokerage, and no real-money trading. Pro (a yearly/monthly auto-renewable subscription or a one-time non-consumable "Lifetime" unlock — same features) unlocks on-device comparison convenience only, on identical public data to the free tier.

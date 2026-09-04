@@ -97,6 +97,7 @@ struct PaywallView: View {
                     purchaseButton(
                         yearly,
                         badge: "\(AppPricing.annualTrial), then \(yearly.displayPrice)/year\(savings)",
+                        identifier: "paywall.buy.yearly",
                         highlighted: true
                     )
                 }
@@ -104,7 +105,16 @@ struct PaywallView: View {
                 if let monthly = entitlements.monthlyProduct {
                     purchaseButton(
                         monthly,
-                        badge: "\(monthly.displayPrice)/month · cancel anytime"
+                        badge: "\(monthly.displayPrice)/month · cancel anytime",
+                        identifier: "paywall.buy.monthly"
+                    )
+                }
+
+                if let lifetime = entitlements.lifetimeProduct {
+                    purchaseButton(
+                        lifetime,
+                        badge: "Pay once · yours forever",
+                        identifier: "paywall.buy.lifetime"
                     )
                 }
 
@@ -119,6 +129,11 @@ struct PaywallView: View {
                             label: "Pro Monthly",
                             price: "$\(AppPricing.monthlyUSD)/month",
                             note: "Lower commitment · cancel anytime"
+                        )
+                        fairPriceRow(
+                            label: "Pro Lifetime",
+                            price: "$\(AppPricing.lifetimeUSD)",
+                            note: "Pay once · yours forever"
                         )
                         #if DEBUG
                         if !TestSupport.isUITest {
@@ -199,16 +214,17 @@ struct PaywallView: View {
     private var subscriptionFooter: String {
         """
         Hummingbird Pro is available as an auto-renewable subscription — \
-        Yearly ($\(AppPricing.yearlyUSD)/year, with a 7-day free trial) or Monthly ($\(AppPricing.monthlyUSD)/month). \
+        Yearly ($\(AppPricing.yearlyUSD)/year, with a 7-day free trial) or Monthly ($\(AppPricing.monthlyUSD)/month) — \
+        or as a one-time Lifetime purchase ($\(AppPricing.lifetimeUSD), non-renewing). \
         Payment is charged to your Apple ID at purchase confirmation; a free trial converts to a paid year unless cancelled \
         at least 24 hours before it ends. Subscriptions renew unless cancelled at least 24 hours before the period ends. \
-        Manage or cancel in Settings → Apple ID → Subscriptions. \
+        Manage or cancel a subscription in Settings → Apple ID → Subscriptions. \
         Pro unlocks on-device comparison tools only — never financial advice, never better foresight, never premium data. \
         Free and Pro share the same key-less public APIs.
         """
     }
 
-    private func purchaseButton(_ product: Product, badge: String, highlighted: Bool = false) -> some View {
+    private func purchaseButton(_ product: Product, badge: String, identifier: String, highlighted: Bool = false) -> some View {
         Button {
             Task {
                 let ok = await entitlements.purchase(product)
@@ -243,7 +259,7 @@ struct PaywallView: View {
         // without buying first, but the buy buttons must stay tappable so
         // the actual purchase flow itself is still testable end to end.
         .disabled(entitlements.hasRealPurchase)
-        .accessibilityIdentifier(highlighted ? "paywall.buy.yearly" : "paywall.buy.monthly")
+        .accessibilityIdentifier(identifier)
         .accessibilityLabel("\(product.displayName)\(highlighted ? ", best value" : ""), \(badge)")
         .accessibilityHint(product.subscription != nil ? "Auto-renewable subscription" : "One-time purchase")
     }

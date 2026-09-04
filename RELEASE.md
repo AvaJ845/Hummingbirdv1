@@ -6,7 +6,7 @@ tests, assets, and legal pages are done — the rest is account/config work
 
 **Key facts**
 - Bundle ID: `com.avaresearch.hummingbird`
-- Subscriptions (IAP), group `Hummingbird Pro`: `com.avaresearch.hummingbird.pro.yearly` ($19.99/yr, 7-day free trial) · `com.avaresearch.hummingbird.pro.monthly` ($2.99/mo)
+- Pro products: `…pro.yearly` ($19.99/yr, 7-day free trial) · `…pro.monthly` ($2.99/mo) — auto-renewable subs in group `Hummingbird Pro`; plus `…pro.lifetime` ($49.99, non-consumable one-time unlock)
 - Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
 - Assets: `AppStore/raw-screens/` (12 real 1320×2868 device captures of the current UI — from the `HummingbirdUITests` screenshot harness; still need marketing frames + captions before upload); `AppIcon-1024.png` + `icon/` render step; `METADATA.md`
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
@@ -37,13 +37,19 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
 - [ ] **Screenshots** — raw re-shoot is **done**: `AppStore/raw-screens/*.png` are 12 real captures of the *current* UI (1320×2868, from the `HummingbirdUITests` harness — regenerate with the command in `AppStore/METADATA.md` §Screenshots). What's left is a **design pass**: add marketing frames + captions, pick the 3–5 strongest, order honesty-first (`11_accuracy_report` → `05_sketch_result` → `06_reliability` → `12_watchlist` → `04_home_empty`). Upload to the **6.9″** slot + set the 1024 icon (`sh AppStore/icon/render.sh`). The old `AppStore/0*_*.png` predate the round-1/2 UI and must not ship.
 
-## 4 · Create the subscriptions
-Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**, then two products:
+## 4 · Create the Pro products (3 total)
+
+**4a · Subscriptions** — Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**:
 - [ ] **Yearly:** `com.avaresearch.hummingbird.pro.yearly` · ref `Pro Yearly` · **1 Year** · **$19.99** · add a **7-day free trial** (Introductory Offer → Free → 1 week)
 - [ ] **Monthly:** `com.avaresearch.hummingbird.pro.monthly` · ref `Pro Monthly` · **1 Month** · **$2.99**
 - [ ] Set both **Ready to Submit** (product IDs must match exactly)
 - [ ] Display name `Hummingbird Pro` + description (from `METADATA.md`)
-- [ ] Add a review screenshot (**use `AppStore/raw-screens/08_paywall_plans.png`** — shows both plans, the 7-day trial and the prices) + set to **Ready to Submit**
+
+**4b · In-App Purchase (non-consumable)** — Apps → Hummingbird → **In-App Purchases**:
+- [ ] **Lifetime:** `com.avaresearch.hummingbird.pro.lifetime` · type **Non-Consumable** · ref `Pro Lifetime` · **$49.99** · display name `Hummingbird Pro — Lifetime`
+- [ ] Same feature set as the subscription — it's a one-time unlock, no renewal. Set **Ready to Submit**.
+
+- [ ] Add a review screenshot for the group + the IAP (**use `AppStore/raw-screens/08_paywall_plans.png`** — re-capture first, it predates the Lifetime row) + set all to **Ready to Submit**
 - [ ] Set the app's EULA to Apple's Standard, or your Terms URL
 
 ## 5 · Build & upload (Release)
