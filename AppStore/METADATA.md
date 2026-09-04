@@ -140,6 +140,83 @@ stretched phone screen.
 | `11_accuracy_report.png` | Settings → Accuracy report (seeded track record) |
 | `12_watchlist.png` | Watchlist sheet with saved assets |
 
+## Watch screenshots
+
+App Store Connect's watch screenshot upload requires 5 sizes, one per
+Apple Watch case-size family. Case size (the mm variant), not the Series
+number, determines the native pixel resolution — verified empirically
+against each installed simulator device type rather than assumed:
+
+| Slot | Required size | Device type used | File |
+| --- | --- | --- | --- |
+| Apple Watch Ultra 3 | 422×514 **or** 410×502 (either satisfies) | Apple Watch Ultra 3 (49mm) | `AppStore/raw-screens-watch/ultra3.png` |
+| Apple Watch Series 11 | 416×496 | Apple Watch Series 11 (46mm) | `AppStore/raw-screens-watch/series11.png` |
+| Apple Watch Series 9 | 396×484 | Apple Watch Series 9 (45mm) | `AppStore/raw-screens-watch/series9.png` |
+| Apple Watch Series 6 | 368×448 | Apple Watch Series 6 (44mm) | `AppStore/raw-screens-watch/series6.png` |
+| Apple Watch Series 3 | 312×390 | **none installed** — see note below | — |
+
+For each family the *other* case size was also checked and does **not**
+match (e.g. Series 11 42mm → 374×446, Series 9 41mm → 352×430, Series 6
+40mm → 324×394) — don't guess the case size, confirm with `sips` as below.
+
+**⚠️ Apple Watch Series 3 has no screenshot.** `xcrun simctl create` for
+both Series 3 device types (42mm and 38mm) fails with "Incompatible
+device" against the watchOS 26.5 runtime — Series 3 never shipped a
+watchOS this new, and this app's watchOS deployment target (10.0, see
+`project.yml`) wouldn't run on real Series 3 hardware regardless. If ASC
+still shows a Series 3 slot at submission time, either accept the gap (the
+other 4 sizes cover it in most upload flows) or generate it from an older
+Xcode/watchOS-runtime install using the same steps below, swapping the
+device type.
+
+All 4 captures show the **populated watchlist** (not the empty state) via
+the `-WATCH_UITEST_SEED` launch argument (`HummingbirdWatch/WatchTestSupport.swift`,
+`#if DEBUG`-only), which seeds 3 deterministic `WatchlistItem` +
+`WatchlistSnapshot` entries (AAPL, bitcoin, MSFT) straight into the App
+Group — no phone pairing needed, so a freshly created, unpaired watchOS
+simulator still renders a real-looking list.
+
+Regenerate the full set:
+```bash
+xcodegen generate
+
+RUNTIME=com.apple.CoreSimulator.SimRuntime.watchOS-26-5   # adjust to whatever `xcrun simctl list runtimes` shows installed
+
+# 1) Create one simulator per slot (skip any that already exist)
+xcrun simctl create "WatchShot-Ultra3"  com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Ultra-3-49mm   "$RUNTIME"
+xcrun simctl create "WatchShot-S11"     com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-11-46mm "$RUNTIME"
+xcrun simctl create "WatchShot-S9"      com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-9-45mm  "$RUNTIME"
+xcrun simctl create "WatchShot-S6"      com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-6-44mm  "$RUNTIME"
+
+# 2) Boot + sanity-check each one's native pixel size before trusting it
+for name in WatchShot-Ultra3 WatchShot-S11 WatchShot-S9 WatchShot-S6; do
+  udid=$(xcrun simctl list devices | grep "$name" | grep -oE '[0-9A-F-]{36}')
+  xcrun simctl boot "$udid"
+  xcrun simctl io "$udid" screenshot /tmp/check-$name.png
+  echo "$name:"; sips -g pixelWidth -g pixelHeight /tmp/check-$name.png
+done
+
+# 3) Build the watch app once (any of the simulators above works as the destination)
+xcodebuild build -project Hummingbird.xcodeproj -scheme HummingbirdWatch -sdk watchsimulator \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' CODE_SIGNING_ALLOWED=NO
+
+APP=$(find ~/Library/Developer/Xcode/DerivedData/Hummingbird-*/Build/Products/Debug-watchsimulator/HummingbirdWatch.app -maxdepth 0)
+BUNDLE_ID=com.avaresearch.hummingbird.dev.watchkitapp
+
+# 4) Install + seed + capture on each
+declare -A SLOT=( [WatchShot-Ultra3]=ultra3 [WatchShot-S11]=series11 [WatchShot-S9]=series9 [WatchShot-S6]=series6 )
+for name in "${!SLOT[@]}"; do
+  udid=$(xcrun simctl list devices | grep "$name" | grep -oE '[0-9A-F-]{36}')
+  xcrun simctl install "$udid" "$APP"
+  xcrun simctl launch "$udid" "$BUNDLE_ID" -WATCH_UITEST_SEED
+  sleep 2
+  xcrun simctl io "$udid" screenshot "AppStore/raw-screens-watch/${SLOT[$name]}.png"
+done
+
+# 5) Verify dimensions
+sips -g pixelWidth -g pixelHeight AppStore/raw-screens-watch/*.png
+```
+
 ### Store upload — still a design task
 These raw frames — the iPhone sets (`raw-screens-6.5in/`, `raw-screens-6.7in/`,
 `raw-screens/`) and the iPad set (`raw-screens-ipad/`) — are **un-framed
