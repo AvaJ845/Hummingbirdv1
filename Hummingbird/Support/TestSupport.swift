@@ -1,5 +1,8 @@
 #if DEBUG
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Launch-argument switches for deterministic UI-test screenshots and the
 /// opt-in developer menu.
@@ -25,10 +28,19 @@ enum TestSupport {
     /// non-deterministic chrome (review prompts, etc.) during capture.
     static let isUITest = arguments.contains { $0.hasPrefix("-UITEST_") }
 
+    /// True under the UI-test screenshot harness: the app's own navigation /
+    /// results-stack animations are treated exactly like Reduce Motion (nil
+    /// animation), and UIKit's implicit animations are switched off process-wide
+    /// (see `disableAnimationsForUITests()`). This is what stops a capture from
+    /// catching a push transition mid-flight (the "double-exposure" ghosting at
+    /// the top of screens 05/08/11). DEBUG-only, like the rest of this file.
+    static let animationsDisabled = isUITest
+
     /// Apply one-time launch state. Call as early as possible in app start-up,
     /// before any store reads `UserDefaults`.
     static func applyLaunchArgumentsIfNeeded() {
         guard isUITest else { return }
+        disableAnimationsForUITests()
         let defaults = UserDefaults.standard
 
         if arguments.contains("-UITEST_RESET") {
@@ -58,6 +70,33 @@ enum TestSupport {
         }
         AppGroup.defaults.synchronize()
         defaults.synchronize()
+    }
+
+    /// Kill every implicit animation for the process so screenshot captures are
+    /// deterministic: no UIKit view animations, no navigation-bar / push-pop
+    /// transition, and Core Animation's own speed cranked so any already-scheduled
+    /// transition finishes instantly. The SwiftUI side is handled separately by
+    /// `animationsDisabled` gating the app's `withAnimation` / `.animation(...)`
+    /// call sites (`NavigationMotion`, `ContentView`). Safe to call before the
+    /// scene is up — these are global switches.
+    private static func disableAnimationsForUITests() {
+        #if canImport(UIKit)
+        UIView.setAnimationsEnabled(false)
+
+        // Make the navigation bar opaque for captures. iOS 26's translucent
+        // "Liquid Glass" bar otherwise shows a blurred smear of whatever scroll
+        // content sits behind it at the top of every pushed/scrolled screen —
+        // which read as double-exposure ghosting in screens 05 / 08 / 11.
+        let opaque = UINavigationBarAppearance()
+        opaque.configureWithOpaqueBackground()
+        opaque.backgroundColor = .systemGroupedBackground
+        opaque.shadowColor = .clear
+        let bar = UINavigationBar.appearance()
+        bar.standardAppearance = opaque
+        bar.compactAppearance = opaque
+        bar.scrollEdgeAppearance = opaque
+        bar.compactScrollEdgeAppearance = opaque
+        #endif
     }
 
     /// Every UserDefaults surface a store might resolve to.

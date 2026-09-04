@@ -1,14 +1,26 @@
 import XCTest
+import UIKit
 
-/// Drives the app on iPhone 17 Pro Max and captures the App Store screenshot
-/// set as real device screenshots, written straight to disk.
+/// Drives the app and captures the App Store screenshot set as real device
+/// screenshots, written straight to disk.
 ///
-/// Run:
+/// iPhone 6.9" set (1320×2868) → `AppStore/raw-screens/`:
 /// ```
 /// TEST_RUNNER_SCREENSHOT_DIR=/abs/path/AppStore/raw-screens \
 /// xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird \
 ///   -sdk iphonesimulator \
 ///   -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+///   -only-testing:HummingbirdUITests CODE_SIGNING_ALLOWED=NO
+/// ```
+///
+/// 13" iPad set → `AppStore/raw-screens-ipad/` (same `TEST_RUNNER_SCREENSHOT_DIR`;
+/// when the run is on an iPad the harness redirects a `.../raw-screens` path to a
+/// sibling `.../raw-screens-ipad`, or honours `TEST_RUNNER_SCREENSHOT_SUBDIR`):
+/// ```
+/// TEST_RUNNER_SCREENSHOT_DIR=/abs/path/AppStore/raw-screens \
+/// xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird \
+///   -sdk iphonesimulator \
+///   -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' \
 ///   -only-testing:HummingbirdUITests CODE_SIGNING_ALLOWED=NO
 /// ```
 final class ScreenshotTests: XCTestCase {
@@ -20,11 +32,27 @@ final class ScreenshotTests: XCTestCase {
 
     // MARK: - Infrastructure
 
+    private var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+
     private var screenshotDir: URL {
         let env = ProcessInfo.processInfo.environment
-        let path = env["SCREENSHOT_DIR"]
+        var path = env["SCREENSHOT_DIR"]
             ?? env["TEST_RUNNER_SCREENSHOT_DIR"]
             ?? NSTemporaryDirectory().appending("hummingbird-screens")
+
+        // Keep the iPad set alongside — never on top of — the iPhone set.
+        if isPad {
+            var url = URL(fileURLWithPath: path, isDirectory: true)
+            if let sub = env["TEST_RUNNER_SCREENSHOT_SUBDIR"] {
+                url = url.appendingPathComponent(sub, isDirectory: true)
+            } else if url.lastPathComponent == "raw-screens" {
+                url = url.deletingLastPathComponent().appendingPathComponent("raw-screens-ipad", isDirectory: true)
+            } else {
+                url = url.appendingPathComponent("ipad", isDirectory: true)
+            }
+            path = url.path
+        }
+
         let url = URL(fileURLWithPath: path, isDirectory: true)
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
@@ -37,10 +65,21 @@ final class ScreenshotTests: XCTestCase {
     }
 
     /// Full-screen device screenshot → PNG on disk + result-bundle attachment.
-    private func capture(_ name: String, app: XCUIApplication) {
-        // Let layout/animation settle.
+    ///
+    /// `settleOn`, when given, is a static text known to be on the destination
+    /// screen — we block on it existing so timing is deterministic rather than
+    /// purely slept. Animations are already disabled in-process by
+    /// `TestSupport` under `-UITEST_*`, so the sleep is only a paint-settle
+    /// margin.
+    private func capture(_ name: String, app: XCUIApplication, settleOn: String? = nil) {
         _ = app.wait(for: .runningForeground, timeout: 5)
-        Thread.sleep(forTimeInterval: 0.6)
+        if let settleOn {
+            XCTAssertTrue(
+                app.staticTexts[settleOn].waitForExistence(timeout: 8),
+                "expected '\(settleOn)' on screen before capturing \(name)"
+            )
+        }
+        Thread.sleep(forTimeInterval: 0.9)
 
         let shot = XCUIScreen.main.screenshot()
         let url = screenshotDir.appendingPathComponent("\(name).png")
@@ -66,16 +105,13 @@ final class ScreenshotTests: XCTestCase {
         let cont = app.buttons["onboarding.continue"]
         XCTAssertTrue(cont.waitForExistence(timeout: 10), "onboarding did not appear")
 
-        XCTAssertTrue(app.staticTexts["Sketches, not predictions"].waitForExistence(timeout: 5))
-        capture("01_onboarding_sketches", app: app)
+        capture("01_onboarding_sketches", app: app, settleOn: "Sketches, not predictions")
 
         cont.tap()
-        XCTAssertTrue(app.staticTexts["Private by design"].waitForExistence(timeout: 5))
-        capture("02_onboarding_private", app: app)
+        capture("02_onboarding_private", app: app, settleOn: "Private by design")
 
         cont.tap()
-        XCTAssertTrue(app.staticTexts["See how wrong it's been"].waitForExistence(timeout: 5))
-        capture("03_onboarding_honest", app: app)
+        capture("03_onboarding_honest", app: app, settleOn: "See how wrong it's been")
     }
 
     // MARK: - 04–06 Home + sketch + reliability
@@ -125,8 +161,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertTrue(pro.waitForExistence(timeout: 10))
         pro.tap()
 
-        XCTAssertTrue(app.staticTexts["Hummingbird Pro"].waitForExistence(timeout: 5))
-        capture("07_paywall_top", app: app)
+        capture("07_paywall_top", app: app, settleOn: "Hummingbird Pro")
 
         // Scroll to the plan buttons ($19.99/year + 7-day trial, $2.99/month, $49.99 Lifetime).
         for _ in 0..<4 {
@@ -151,17 +186,20 @@ final class ScreenshotTests: XCTestCase {
         gear.tap()
 
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
-        Thread.sleep(forTimeInterval: 0.5)
-        capture("09_settings", app: app)
+        capture("09_settings", app: app, settleOn: "Appearance")
 
+        // The Accuracy report row sits a few sections down — scroll it into the
+        // rendered range deterministically instead of hoping it's on-screen
+        // (it isn't on shorter devices, which is what used to flake this test).
         let report = app.buttons["settings.accuracyReport"]
-        if report.waitForExistence(timeout: 3) {
-            report.tap()
-            Thread.sleep(forTimeInterval: 0.8)
-            capture("11_accuracy_report", app: app)
-        } else {
-            XCTFail("accuracy report row not found")
+        var scrolls = 0
+        while !report.isHittable && scrolls < 8 {
+            app.swipeUp()
+            scrolls += 1
         }
+        XCTAssertTrue(report.waitForExistence(timeout: 3), "accuracy report row not found")
+        report.tap()
+        capture("11_accuracy_report", app: app, settleOn: "Across all assets")
     }
 
     // MARK: - 10 Practice home
