@@ -73,7 +73,7 @@ xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird -sdk iphonesi
 | `05_sketch_result.png` | Plain-English result card after a sketch |
 | `06_reliability.png` | Price-sketch chart + reliability meter |
 | `07_paywall_top.png` | Pro paywall — value prop + "Always free" / "Pro adds" |
-| `08_paywall_plans.png` | Pro paywall — plans ($19.99/yr, 7-day trial · $2.99/mo · $49.99 Lifetime) — **use as the IAP review screenshot** (re-capture: predates the Lifetime tier) |
+| `08_paywall_plans.png` | Pro paywall — all 3 plans ($19.99/yr + 7-day trial · $2.99/mo · $49.99 Lifetime) — **use as the IAP review screenshot** |
 | `09_settings.png` | Settings — appearance, icon picker, Siri, Accuracy report |
 | `10_practice_home.png` | Home with Practice tools on |
 | `11_accuracy_report.png` | Settings → Accuracy report (seeded track record) |
