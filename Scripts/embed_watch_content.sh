@@ -33,10 +33,16 @@
 # so simulator builds (and therefore the whole unit/UI test baseline) are
 # entirely unaffected — this script no-ops for them.
 #
-# Destination is Watch/HummingbirdWatch.app up through Xcode 25, but Xcode 26
-# validates companion watch apps at PlugIns/HummingbirdWatch.app instead (see
-# https://github.com/yonaskolb/XcodeGen/issues/1613) — this script targets the
-# Xcode 26 convention since that's what ships in this environment.
+# Destination is Watch/HummingbirdWatch.app. A GitHub issue (yonaskolb/
+# XcodeGen#1613) suggested Xcode 26 moved this to PlugIns/, and a local
+# `xcodebuild archive` does accept that location — but App Store Connect's
+# real upload validator disagrees and rejects it: "Invalid directory. The
+# bundle Payload/Hummingbird.app/PlugIns/HummingbirdWatch.app is not
+# contained in a correctly named directory. It should be under Watch."
+# (code 90680, hit on an actual upload attempt). Trust the server, not the
+# issue thread: local archive validation is looser than what ASC enforces
+# on submission, so Watch/ is the only convention confirmed correct end to
+# end — a local-only archive check is not enough to prove this is right.
 
 set -euo pipefail
 
@@ -48,7 +54,7 @@ fi
 WATCH_APP_NAME="HummingbirdWatch.app"
 EMBED_DERIVED_DATA="${BUILD_DIR}/EmbedWatchDerivedData"
 WATCH_PRODUCTS_DIR="${EMBED_DERIVED_DATA}/Build/Products/${CONFIGURATION}-watchos"
-DEST_DIR="${CODESIGNING_FOLDER_PATH}/PlugIns"
+DEST_DIR="${CODESIGNING_FOLDER_PATH}/Watch"
 DEST_PATH="${DEST_DIR}/${WATCH_APP_NAME}"
 
 echo "embed_watch_content.sh: building ${WATCH_APP_NAME} for watchos (${CONFIGURATION})"

@@ -16,7 +16,7 @@ settings:
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
@@ -146,7 +146,7 @@ targets:
         script: "\"$SRCROOT/Scripts/embed_watch_content.sh\""
         basedOnDependencyAnalysis: false
         outputFiles:
-          - "$(CODESIGNING_FOLDER_PATH)/PlugIns/HummingbirdWatch.app"
+          - "$(CODESIGNING_FOLDER_PATH)/Watch/HummingbirdWatch.app"
       - name: Strip extended attributes (codesign detritus)
         script: /usr/bin/xattr -rc "${CODESIGNING_FOLDER_PATH}"
         basedOnDependencyAnalysis: false
