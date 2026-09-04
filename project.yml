@@ -15,8 +15,8 @@ settings:
     # now that watchOS targets exist in the same project — each watchOS target
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
-    MARKETING_VERSION: "1.16.0"
-    CURRENT_PROJECT_VERSION: "23"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
@@ -62,19 +62,43 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        # Portrait-only on both idioms. A universal app whose iPad build does
+        # not advertise all four orientations is only accepted when it also
+        # opts out of Split View / Slide Over via UIRequiresFullScreen — which
+        # this app does (below). That combination is what clears App Store
+        # upload error 90474.
+        UIRequiresFullScreen: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSHumanReadableCopyright: "Educational projections — not financial advice."
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+        NSHumanReadableCopyright: "2026 AvaResearch LLC"
         NSMicrophoneUsageDescription: "Hummingbird uses the microphone so you can dictate a stock ticker or crypto id for an educational projection."
         NSSpeechRecognitionUsageDescription: "Hummingbird converts speech into a ticker or coin id to run an educational price projection — not financial advice."
         ITSAppUsesNonExemptEncryption: false
         NSSupportsLiveActivities: true
         UIBackgroundModes:
           - fetch
-          - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.avaresearch.hummingbird.refresh
         CFBundleIcons:
+          CFBundlePrimaryIcon:
+            CFBundleIconName: AppIcon
+          CFBundleAlternateIcons:
+            Midnight:
+              CFBundleIconFiles:
+                - AltIcon-Midnight
+              UIPrerenderedIcon: false
+            Mono:
+              CFBundleIconFiles:
+                - AltIcon-Mono
+              UIPrerenderedIcon: false
+        # iPad reads CFBundleIcons~ipad, not CFBundleIcons — mirror the phone
+        # entry so the primary icon and both alternates (Midnight / Mono) work
+        # on iPad too. The alt-icon rasters ship an ~ipad 152pt variant
+        # (AppStore/icon/render.py) alongside the @2x/@3x phone sizes.
+        CFBundleIcons~ipad:
           CFBundlePrimaryIcon:
             CFBundleIconName: AppIcon
           CFBundleAlternateIcons:
@@ -95,10 +119,13 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        # iPhone-only: Hummingbird is a portrait phone app. Universal (1,2)
-        # would require all four iPad orientations for multitasking (upload
-        # error 90474). iPad users can still run it in compatibility mode.
-        TARGETED_DEVICE_FAMILY: "1"
+        # Universal. Hummingbird stays a portrait-only, full-screen utility on
+        # iPad (no Split View / Slide Over) — UIRequiresFullScreen: true in
+        # info.properties is what lets a universal app ship without advertising
+        # all four iPad orientations, clearing upload error 90474. The layout
+        # is width-capped to a readable measure on regular size classes so it
+        # reads as a considered iPad app, not a stretched phone screen.
+        TARGETED_DEVICE_FAMILY: "1,2"
       configs:
         Debug:
           # Debug-only separate identity, so the dev build installs SIDE-BY-SIDE
@@ -143,7 +170,9 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: HummingbirdWidget/Info.plist
         CODE_SIGN_ENTITLEMENTS: HummingbirdWidget/HummingbirdWidget.entitlements
-        TARGETED_DEVICE_FAMILY: "1"
+        # Match the host app — widgets should be available on the iPad Home
+        # Screen / Today view too.
+        TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: YES
       configs:
         Debug:
@@ -259,18 +288,36 @@ targets:
         PRODUCT_NAME: HummingbirdTests
         PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.tests
         GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Hummingbird.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Hummingbird"
         BUNDLE_LOADER: "$(TEST_HOST)"
+  HummingbirdUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: HummingbirdUITests
+    dependencies:
+      - target: Hummingbird
+    settings:
+      base:
+        PRODUCT_NAME: HummingbirdUITests
+        PRODUCT_BUNDLE_IDENTIFIER: com.avaresearch.hummingbird.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+        TEST_TARGET_NAME: Hummingbird
 schemes:
   Hummingbird:
     build:
       targets:
         Hummingbird: all
         HummingbirdTests: [test]
+        HummingbirdUITests: [test]
     test:
       config: Debug
+      storeKitConfiguration: Products.storekit
       targets:
         - HummingbirdTests
+        - HummingbirdUITests
     run:
       config: Debug
       storeKitConfiguration: Products.storekit

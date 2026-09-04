@@ -97,6 +97,7 @@ struct PaywallView: View {
                     purchaseButton(
                         yearly,
                         badge: "\(AppPricing.annualTrial), then \(yearly.displayPrice)/year\(savings)",
+                        identifier: "paywall.buy.yearly",
                         highlighted: true
                     )
                 }
@@ -104,14 +105,16 @@ struct PaywallView: View {
                 if let monthly = entitlements.monthlyProduct {
                     purchaseButton(
                         monthly,
-                        badge: "\(monthly.displayPrice)/month · cancel anytime"
+                        badge: "\(monthly.displayPrice)/month · cancel anytime",
+                        identifier: "paywall.buy.monthly"
                     )
                 }
 
                 if let lifetime = entitlements.lifetimeProduct {
                     purchaseButton(
                         lifetime,
-                        badge: "Pay once · yours forever"
+                        badge: "Pay once · yours forever",
+                        identifier: "paywall.buy.lifetime"
                     )
                 }
 
@@ -133,9 +136,11 @@ struct PaywallView: View {
                             note: "Pay once · yours forever"
                         )
                         #if DEBUG
-                        Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        if !TestSupport.isUITest {
+                            Text("Live purchase appears once the products are created in App Store Connect and Products.storekit is attached. Until then, use Debug unlock for QA.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         #endif
                     }
                     .padding(.vertical, 4)
@@ -146,10 +151,14 @@ struct PaywallView: View {
                 Text(subscriptionFooter)
             }
 
+            // Guideline 3.1.2: an auto-renewable subscription needs functional
+            // Privacy Policy + Terms of Use (EULA) links right by the purchase.
+            // "Terms of Use" opens the bundled custom EULA, which itself
+            // incorporates Apple's standard Licensed Application EULA by
+            // reference — so a separate Apple-EULA link would be redundant.
             Section("Legal") {
                 Button("Privacy Policy") { legalPath = .privacy }
-                Button("Terms of Use") { legalPath = .terms }
-                Link("Apple Standard EULA", destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                Button("Terms of Use (EULA)") { legalPath = .terms }
             }
 
             Section {
@@ -171,17 +180,20 @@ struct PaywallView: View {
             }
 
             #if DEBUG
-            Section("Debug") {
-                Toggle(
-                    "Unlock Pro (local QA)",
-                    isOn: Binding(
-                        get: { entitlements.debugUnlocked },
-                        set: { entitlements.setDebugUnlocked($0) }
+            if TestSupport.isDebugMenuEnabled {
+                Section("Debug") {
+                    Toggle(
+                        "Unlock Pro (local QA)",
+                        isOn: Binding(
+                            get: { entitlements.debugUnlocked },
+                            set: { entitlements.setDebugUnlocked($0) }
+                        )
                     )
-                )
+                }
             }
             #endif
         }
+        .readableContentWidth()
         .navigationTitle("Pro")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -211,13 +223,13 @@ struct PaywallView: View {
         or as a one-time Lifetime purchase ($\(AppPricing.lifetimeUSD), non-renewing). \
         Payment is charged to your Apple ID at purchase confirmation; a free trial converts to a paid year unless cancelled \
         at least 24 hours before it ends. Subscriptions renew unless cancelled at least 24 hours before the period ends. \
-        Manage or cancel in Settings → Apple ID → Subscriptions. \
+        Manage or cancel a subscription in Settings → Apple ID → Subscriptions. \
         Pro unlocks on-device comparison tools only — never financial advice, never better foresight, never premium data. \
         Free and Pro share the same key-less public APIs.
         """
     }
 
-    private func purchaseButton(_ product: Product, badge: String, highlighted: Bool = false) -> some View {
+    private func purchaseButton(_ product: Product, badge: String, identifier: String, highlighted: Bool = false) -> some View {
         Button {
             Task {
                 let ok = await entitlements.purchase(product)
@@ -252,6 +264,7 @@ struct PaywallView: View {
         // without buying first, but the buy buttons must stay tappable so
         // the actual purchase flow itself is still testable end to end.
         .disabled(entitlements.hasRealPurchase)
+        .accessibilityIdentifier(identifier)
         .accessibilityLabel("\(product.displayName)\(highlighted ? ", best value" : ""), \(badge)")
         .accessibilityHint(product.subscription != nil ? "Auto-renewable subscription" : "One-time purchase")
     }

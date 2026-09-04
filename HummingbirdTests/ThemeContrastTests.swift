@@ -27,6 +27,13 @@ final class ThemeContrastTests: XCTestCase {
         assertContrast(Theme.warning, name: "warning")
     }
 
+    func testAccentClearsAABodyTextContrast() {
+        // accent is the app-wide interactive tint and is also used as short
+        // colored text ("Pro active", counts, links) — hold it to the same
+        // 4.5:1 bar as the status colors.
+        assertContrast(Theme.accent, name: "accent")
+    }
+
     // MARK: - Helpers
 
     private func assertContrast(_ color: Color, name: String) {

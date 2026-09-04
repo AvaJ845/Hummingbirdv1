@@ -67,7 +67,7 @@ struct CallSheet: View {
                     }
 
                     Text("A record of your own call, logged before the sketch. Being right before doesn't mean you'll be right again — never advice.")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.footnote).foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -76,7 +76,7 @@ struct CallSheet: View {
                         onCommit(direction, confidence, reason, callHorizon)
                         dismiss()
                     } label: {
-                        Text("Lock in call · see the sketch")
+                        Text("Log the call · see the sketch")
                             .font(.headline).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -84,6 +84,7 @@ struct CallSheet: View {
                     .disabled(direction == nil)
                 }
                 .padding()
+                .readableContentWidth(fillColor: nil)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

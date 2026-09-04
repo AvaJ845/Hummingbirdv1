@@ -4,15 +4,15 @@ struct ForecastEmptyState: View {
     var body: some View {
         Card {
             VStack(spacing: 10) {
-                Image(systemName: "hand.point.up.left")
+                Image(systemName: "scribble.variable")
                     .font(.largeTitle)
                     .foregroundStyle(Theme.brandGradient)
                     .symbolEffect(.pulse, options: .repeating.speed(0.4),
                                   isActive: !ProcessInfo.processInfo.isLowPowerModeEnabled)
                     .accessibilityHidden(true)
-                Text("Pick a symbol, then call it")
+                Text("Pick a symbol for a sketch")
                     .font(.headline)
-                Text("Predict Higher or Lower before you see the sketch, and keep an honest score of your own calls. Or just show the sketch — up to you.")
+                Text("Hummingbird draws a simple statistical sketch of where a stock or coin could drift, and shows how wrong past sketches have been.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -43,8 +43,8 @@ struct ForecastLoadingCard: View {
 struct ForecastDisclaimer: View {
     var body: some View {
         Text("Hummingbird sketches a future path from public price history and simple models. Not financial advice.")
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
             .padding(.top, 8)
             .accessibilityLabel("Disclaimer: Not financial advice.")

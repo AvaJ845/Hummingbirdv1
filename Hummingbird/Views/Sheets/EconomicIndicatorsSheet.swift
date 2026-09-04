@@ -78,6 +78,7 @@ struct EconomicIndicatorsSheet: View {
                 }
             }
         }
+        .readableContentWidth()
         .navigationTitle("Rate what-ifs")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

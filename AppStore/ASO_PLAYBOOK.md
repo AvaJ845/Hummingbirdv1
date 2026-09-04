@@ -12,13 +12,13 @@ risk and protect the "not advice" brand.
 ## ① Discovery (keywords) — *get found*  ✅ done
 Full strings live in **`METADATA.md`**. Summary:
 
-- **App Store Name** (heaviest field): `Stocks & Crypto - Hummingbird` — primary keyword FIRST, brand second. Home Screen name stays `Hummingbird`.
-- **Subtitle**: `Charts, watchlist & projection` — secondary keywords, zero repeats from the Name.
-- **Keyword array** (94/100): `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` — no repeats, singulars, no competitors.
+- **App Store Name** (heaviest field): `Stocks & Crypto - Hummingbird` (29 chars) — keyword-forward: highest-intent category terms first, brand last. Home Screen name stays `Hummingbird` (`CFBundleDisplayName`).
+- **Subtitle**: `Honest on-device price sketch` — honesty-first promise; carries `on-device` / `price` / `sketch`. (29 chars; singular `sketch` to fit the 30-char field, Apple stems it to `sketches`.)
+- **Keyword array** (98/100, live): `bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` — no repeat of the Name (`stocks`/`crypto`), singulars, no competitors. (`price` is also in the Subtitle — redundant slot, swap for `chart`/`coin` on a later pass.)
 
 Because Apple indexes Name + Subtitle + Keywords as **one string**, the unique
-terms combine into phrases we rank for: `stock tracker`, `crypto chart`,
-`bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`.
+terms combine into phrases we rank for: `crypto tracker`, `bitcoin price`,
+`crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
 
 **Guardrail:** `forecast` lives in the hidden array only; `prediction`/`signals`
 stay out entirely (advice-claim risk).
@@ -32,15 +32,19 @@ lowest-ranking hidden keyword each update; re-validate ideas with an LLM.
 You have **3–5 seconds**. The deck's proven rule: **authentic, functional UI beats
 polished abstraction**; lead with your best *real* feature; never a welcome/lifestyle screen.
 
-**Recommended order** (assets in this folder):
-1. **`01_plain_english.png`** — the honest multi-method read. Immediate differentiation.
-2. **`02_best_method.png`** — the "best recent" backtest receipts (unique to Hummingbird).
-3. **`03_watchlist.png`** — glanceable value + widget/live angle.
-4. **`04_any_asset.png`** — the simple input (what they'll do).
-5. **`05_honest.png`** — the honesty promise (brand close).
+**Recommended order** (assets in this folder) — lead with the differentiator:
+1. **`01_honest.png`** — "See how wrong it's been." The accuracy record IS the hook.
+2. **`02_plain_english.png`** — the honest multi-method read in plain English.
+3. **`03_best_method.png`** — the "best recent" backtest receipts (unique to Hummingbird).
+4. **`04_watchlist.png`** — glanceable value + widget/live angle.
+5. **`05_any_asset.png`** — the simple input (what they'll do).
 
 Each already carries a bold caption + the not-advice line — good; the caption is
 read faster than the screen.
+
+> ⚠️ All five images are **stale** (pre round-1/2 UI + old icon/mark) and must be
+> re-shot. `01_honest.png` should be a real capture of the **Accuracy report**
+> screen, not the onboarding page it currently shows.
 
 **Action items**
 - [ ] **A/B test via Product Page Optimization** once live (App Store Connect → up to 3 treatments). First test to run: **#1 = the price-sketch chart with the confidence band** vs the current comparison card. The chart is the more *visually* striking hero; the deck says *don't assume — test.*
@@ -79,9 +83,9 @@ algorithm rewards consistency.**
 ## One-look checklist
 | Part | Item | Status |
 |---|---|---|
-| Discovery | Keyword-first App Name | ✅ |
+| Discovery | Clean brand App Name | ✅ |
 | Discovery | Searchable Subtitle (no repeats) | ✅ |
-| Discovery | 100-char keyword array (deduped) | ✅ (94) |
+| Discovery | 100-char keyword array (deduped) | ✅ (95) |
 | Conversion | Authentic, feature-first screenshots | ✅ set ready |
 | Conversion | A/B test (Product Page Optimization) | ▢ after launch |
 | Conversion | App Preview video | ▢ optional |

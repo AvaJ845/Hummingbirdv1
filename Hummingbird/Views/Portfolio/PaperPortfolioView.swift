@@ -44,7 +44,7 @@ struct PaperPortfolioCard: View {
         if c.tradeCount == 0 { return "Holding your first picks · vs. buy-and-hold" }
         if abs(c.edge) < 0.0005 { return "Even with buy-and-hold" }
         return c.isBeatingHold
-            ? "Beating buy-and-hold by \(c.edge.asSignedPercent())"
+            ? "Ahead of buy-and-hold by \(c.edge.asSignedPercent())"
             : "Behind buy-and-hold by \((-c.edge).asPercent())"
     }
 }
@@ -86,6 +86,7 @@ struct PaperPortfolioView: View {
             shareSection
             disclaimerSection
         }
+        .readableContentWidth()
         .navigationTitle("Practice portfolio")
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.revalueDue(using: service) }
@@ -154,7 +155,7 @@ struct PaperPortfolioView: View {
             }
         } footer: {
             if store.hasStarted, report.comparison.tradeCount > 0 {
-                Text("You've made \(report.comparison.tradeCount) trade\(report.comparison.tradeCount == 1 ? "" : "s"). Buy-and-hold makes zero — activity rarely wins.")
+                Text("You've made \(report.comparison.tradeCount) trade\(report.comparison.tradeCount == 1 ? "" : "s"). The buy-and-hold comparison makes none.")
             }
         }
     }
@@ -169,7 +170,7 @@ struct PaperPortfolioView: View {
             Text("Your return \(c.yourReturn.asSignedPercent()) · holding your first picks \(c.holdReturn.asSignedPercent())")
                 .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             if let market = marketReturn {
-                Text("The market (S&P) \(market.asSignedPercent()) — index funds are hard to beat.")
+                Text("The market (S&P) \(market.asSignedPercent()) over the same period.")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
             if let dcaReturn {
@@ -202,11 +203,11 @@ struct PaperPortfolioView: View {
 
     private var vsHoldHeadline: String {
         let c = report.comparison
-        if c.tradeCount == 0 { return "You're holding your first picks — a real strategy." }
-        if abs(c.edge) < 0.0005 { return "You're even with buy-and-hold." }
+        if c.tradeCount == 0 { return "You're holding your first picks." }
+        if abs(c.edge) < 0.0005 { return "Even with buy-and-hold." }
         return c.isBeatingHold
-            ? "You're beating buy-and-hold by \(c.edge.asSignedPercent())."
-            : "Buy-and-hold is ahead by \((-c.edge).asPercent()) — trading isn't free."
+            ? "Ahead of buy-and-hold by \(c.edge.asSignedPercent())."
+            : "Behind buy-and-hold by \((-c.edge).asPercent())."
     }
 
     private var headlineColor: Color {
@@ -286,9 +287,9 @@ struct PaperPortfolioView: View {
 
     private func concentrationFooter(_ c: ConcentrationInsight) -> String {
         if c.assetCount == 1 {
-            return "All of it is in \(c.topSymbol). Diversification spreads risk across holdings — right now you have none."
+            return "All of it is in \(c.topSymbol) — a single holding. Diversification spreads holdings across more assets, for better or worse."
         }
-        return "\(pctText(c.topFraction)) is in \(c.topSymbol), your largest holding. Diversification spreads risk across holdings, for better or worse."
+        return "\(pctText(c.topFraction)) is in \(c.topSymbol), the largest holding. Diversification spreads holdings across more assets, for better or worse."
     }
 
     // MARK: - Holdings
@@ -426,7 +427,7 @@ struct PaperPortfolioView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Your trades vs. the methods", systemImage: "sparkles")
                                 .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
-                            Text("See whether your own trades are beating the app's methods — scored on the very same positions. Pro.")
+                            Text("See how your own trades compare with the app's methods — scored on the very same positions. Pro.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
@@ -436,7 +437,7 @@ struct PaperPortfolioView: View {
                 Text("Your trades vs. the methods")
             } footer: {
                 if entitlements.isPro {
-                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; keep trading.")
+                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; more trades make the picture clearer.")
                 }
             }
         }

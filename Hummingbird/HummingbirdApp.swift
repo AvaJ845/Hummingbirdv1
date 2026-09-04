@@ -5,6 +5,12 @@ struct HummingbirdApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hb.appearance") private var appearance: AppAppearance = .system
 
+    init() {
+        #if DEBUG
+        TestSupport.applyLaunchArgumentsIfNeeded()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

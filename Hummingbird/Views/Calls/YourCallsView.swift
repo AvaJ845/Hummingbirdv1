@@ -21,11 +21,9 @@ struct YourCallsView: View {
     }
     private var freeResolvedLimit: Int { 5 }
 
-    /// The streak shown to the user, including a Pro subscriber's one grace
-    /// day (see `ProFeature.streakFreeze`) — never the raw participation
-    /// count alone once Pro is active.
+    /// The raw participation streak shown to the user — no perks, no grace days.
     private var displayStreak: Int {
-        StreakEngine.currentStreak(store.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
+        StreakEngine.currentStreak(store.calls)
     }
 
     var body: some View {
@@ -48,6 +46,7 @@ struct YourCallsView: View {
             }
             aboutSection
         }
+        .readableContentWidth()
         .navigationTitle("Your calls")
         .navigationBarTitleDisplayMode(.inline)
         .task { await resolveDue() }
@@ -175,7 +174,7 @@ struct YourCallsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("You vs. the methods", systemImage: "sparkles")
                                 .font(.body.weight(.semibold)).foregroundStyle(Theme.brandGradient)
-                            Text("See whether your own calls are beating the app's methods — scored on the very same calls. Pro.")
+                            Text("See how your own calls compare with the app's methods — scored on the very same calls. Pro.")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 4)
@@ -185,7 +184,7 @@ struct YourCallsView: View {
                 Text("You vs. the methods")
             } footer: {
                 if entitlements.isPro {
-                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; keep calling.")
+                    Text("You're ahead of \(vs.methodsBeaten) of \(vs.methods.count) methods so far — a record of the past, never advice. Small samples wobble; more calls make the picture clearer.")
                 }
             }
         }

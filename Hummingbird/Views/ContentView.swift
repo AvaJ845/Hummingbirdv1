@@ -1,5 +1,4 @@
 import SwiftUI
-import StoreKit
 import WidgetKit
 
 struct ContentView: View {
@@ -20,10 +19,15 @@ struct ContentView: View {
     @State private var literacy = WeeklyLiteracyStore()
     @State private var literacyQuestion: LiteracyQuestion?
     @AppStorage("hummingbird.hasOnboarded") private var hasOnboarded = false
+    /// Opt-in "practice" surface: the prediction/portfolio/recall/literacy tools.
+    /// Off by default so the home screen stays a calm single-purpose utility —
+    /// flipped on from Settings.
+    @AppStorage("hb.practice.enabled") private var practiceEnabled = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @FocusState private var symbolFocused: Bool
     @State private var path = NavigationPath()
     @State private var micCenter: CGPoint = .zero
+    @State private var lastLiveRefresh: Date = .distantPast
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -95,27 +99,12 @@ struct ContentView: View {
             // Ask for a rating only at a "happy moment" — a completed projection,
             // never at launch or after an error (forecastGeneration bumps only on
             // a successful run).
-            if ReviewPrompt.registerSuccessAndShouldRequest() {
+            var suppressReview = false
+            #if DEBUG
+            suppressReview = TestSupport.isUITest
+            #endif
+            if !suppressReview, ReviewPrompt.registerSuccessAndShouldRequest() {
                 requestReview()
-            }
-        }
-        .alert(
-            "Keep your streak going?",
-            isPresented: Binding(
-                get: { viewModel.pendingStreakReminderOffer != nil },
-                set: { if !$0 { viewModel.pendingStreakReminderOffer = nil } }
-            )
-        ) {
-            Button("Remind Me") {
-                enableStreakReminder()
-                viewModel.pendingStreakReminderOffer = nil
-            }
-            Button("Not Now", role: .cancel) {
-                viewModel.pendingStreakReminderOffer = nil
-            }
-        } message: {
-            if let streak = viewModel.pendingStreakReminderOffer {
-                Text("You're on a \(streak)-day streak. Want a nudge in the evening if you're about to lose it?")
             }
         }
         .sheet(isPresented: $showWatchlist) {
@@ -188,14 +177,15 @@ struct ContentView: View {
         }
         .task {
             await entitlements.loadProducts()
-            await viewModel.resolveDueCalls()
-            await paper.revalueDue(using: MarketDataService())
-            updateTrackRecordSnapshot()
-            updatePortfolioSnapshot()
+            // Once per launch, regardless of practice mode, so calls made before
+            // practice was turned off still resolve and aren't left frozen.
+            await refreshLiveData(force: true)
         }
         .onAppear {
             if !hasOnboarded { showOnboarding = true }
-            literacyQuestion = literacy.questionForThisWeek()
+            if practiceEnabled {
+                literacyQuestion = literacy.questionForThisWeek()
+            }
         }
     }
 
@@ -227,6 +217,41 @@ struct ContentView: View {
         WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
     }
 
+    /// Single debounced entry point for "catch up on anything that may have gone
+    /// stale while we were away" — resolve due calls, revalue the practice
+    /// portfolio, refresh the widget snapshots. Every trigger (launch, return to
+    /// foreground) routes through here instead of firing its own overlapping
+    /// tasks; a call within `Self.liveRefreshInterval` of the last one no-ops.
+    /// `force` (used once per launch) bypasses the interval so old unresolved
+    /// calls are never left frozen, even when practice mode is off.
+    private static let liveRefreshInterval: TimeInterval = 30
+    private func refreshLiveData(force: Bool = false) async {
+        guard force || Date().timeIntervalSince(lastLiveRefresh) > Self.liveRefreshInterval else { return }
+        lastLiveRefresh = Date()
+        await viewModel.resolveDueCalls()
+        await paper.revalueDue(using: MarketDataService())
+        updateTrackRecordSnapshot()
+        updatePortfolioSnapshot()
+    }
+
+    /// Recompose the on-device notification content (morning read, weekly recap)
+    /// so it never goes stale between opens — throttled so a rapid
+    /// background/foreground flap can't reschedule repeatedly.
+    private func rescheduleNotificationsIfDue() {
+        let key = "hb.notifications.lastReschedule"
+        let last = UserDefaults.standard.double(forKey: key)
+        guard Date().timeIntervalSince1970 - last > 300 else { return }
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: key)
+        Task { await MorningDigest.rescheduleIfEnabled() }
+        Task {
+            await WeeklyRecap.rescheduleIfEnabled(
+                calls: viewModel.userCalls.calls,
+                streak: viewModel.userCalls.currentStreak,
+                hasJournalActivity: !SharedStorage.snapshots().isEmpty
+            )
+        }
+    }
+
     /// Keep the widget/watchlist snapshot fresh whenever a watched asset is projected.
     private func saveSnapshotIfWatched() {
         guard let item = viewModel.currentWatchItem,
@@ -247,58 +272,62 @@ struct ContentView: View {
             VStack(spacing: 16) {
                 header
 
-                if !viewModel.userCalls.calls.isEmpty {
-                    YourCallsCard(
-                        report: viewModel.userCalls.report,
-                        pendingCount: viewModel.userCalls.pending.count,
-                        streak: displayStreak
-                    ) { showYourCalls = true }
-                    .transition(.opacity)
-                }
+                // Practice surface — opt-in only. The default home screen is
+                // just: header → input → results → disclaimer.
+                if practiceEnabled {
+                    if !viewModel.userCalls.calls.isEmpty {
+                        YourCallsCard(
+                            report: viewModel.userCalls.report,
+                            pendingCount: viewModel.userCalls.pending.count,
+                            streak: displayStreak
+                        ) { showYourCalls = true }
+                        .transition(.opacity)
+                    }
 
-                PaperPortfolioCard(
-                    report: paper.report,
-                    hasStarted: paper.hasStarted
-                ) { showPaperPortfolio = true }
+                    PaperPortfolioCard(
+                        report: paper.report,
+                        hasStarted: paper.hasStarted
+                    ) { showPaperPortfolio = true }
 
-                if let insight = calibrationInsight {
-                    CalibrationInsightCard(
-                        insight: insight,
-                        onTap: {
-                            CalibrationInsightThrottle.recordShown(insight.signature)
-                            showYourCalls = true
-                        },
-                        onDismiss: {
-                            CalibrationInsightThrottle.recordShown(insight.signature)
-                        }
-                    )
-                    .transition(.opacity)
-                }
-
-                if !dueRecallBatch.isEmpty {
-                    RecallCard(
-                        symbols: dueRecallBatch.map(\.call.symbol),
-                        daysAgo: daysSince(dueRecallBatch.first?.call.resolvedAt),
-                        onTap: { activeRecallBatch = dueRecallBatch },
-                        onDismiss: {
-                            for item in dueRecallBatch {
-                                spacedRecall.recordReviewed(item.call, intervalIndex: item.intervalIndex)
+                    if let insight = calibrationInsight {
+                        CalibrationInsightCard(
+                            insight: insight,
+                            onTap: {
+                                CalibrationInsightThrottle.recordShown(insight.signature)
+                                showYourCalls = true
+                            },
+                            onDismiss: {
+                                CalibrationInsightThrottle.recordShown(insight.signature)
                             }
-                        }
-                    )
-                    .transition(.opacity)
-                }
+                        )
+                        .transition(.opacity)
+                    }
 
-                if let literacyQuestion {
-                    LiteracyQuestionCard(
-                        question: literacyQuestion,
-                        onAnswered: { literacy.recordShown() },
-                        onDismiss: {
-                            literacy.recordShown()
-                            self.literacyQuestion = nil
-                        }
-                    )
-                    .transition(.opacity)
+                    if !dueRecallBatch.isEmpty {
+                        RecallCard(
+                            symbols: dueRecallBatch.map(\.call.symbol),
+                            daysAgo: daysSince(dueRecallBatch.first?.call.resolvedAt),
+                            onTap: { activeRecallBatch = dueRecallBatch },
+                            onDismiss: {
+                                for item in dueRecallBatch {
+                                    spacedRecall.recordReviewed(item.call, intervalIndex: item.intervalIndex)
+                                }
+                            }
+                        )
+                        .transition(.opacity)
+                    }
+
+                    if let literacyQuestion {
+                        LiteracyQuestionCard(
+                            question: literacyQuestion,
+                            onAnswered: { literacy.recordShown() },
+                            onDismiss: {
+                                literacy.recordShown()
+                                self.literacyQuestion = nil
+                            }
+                        )
+                        .transition(.opacity)
+                    }
                 }
 
                 ForecastInputCard(
@@ -321,7 +350,8 @@ struct ContentView: View {
                     },
                     onUnlock: {
                         open(.paywall(reason: "Free includes horizons up to \(FreeTierLimits.maxHorizonDays) days. Pro stretches sketches to 90."))
-                    }
+                    },
+                    practiceEnabled: practiceEnabled
                 )
 
                 if let error = viewModel.errorMessage {
@@ -397,6 +427,7 @@ struct ContentView: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 32)
+            .readableContentWidth()
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.hasResult)
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.isLoading)
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.forecastGeneration)
@@ -415,6 +446,7 @@ struct ContentView: View {
                 }
                 .disabled(dictation.isActive)
                 .accessibilityLabel("Watchlist")
+                .accessibilityIdentifier("toolbar.watchlist")
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if !entitlements.isPro {
@@ -425,6 +457,7 @@ struct ContentView: View {
                             .font(.caption.weight(.bold))
                     }
                     .accessibilityLabel("Hummingbird Pro")
+                    .accessibilityIdentifier("toolbar.pro")
                 }
 
                 Button {
@@ -456,6 +489,7 @@ struct ContentView: View {
                 }
                 .disabled(dictation.isActive)
                 .accessibilityLabel("Settings")
+                .accessibilityIdentifier("toolbar.settings")
             }
         }
         .task {
@@ -469,36 +503,25 @@ struct ContentView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active {
+            switch phase {
+            case .active:
                 if viewModel.hasResult { viewModel.beginAutoRefresh() }
-                Task { await viewModel.resolveDueCalls() }
-                Task { await paper.revalueDue(using: MarketDataService()) }
-            } else if phase != .active {
+                // Recurring catch-up only while practice mode is on; debounced
+                // inside refreshLiveData so a foreground flap can't swarm it.
+                if practiceEnabled {
+                    Task { await refreshLiveData() }
+                }
+            case .background:
                 viewModel.endAutoRefresh()
-            }
-            if phase == .background {
-                // Refresh the morning-digest and weekly-recap content so neither
-                // ever goes stale between app opens.
-                Task { await MorningDigest.rescheduleIfEnabled() }
-                Task {
-                    await WeeklyRecap.rescheduleIfEnabled(
-                        calls: viewModel.userCalls.calls,
-                        streak: viewModel.userCalls.currentStreak,
-                        hasJournalActivity: !SharedStorage.snapshots().isEmpty
-                    )
-                }
-                Task {
-                    await StreakReminder.rescheduleIfEnabled(
-                        streak: viewModel.userCalls.currentStreak,
-                        calls: viewModel.userCalls.calls
-                    )
-                }
+                rescheduleNotificationsIfDue()
                 // Never leave the mic + audio engine running off-screen. Only on
                 // .background (not .inactive) so the first-run permission prompt,
                 // which briefly deactivates the scene, doesn't cancel listening.
                 if dictation.isActive {
                     Task { await dictation.cancel() }
                 }
+            default:
+                viewModel.endAutoRefresh()
             }
         }
         .sensoryFeedback(.success, trigger: viewModel.forecastGeneration)
@@ -509,22 +532,6 @@ struct ContentView: View {
         guard !dictation.isActive else { return }
         symbolFocused = false
         NavigationMotion.push(&path, route)
-    }
-
-    /// Turns on the streak reminder from the contextual prompt — same effect
-    /// as the Settings toggle, requesting notification permission the first
-    /// time, falling back to off if the user declines that system prompt.
-    private func enableStreakReminder() {
-        UserDefaults.standard.set(true, forKey: StreakReminder.enabledKey)
-        Task {
-            var authorized = await NotificationService.isAuthorized()
-            if !authorized { authorized = await NotificationService.requestAuthorization() }
-            guard authorized else {
-                UserDefaults.standard.set(false, forKey: StreakReminder.enabledKey)
-                return
-            }
-            await StreakReminder.rescheduleIfEnabled(streak: viewModel.userCalls.currentStreak, calls: viewModel.userCalls.calls)
-        }
     }
 
     private func confirmDictation() async {
@@ -543,11 +550,9 @@ struct ContentView: View {
         }
     }
 
-    /// The streak shown to the user, including a Pro subscriber's one grace
-    /// day (see `ProFeature.streakFreeze`) — never the raw participation count
-    /// alone once Pro is active.
+    /// The raw participation streak shown to the user — no perks, no grace days.
     private var displayStreak: Int {
-        StreakEngine.currentStreak(viewModel.userCalls.calls, freezesAvailable: entitlements.isPro ? 1 : 0)
+        StreakEngine.currentStreak(viewModel.userCalls.calls)
     }
 
     /// The one past call, if any, due for a spaced-retrieval memory check

@@ -41,7 +41,7 @@ enum WeeklyRecapEngine {
         // number to report — silence beats a "0.0%, no change" non-update.
         if let c = portfolioComparison, abs(c.edge) > 0.0005 {
             parts.append(c.isBeatingHold
-                ? "your practice portfolio beating buy-and-hold by \(c.edge.asSignedPercent())"
+                ? "your practice portfolio ahead of buy-and-hold by \(c.edge.asSignedPercent())"
                 : "your practice portfolio \((-c.edge).asPercent()) behind buy-and-hold")
         }
 

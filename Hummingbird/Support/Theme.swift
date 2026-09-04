@@ -7,8 +7,15 @@ import UIKit
 /// always paired with a sign, symbol, or label in the UI so meaning never rests
 /// on hue alone (colorblind-safe).
 enum Theme {
-    /// Hummingbird green — primary interactive accent.
-    static let accent = Color(red: 0.30, green: 0.78, blue: 0.55)
+    /// Hummingbird green — primary interactive accent. **Adaptive**, like the
+    /// status colors: the light value is deepened so accent-colored text and
+    /// controls clear 4.5:1 on white (the old flat `rgb(0.30, 0.78, 0.55)` was
+    /// ~2.1:1); the dark value keeps that brighter mint, which already clears
+    /// ~9.8:1 on black. Same recognisable green — see `ThemeContrastTests`.
+    static let accent = adaptive(
+        light: UIColor(red: 0.06, green: 0.50, blue: 0.38, alpha: 1),
+        dark:  UIColor(red: 0.30, green: 0.78, blue: 0.55, alpha: 1)
+    )
     /// Iridescent blue — secondary brand note.
     static let accentAlt = Color(red: 0.16, green: 0.55, blue: 0.90)
 

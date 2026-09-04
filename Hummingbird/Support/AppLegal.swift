@@ -25,6 +25,7 @@ enum AppPricing {
     /// Fallback display prices (StoreKit provides the localized live price at runtime).
     static let yearlyUSD = "19.99"
     static let monthlyUSD = "2.99"
+    /// One-time, non-renewing unlock — priced at ~2.5× the annual plan.
     static let lifetimeUSD = "49.99"
     /// 7-day free trial on the annual plan.
     static let annualTrial = "7-day free trial"

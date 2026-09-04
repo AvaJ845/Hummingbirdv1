@@ -18,7 +18,7 @@ Where the original ran Python + Prophet on a server, Hummingbird runs everything
 - **Presence** — configurable **WidgetKit** widget, **Siri/App Intents** ("Project an asset in Hummingbird"), and honest **movement alerts** (local notifications — movement, never signals).
 - **Share** — export a projection as a branded image card with the not-advice caveat baked in.
 - **Polish** — honesty-first onboarding, alternate app icons (Classic/Midnight/Mono), full accessibility pass (Dynamic Type to AX5 + VoiceOver).
-- **Hummingbird Pro** — StoreKit 2; **$19.99/year** (7-day free trial), **$2.99/month**, or **$49.99 lifetime**; unlocks comparison depth (more methods, 90-day horizons), not better data.
+- **Hummingbird Pro** — StoreKit 2; **$19.99/year** (7-day free trial), **$2.99/month**, or a one-time **$49.99 Lifetime** unlock; unlocks comparison depth (more methods, 90-day horizons), not better data.
 - **Private by design** — privacy manifest, no accounts, no tracking; graceful offline sample data with clear banners.
 
 ## Data sources
@@ -35,8 +35,8 @@ All key-less; adjusted-close preferred and bad ticks scrubbed (Hampel filter) be
 
 - `Hummingbird/` — app (Models, Services, ViewModels, Views, Support)
 - `HummingbirdWidget/` — WidgetKit extension (App Intent-configurable)
-- `HummingbirdTests/` — unit tests (85, all passing)
-- `AppStore/` — 6.9″ screenshots, 1024 icon, and listing metadata (`METADATA.md`)
+- `HummingbirdTests/` — unit tests (~310; exact count shifts with ongoing changes)
+- `AppStore/` — 6.9″ iPhone + 13″ iPad screenshots, 1024 icon, and listing metadata (`METADATA.md`)
 - `docs/` — GitHub Pages legal site (`privacy.html`, `terms.html`)
 
 Bundle id `com.avaresearch.hummingbird` · App Group `group.com.avaresearch.hummingbird` · iOS 17+.

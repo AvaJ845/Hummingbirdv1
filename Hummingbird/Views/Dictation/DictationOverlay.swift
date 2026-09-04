@@ -129,7 +129,7 @@ struct DictationOverlay: View {
 
 /// Preference for the microphone button's global center.
 struct MicAnchorKey: PreferenceKey {
-    static var defaultValue: Anchor<CGRect>?
+    static var defaultValue: Anchor<CGRect>? { nil }
 
     static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
         value = nextValue() ?? value

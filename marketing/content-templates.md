@@ -1,8 +1,12 @@
-# Content templates — the honest-scoreboard engine
+# Content templates — the honest-forecasting engine
 
 The product generates these. Fill the brackets from the app's own data (Settings
-→ Accuracy report) and your own "Your calls" record. Keep every claim a record
-of the past — never advice, never a promise.
+→ Accuracy report) and, for the optional practice pieces, your own "Your calls"
+record. Keep every claim a record of the past — never advice, never a promise.
+
+**Lead with pillar #1** (the app's public accuracy record — that's the core
+product). Pillar #2 is about the **opt-in Practice tools** (off by default);
+frame it as an optional calibration layer, not the headline.
 
 ---
 
@@ -28,14 +32,16 @@ No signals. No advice. Just a record of the past — including the parts we got 
 
 ---
 
-## 2. Founder's calibration diary (start THIS TUESDAY)
+## 2. Founder's calibration diary (optional — Practice tools angle)
 Cadence: whenever your own calls resolve. Source: your "Your calls" record.
+Only relevant once you've turned on **Practice tools** (opt-in, off by default).
 
-**Title:** I made my first calls in my own app. Here's how they did.
+**Title:** I turned on the practice mode in my own app. Here's how my calls did.
 
-I built Hummingbird so you can keep an honest score of your own market reads —
-predict Higher or Lower before you see the sketch, then get scored when real
-prices catch up. So I ate my own cooking.
+Hummingbird's core job is an honest price sketch plus a public accuracy record.
+It also has an optional practice layer: you can log a direction call before you
+look, then see how it resolved when real prices catch up. I turned it on and ate
+my own cooking.
 
 My first [4] calls:
 - **[ASSET]** — I said **[Higher/Lower]**, [confidence], [3-day] → **[right/wrong]** ([actual move %])
@@ -44,9 +50,9 @@ My first [4] calls:
 - **[ASSET]** — …
 
 The humbling part: [e.g. "I felt Confident on both crypto calls and went 1-for-2.
-Confidence isn't accuracy — which is exactly the thing the app is built to show you."]
+Confidence isn't accuracy — and the optional practice log makes that hard to ignore."]
 
-That's the whole point: a mirror, not a crystal ball. On-device, private, never advice.
+A mirror, not a crystal ball. On-device, private, never advice.
 → [App Store link]
 
 **Where:** X/fintwit (most authentic here), then Reddit, then a blog archive.
@@ -58,9 +64,9 @@ Confidence was inversely related to accuracy — the calibration trap, live.
 
 **X / fintwit thread:**
 ```
-1/ I built a finance app that refuses to give buy/sell signals. Instead it makes you "call it" — Higher or Lower, and how sure you are — BEFORE you see anything. Then it scores you honestly.
+1/ I built a finance app that refuses to give buy/sell signals — its core job is an honest price sketch plus a public record of how wrong it's been. It also has an optional practice log: "call it" — Higher or Lower, and how sure you are — before you look.
 
-So I ate my own cooking. My first 4 calls just resolved. It went about how you'd hope: humblingly.
+I turned that on and ate my own cooking. My first 4 calls just resolved. It went about how you'd hope: humblingly.
 
 2/ The scoreboard:
 • COST — I said Higher, Confident → −0.4% ❌
@@ -76,11 +82,11 @@ So I ate my own cooking. My first 4 calls just resolved. It went about how you'd
 
 My confidence was upside down. I was most wrong exactly where I felt most sure.
 
-4/ That's the calibration trap, and it's the whole reason the app exists. It isn't here to tell you what happens next — nobody can. It's a mirror for whether your own gut is worth trusting.
+4/ That's the calibration trap. The app isn't here to tell you what happens next — nobody can. The practice log is just a mirror for whether your own gut is worth trusting.
 
-n=4 proves nothing. Ask me at n=40. That's the point: keep score.
+n=4 proves nothing. Ask me at n=40.
 
-5/ On-device. Private. Never advice. Just an honest record of your own calls — including the ones I blew while feeling great about them.
+5/ On-device. Private. Never advice. The core is the honest sketch and its public error rate; the call log is an optional extra — including the calls I blew while feeling great about them.
 
 [link] [screenshot: the "Did feeling sure mean being right?" card]
 ```
@@ -89,10 +95,11 @@ n=4 proves nothing. Ask me at n=40. That's the point: keep score.
 Title: *I ate my own cooking: my first 4 calls, and the confidence trap they exposed*
 
 I built Hummingbird because every market app sells certainty it doesn't have. Mine
-does the opposite: you "call it" — Higher or Lower, and how sure you are — before
-you see any sketch, and it keeps an honest score of your own calls over time.
+does the opposite: an honest price sketch and a public record of how wrong it's
+been. It also ships an optional practice log — "call it" Higher or Lower, and how
+sure you are, before you look — that resolves against real prices over time.
 
-So I used it. My first four calls just resolved against real prices:
+So I turned that on and used it. My first four calls just resolved against real prices:
 
 | Asset | My call | Confidence | Result |
 |---|---|---|---|
@@ -110,9 +117,8 @@ tracks whether feeling **sure** meant being right. And there the picture was bru
 
 My confidence was inverted. I was most wrong exactly where I felt most certain.
 That's the calibration trap — the gap between how sure we feel and how right we
-are — and it's the entire reason this app exists. It's not a crystal ball. It's a
-mirror. On-device, private, never advice. n=4 proves nothing; that's why you keep
-score. Ask me at n=40.
+are — and the optional practice log surfaces it. It's not a crystal ball. It's a
+mirror. On-device, private, never advice. n=4 proves nothing. Ask me at n=40.
 
 **Note:** attach the *second* screenshot's "Did feeling sure mean being right?" card
 (Confident 33% / Fairly sure 100%) — that one image is the whole argument.
@@ -147,8 +153,8 @@ Ideas, each a standalone piece:
 
 ## Launch spikes (do once, when polished + ~2 weeks of real data)
 - **Show HN:** "Hummingbird – an on-device finance app that publishes its own error rate and refuses to give signals." Lead with privacy + honesty + technical transparency.
-- **Product Hunt:** the honest-mirror angle; use pillar #2 (your diary) as the maker story.
+- **Product Hunt:** the honest-mirror angle; lead the maker story with pillar #1 (our public error rate) or pillar #4.
 
 ## Measure
-Install source · App Store impressions→installs · **calls per new user** (activation) ·
-**Day-7 / Day-30 return** (the retention test the whole pivot exists for) · Pro conversion.
+Install source · App Store impressions→installs · **sketches run per new user** (activation) ·
+**Day-7 / Day-30 return** · Practice tools opt-in rate · Pro conversion.

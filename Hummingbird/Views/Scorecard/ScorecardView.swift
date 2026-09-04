@@ -31,6 +31,7 @@ struct ScorecardView: View {
                 }
             }
         }
+        .readableContentWidth()
         .navigationTitle("Accuracy report")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: shareRenderKey) { shareImage = renderShareImage() }

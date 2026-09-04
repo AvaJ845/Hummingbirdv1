@@ -1,25 +1,24 @@
 # App Store — Hummingbird
 
-## Identity — Discovery (keyword-first, per the ASO playbook)
-- **App Store Name (≤30):** `Stocks & Crypto - Hummingbird`  *(29 chars — primary keyword FIRST, brand second)*
-  - **Decision:** plural `Stocks` — it's the higher-intent exact match users actually type, and Apple stems it to `stock` anyway, so nothing is lost. (Singular `Stock & Crypto - Hummingbird` was the alternative.)
-  - Note: this is the **App Store listing name only.** The Home Screen name stays `Hummingbird` (CFBundleDisplayName) — same pattern as "Habit Tracker - Habit Kit" appearing as "Habit Kit" on device.
-- **Subtitle (≤30):** `Charts, watchlist & projection`  *(30 chars — all new words, none repeated from the Name)*
-  - Alts: `Price chart, watchlist, trend` *(29)* · `Tracker, charts & projections` *(29)*
+## Identity
+- **App Store Name (≤30):** `Stocks & Crypto - Hummingbird`  *(29 chars — keyword-forward: the two highest-intent category terms first, brand last)*
+  - **Decision:** discovery over editorial-clean. Apple indexes App Store Name + Subtitle + the backend keyword field as one search string, and for a zero-audience launch the Name is the heaviest-weighted field — so `Stocks` and `Crypto` earn their place there. (The clean `Hummingbird` was the alternative.)
+  - Note: this is the **App Store listing name only.** The **Home Screen name stays `Hummingbird`** (`CFBundleDisplayName`) — same pattern as "Habit Tracker - Habit Kit" showing as "Habit Kit" on device.
+- **Subtitle (≤30):** `Honest on-device price sketch`  *(29 chars — leads with the honesty-first promise and carries the search terms `on-device` / `price` / `sketch`. No word repeats the Name. Singular `sketch` so it fits Apple's 30-char limit; Apple stems it to cover `sketches` too.)*
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
-- **Price:** Free. Optional **Hummingbird Pro** auto-renewable subscription — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%). Group `Hummingbird Pro`.
+- **Price:** Free. Optional **Hummingbird Pro** — **$2.99/month** or **$19.99/year** (7-day free trial on the annual; annual saves ~44%) as an auto-renewable subscription (group `Hummingbird Pro`), **or a one-time $49.99 Lifetime unlock** (non-consumable, no renewal).
 
 ## Promotional text (≤170)
 The rare forecast app that shows you how wrong it's been. Honest, on-device price sketches with a live accuracy track record. Educational only — never advice.  *(≈150 chars; leads with the radical-honesty differentiator per the Evangelism Fellow's note)*
 
 ## Keywords (≤100) — the hidden backend array
-`bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast`  *(94 chars)*
+`bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast`  *(98 chars — live value in App Store Connect)*
 
-Rules applied (per the playbook): comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only** (no `stocks`/`charts` here — they're covered above), and **no competitor names**. Because Apple indexes Name + Subtitle + Keywords as one string, these unique terms combine into phrases like `stock tracker`, `crypto chart`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget` — far more coverage than repeating words.
+Rules applied: comma-separated, **no spaces**, **singulars only**, **no competitor names**. `stocks`/`crypto` are **not** here — they're in the Name, and Apple indexes Name + Subtitle + Keywords as one set, so repeating a word buys nothing. `xrp` is a supported asset (a distinct high-volume ticker not covered by stemming `bitcoin`/`ethereum`). `price` is also in the Subtitle (`Honest on-device price sketch`) so it's technically a redundant slot — could be swapped for `chart` or `coin` later, but harmless. The unique terms combine into phrases like `crypto tracker`, `bitcoin price`, `xrp price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
 
-> **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). Dropped `coin`/`invest` to make room — they're well covered by `bitcoin`/`portfolio`/`finance` via stemming.
+> **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). `coin`/`invest` stay out — well covered by `bitcoin`/`portfolio`/`finance` via stemming.
 
 ## Description
 Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency **could** drift over the coming days — built entirely from public prices, right on your device. It is a learning tool, not a crystal ball: it never tells you to buy or sell.
@@ -35,26 +34,104 @@ Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency *
 • Get an optional "it moved" alert — movement, never a signal.
 
 **Hummingbird Pro (optional)**
-Compare every method in one place and stretch sketches to 90 days. Same free public data — Pro is convenience, not better foresight.
+Compare every method in one place and stretch sketches to 90 days. Same free public data — Pro is convenience, not better foresight. Hummingbird Pro is offered as an auto-renewable subscription — $19.99/year (7-day free trial) or $2.99/month — or as a one-time Lifetime purchase ($49.99). Payment is charged to your Apple ID at confirmation; a subscription renews unless cancelled at least 24 hours before the period ends, and you can manage or cancel it in your Apple ID settings.
 
 Hummingbird is for learning and exploration only and is **not financial, investment, or trading advice.** Markets are unpredictable; never make money decisions based solely on this app.
 
+Privacy Policy: https://avaj845.github.io/Hummingbirdv1/privacy.html
+Terms of Use (EULA): https://avaj845.github.io/Hummingbirdv1/terms.html
+
 ## What's New (1.0)
-First release: on-device price sketches for stocks & crypto, method comparison with honest backtests, watchlist, widget, Siri, and shareable sketch cards — educational, never advice.
+First public release: on-device price sketches for stocks & crypto, method comparison with honest backtests, watchlist, widget, Siri, and shareable sketch cards — educational, never advice.
 
 ## URLs
 - **Support / Marketing:** https://avaj845.github.io/Hummingbirdv1/
-- **Privacy Policy:** https://avaj845.github.io/Hummingbirdv1/privacy.html
-- **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html (or Apple standard EULA)
+- **Privacy Policy:** https://avaj845.github.io/Hummingbirdv1/privacy.html  *(paste into the App Store Connect "Privacy Policy URL" field)*
+- **Terms of Use (EULA):** https://avaj845.github.io/Hummingbirdv1/terms.html  *(use as the CUSTOM EULA — see 3.1.2 below)*
 
-## Screenshots (6.9" — 1320×2868, in this folder)
-1. `01_plain_english.png` — "Plain-English, not hype."
-2. `02_best_method.png` — "Which method tracks best?"
-3. `03_watchlist.png` — "Glanceable. Always fresh."
-4. `04_any_asset.png` — "Sketch any stock or crypto."
-5. `05_honest.png` — "Honest by design. Never advice."
+## ⚠️ Guideline 3.1.2 — Terms of Use / EULA (this is what gets subscription apps rejected)
+An auto-renewable subscription (or non-consumable IAP alongside subs) requires a **functional Terms of Use link on the App Store product page** AND the EULA set in App Store Connect. Do ALL of:
+1. **App Description** — the two links above (`Privacy Policy:` and `Terms of Use (EULA):`) are already in the Description text above its final paragraph. Keep them there, as plain `https://` text — Apple renders them as tappable links on the product page. Do **not** remove them.
+2. **App Store Connect → App Information → License Agreement** → choose **Custom** → paste `https://avaj845.github.io/Hummingbirdv1/terms.html`. (Do not leave it on "Standard Apple EULA" — the custom terms carry the subscription/refund/renewal specifics Apple 3.1.2 looks for.)
+3. **App Store Connect → Privacy Policy URL** (App Information) → `https://avaj845.github.io/Hummingbirdv1/privacy.html`
+4. **Both URLs must return HTTP 200 before submission** — if the repo is private, GitHub Pages needs GitHub Pro; make the repo public or enable Pages.
+5. In-app: the paywall already shows working **Privacy Policy** and **Terms of Use** links right by the purchase buttons (`PaywallView` → Legal section) — that covers 3.1.2's in-binary requirement. Don't remove them.
 
-App icon: `AppIcon-1024.png` (1024×1024, no alpha).
+## Screenshots
+
+The app supports **iPhone and iPad**, so App Store Connect requires **two**
+screenshot sets: the **6.9″ iPhone** set and the **13″ iPad** set. Both are
+generated by the same `HummingbirdUITests` screenshot harness
+(`ScreenshotTests.swift`) against sample data (`-UITEST_FORCE_SAMPLE`), so they
+match the *current* UI, brand mark and icon. Animations are disabled in-process
+under the harness and the nav bar is forced opaque, so captures never catch a
+push transition mid-flight or a blurred smear of scroll content behind the bar.
+
+### 6.9″ iPhone — `AppStore/raw-screens/` (1320×2868)
+Real iPhone 17 Pro Max device captures. Regenerate with:
+
+```bash
+xcodegen generate
+TEST_RUNNER_SCREENSHOT_DIR="$PWD/AppStore/raw-screens" \
+xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' \
+  -only-testing:HummingbirdUITests CODE_SIGNING_ALLOWED=NO
+```
+
+### 13″ iPad — `AppStore/raw-screens-ipad/` (2064×2752)
+Real iPad Pro 13-inch (M5) portrait captures. The harness detects the iPad
+idiom and redirects a `.../raw-screens` path to the sibling
+`.../raw-screens-ipad`. Regenerate with:
+
+```bash
+xcodegen generate
+TEST_RUNNER_SCREENSHOT_DIR="$PWD/AppStore/raw-screens" \
+xcodebuild test -project Hummingbird.xcodeproj -scheme Hummingbird -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)' \
+  -only-testing:HummingbirdUITests CODE_SIGNING_ALLOWED=NO
+```
+
+On iPad the main content is width-capped to a readable measure and centered
+(`.readableContentWidth()`), so it reads as a considered iPad app rather than a
+stretched phone screen.
+
+12 frames per set. iPhone set is 1320×2868; iPad set is 2064×2752:
+
+| File | Screen |
+| --- | --- |
+| `01_onboarding_sketches.png` | Onboarding 1 — "Sketches, not predictions" |
+| `02_onboarding_private.png` | Onboarding 2 — "Private by design" |
+| `03_onboarding_honest.png` | Onboarding 3 — "See how wrong it's been" |
+| `04_home_empty.png` | Fresh home, calm default state |
+| `05_sketch_result.png` | Plain-English result card after a sketch |
+| `06_reliability.png` | Price-sketch chart + reliability meter |
+| `07_paywall_top.png` | Pro paywall — value prop + "Always free" / "Pro adds" |
+| `08_paywall_plans.png` | Pro paywall — all 3 plans ($19.99/yr + 7-day trial · $2.99/mo · $49.99 Lifetime) — **use as the IAP review screenshot** |
+| `09_settings.png` | Settings — appearance, icon picker, Siri, Accuracy report |
+| `10_practice_home.png` | Home with Practice tools on |
+| `11_accuracy_report.png` | Settings → Accuracy report (seeded track record) |
+| `12_watchlist.png` | Watchlist sheet with saved assets |
+
+### Store upload — still a design task
+These raw frames (both the 6.9″ iPhone set in `AppStore/raw-screens/` and the
+13″ iPad set in `AppStore/raw-screens-ipad/`) are **un-framed device captures**.
+Both sets still need the marketing frame + caption design pass (add the
+caption/device-bezel treatment, pick the 3–5 strongest, order honesty-first).
+The 13″ iPad slot is **required** now that the app declares iPad support.
+Suggested hero order for the store:
+`11_accuracy_report` ("See how wrong it's been") → `05_sketch_result`
+("Plain-English, not hype") → `06_reliability` ("Which method tracks best?") →
+`12_watchlist` ("Glanceable. Always fresh") → `04_home_empty`
+("Sketch any stock or crypto").
+
+> **Re-shoot at the raw level is done** — real captures of the current UI,
+> iPhone (`AppStore/raw-screens/`) and iPad (`AppStore/raw-screens-ipad/`).
+> What remains is the marketing-frame/caption pass on top of both sets. The
+> older `0*_*.png` files in `AppStore/` predate the round-1/2 UI and must not
+> ship.
+
+App icon: `AppIcon-1024.png` (1024×1024, no alpha) — regenerate with
+`sh AppStore/icon/render.sh`.
 
 ## App Privacy (nutrition label)
 - **Data collected:** None. No account, no analytics/tracking SDKs.
@@ -62,4 +139,6 @@ App icon: `AppIcon-1024.png` (1024×1024, no alpha).
 - Subscriptions handled by Apple (StoreKit); Hummingbird only learns whether Pro is active.
 
 ## Review notes (paste into App Review)
-Hummingbird is an **educational** tool. It produces statistical "sketches" from public historical prices and clearly labels them as not predictions and **not financial advice** throughout (onboarding, results, share card, alerts, paywall). It contains no buy/sell signals, no brokerage, and no real-money trading. The subscription unlocks on-device comparison convenience only — identical public data to the free tier.
+Hummingbird is an **educational** tool. It produces statistical "sketches" from public historical prices and clearly labels them as not predictions and **not financial advice** throughout (onboarding, results, share card, alerts, paywall). It contains no buy/sell signals, no brokerage, and no real-money trading. Pro (a yearly/monthly auto-renewable subscription or a one-time non-consumable "Lifetime" unlock — same features) unlocks on-device comparison convenience only, on identical public data to the free tier.
+
+Terms of Use (EULA) and Privacy Policy: linked at the end of the App Description, set in App Store Connect (License Agreement = custom terms.html), and shown in-app on the paywall (Pro screen → Legal). Subscription price, length, and renewal terms are stated in the App Description and on the paywall.

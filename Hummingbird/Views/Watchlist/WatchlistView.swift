@@ -19,6 +19,7 @@ struct WatchlistView: View {
                     list
                 }
             }
+            .readableContentWidth()
             .navigationTitle("Watchlist")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -6,11 +6,21 @@ final class PricingTests: XCTestCase {
         XCTAssertEqual(EntitlementStore.yearlyProductID, "com.avaresearch.hummingbird.pro.yearly")
         XCTAssertEqual(EntitlementStore.monthlyProductID, "com.avaresearch.hummingbird.pro.monthly")
         XCTAssertEqual(EntitlementStore.lifetimeProductID, "com.avaresearch.hummingbird.pro.lifetime")
+        // Three tiers: two auto-renewable subscriptions + one non-consumable unlock.
         XCTAssertEqual(EntitlementStore.allProductIDs, [
             "com.avaresearch.hummingbird.pro.yearly",
             "com.avaresearch.hummingbird.pro.monthly",
             "com.avaresearch.hummingbird.pro.lifetime"
         ])
+    }
+
+    func testLifetimePriceIsAboutTwoAndAHalfTimesAnnual() {
+        let lifetime = Double(AppPricing.lifetimeUSD)!
+        let yearly = Double(AppPricing.yearlyUSD)!
+        XCTAssertEqual(lifetime, 49.99, accuracy: 0.001)
+        // A fair one-time price sits between 2× and 3× the annual plan.
+        XCTAssertGreaterThan(lifetime, yearly * 2)
+        XCTAssertLessThan(lifetime, yearly * 3)
     }
 
     func testYearlySavingsVsMonthly() {

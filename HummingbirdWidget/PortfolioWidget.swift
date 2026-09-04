@@ -129,7 +129,7 @@ struct PortfolioWidgetView: View {
 
     private func vsHoldLine(_ s: PortfolioSnapshot) -> String {
         guard let edge = s.edge, abs(edge) > 0.0005 else { return "Holding your first picks." }
-        return edge > 0 ? "Beating buy-and-hold by \(edge.asSignedPercent())"
+        return edge > 0 ? "Ahead of buy-and-hold by \(edge.asSignedPercent())"
                         : "Behind buy-and-hold by \((-edge).asPercent())"
     }
 }

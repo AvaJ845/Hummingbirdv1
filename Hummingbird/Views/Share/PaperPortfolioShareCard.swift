@@ -62,7 +62,7 @@ struct PaperPortfolioShareCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 if comparison.tradeCount > 0 {
-                    Text("\(comparison.tradeCount) trade\(comparison.tradeCount == 1 ? "" : "s") vs. 0 — activity rarely wins.")
+                    Text("\(comparison.tradeCount) trade\(comparison.tradeCount == 1 ? "" : "s") vs. 0 in the comparison.")
                         .font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.75))
                 }
                 if let periodText {

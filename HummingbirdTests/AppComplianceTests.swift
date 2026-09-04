@@ -2,12 +2,20 @@ import XCTest
 @testable import Hummingbird
 
 final class AppComplianceTests: XCTestCase {
-    func testYearlyOnlyPricingForUntestedResults() {
+    func testPricingTiers() {
         XCTAssertEqual(AppPricing.yearlyUSD, "19.99")
+        XCTAssertEqual(AppPricing.monthlyUSD, "2.99")
+        XCTAssertEqual(AppPricing.lifetimeUSD, "49.99")
         let yearly = Double(AppPricing.yearlyUSD)!
         XCTAssertEqual(yearly, 19.99, accuracy: 0.001)
-        // Roughly tip-jar monthly equivalent (~$1.67/mo) — fair for untested sketches.
+        // Yearly monthly-equivalent (~$1.67/mo) stays under $2 — fair for untested sketches.
         XCTAssertLessThan(yearly / 12, 2.0)
+        // Product set is exactly {yearly, monthly, lifetime}.
+        XCTAssertEqual(Set(EntitlementStore.allProductIDs), [
+            EntitlementStore.yearlyProductID,
+            EntitlementStore.monthlyProductID,
+            EntitlementStore.lifetimeProductID
+        ])
     }
 
     func testFreeTierKeepsClassicMethods() {
@@ -28,12 +36,17 @@ final class AppComplianceTests: XCTestCase {
     }
 
     func testUserAgentIsUnified() {
-        XCTAssertTrue(AppNetwork.userAgent.contains("1.4"))
-        XCTAssertTrue(AppNetwork.userAgent.contains("Hummingbird"))
+        XCTAssertTrue(AppNetwork.userAgent.contains("Hummingbird/"))
+        let version = (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "1.0"
+        XCTAssertTrue(AppNetwork.userAgent.contains(version),
+                      "UA \(AppNetwork.userAgent) should carry the runtime CFBundleShortVersionString \(version)")
+        XCTAssertTrue(AppNetwork.userAgent.contains("(iOS; educational)"))
     }
 
-    func testProProductIDIsYearlyOnly() {
+    func testProProductIDs() {
         XCTAssertEqual(EntitlementStore.yearlyProductID, "com.avaresearch.hummingbird.pro.yearly")
+        XCTAssertEqual(EntitlementStore.monthlyProductID, "com.avaresearch.hummingbird.pro.monthly")
+        XCTAssertEqual(EntitlementStore.lifetimeProductID, "com.avaresearch.hummingbird.pro.lifetime")
     }
 
     func testMethodNamesLeadNotBirdNicknames() {

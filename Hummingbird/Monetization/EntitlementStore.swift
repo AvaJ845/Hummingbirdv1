@@ -7,9 +7,12 @@ import StoreKit
 @MainActor
 @Observable
 final class EntitlementStore {
-    static let yearlyProductID = "com.avaresearch.hummingbird.pro.yearly"
-    static let monthlyProductID = "com.avaresearch.hummingbird.pro.monthly"
-    static let lifetimeProductID = "com.avaresearch.hummingbird.pro.lifetime"
+    nonisolated static let yearlyProductID = "com.avaresearch.hummingbird.pro.yearly"
+    nonisolated static let monthlyProductID = "com.avaresearch.hummingbird.pro.monthly"
+    /// One-time, non-consumable unlock — no renewal, no expiry. Once purchased it
+    /// stays in `Transaction.currentEntitlements` forever, so `hasRealPurchase`
+    /// and `isPro` pick it up through the same path as the subscriptions.
+    nonisolated static let lifetimeProductID = "com.avaresearch.hummingbird.pro.lifetime"
     nonisolated static var allProductIDs: [String] { [yearlyProductID, monthlyProductID, lifetimeProductID] }
 
     #if DEBUG
@@ -20,8 +23,11 @@ final class EntitlementStore {
     private(set) var purchasedProductIDs: Set<String> = []
     private(set) var isLoading = false
     private(set) var lastError: String?
-    /// Local QA unlock — DEBUG builds only; never written in Release.
+    #if DEBUG
+    /// Local QA unlock — DEBUG builds only. The property, its storage, and every
+    /// path that reads it are compiled out of Release entirely.
     private(set) var debugUnlocked: Bool = false
+    #endif
 
     /// The real, StoreKit-verified purchase status — independent of the
     /// TestFlight override below. This is what the paywall's purchase button
@@ -60,8 +66,6 @@ final class EntitlementStore {
         products.first { $0.id == Self.monthlyProductID }
     }
 
-    /// Pay-once lifetime unlock (non-consumable). `isPro` already covers it —
-    /// `Transaction.currentEntitlements` returns a non-consumable forever.
     var lifetimeProduct: Product? {
         products.first { $0.id == Self.lifetimeProductID }
     }
@@ -82,8 +86,10 @@ final class EntitlementStore {
     }
 
     /// Long-lived `Transaction.updates` listener. Stored so it can be cancelled.
-    /// `nonisolated(unsafe)` so `deinit` can cancel it — safe because it's written
-    /// once in `init` and read only in `deinit`, when no other reference exists.
+    /// `@ObservationIgnored` + `nonisolated(unsafe)` so `deinit` (which is
+    /// nonisolated) can cancel it — `Task` is `Sendable`, and it's written once
+    /// in `init` and read only in `deinit`, when no other reference exists.
+    @ObservationIgnored
     private nonisolated(unsafe) var transactionListener: Task<Void, Never>?
 
     init() {
@@ -166,14 +172,12 @@ final class EntitlementStore {
         }
     }
 
+    #if DEBUG
     func setDebugUnlocked(_ unlocked: Bool) {
-        #if DEBUG
         debugUnlocked = unlocked
         UserDefaults.standard.set(unlocked, forKey: Self.debugUnlockKey)
-        #else
-        _ = unlocked
-        #endif
     }
+    #endif
 
     private func refreshPurchases() async {
         var owned: Set<String> = []

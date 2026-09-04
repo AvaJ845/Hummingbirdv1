@@ -75,7 +75,7 @@ final class WeeklyRecapEngineTests: XCTestCase {
         let calls = [call(daysAgo: 0)]
         let c = comparison(your: 10_500, hold: 10_200)   // edge = +3.0%
         let digest = WeeklyRecapEngine.compose(calls: calls, streak: 0, portfolioComparison: c, now: now, calendar: calendar)
-        XCTAssertTrue(digest!.body.contains("practice portfolio beating buy-and-hold by +3.0%"))
+        XCTAssertTrue(digest!.body.contains("practice portfolio ahead of buy-and-hold by +3.0%"))
     }
 
     func testMentionsPortfolioWhenBehindHold() {

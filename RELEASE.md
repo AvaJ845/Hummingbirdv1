@@ -6,9 +6,10 @@ tests, assets, and legal pages are done — the rest is account/config work
 
 **Key facts**
 - Bundle ID: `com.avaresearch.hummingbird`
-- Subscriptions (IAP), group `Hummingbird Pro`: `com.avaresearch.hummingbird.pro.yearly` ($19.99/yr, 7-day free trial) · `com.avaresearch.hummingbird.pro.monthly` ($2.99/mo)
+- Pro products: `…pro.yearly` ($19.99/yr, 7-day free trial) · `…pro.monthly` ($2.99/mo) — auto-renewable subs in group `Hummingbird Pro`; plus `…pro.lifetime` ($49.99, non-consumable one-time unlock)
 - Signing: your **paid** Apple Developer Program team (not a free personal team). Set it locally in `Config/Signing.xcconfig` — gitignored; copy from `Config/Signing.xcconfig.example`.
-- Assets: `AppStore/` (five 1320×2868 screenshots, `AppIcon-1024.png`, `METADATA.md`)
+- Device support: **Universal (iPhone + iPad)**, portrait-only, `UIRequiresFullScreen` (no Split View) — see `project.yml`
+- Assets: `AppStore/raw-screens/` (12 real 1320×2868 iPhone captures) + `AppStore/raw-screens-ipad/` (12 real 2064×2752 iPad captures) of the current UI — from the `HummingbirdUITests` screenshot harness; both still need marketing frames + captions before upload; `AppIcon-1024.png` + `icon/` render step; `METADATA.md`
 - Legal: `docs/` via GitHub Pages → `https://avaj845.github.io/Hummingbirdv1/{privacy,terms}.html`
 
 ---
@@ -28,22 +29,31 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 
 ## 3 · Create the app record
 [App Store Connect](https://appstoreconnect.apple.com) → **Apps → +**
-- [ ] Platform iOS · Name **Hummingbird** · Primary language English · Bundle ID `com.avaresearch.hummingbird` · SKU (any, e.g. `hummingbird-001`)
-- [ ] **Subtitle:** `Honest, on-device sketches`
+- [ ] Platform iOS · Name **`Stocks & Crypto - Hummingbird`** (listing name; Home Screen name stays `Hummingbird` via `CFBundleDisplayName`) · Primary language English · Bundle ID `com.avaresearch.hummingbird` · SKU (any, e.g. `hummingbird-001`)
+- [ ] **Subtitle:** `Honest on-device price sketch` (29 chars — see `AppStore/METADATA.md`)
+- [ ] **Keywords:** `bitcoin,ethereum,xrp,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` (98 chars)
 - [ ] **Category:** Finance (primary), Education (secondary) · **Age:** 4+
-- [ ] Description / promo text / keywords → paste from `AppStore/METADATA.md`
-- [ ] **Privacy Policy URL:** `https://avaj845.github.io/Hummingbirdv1/privacy.html`
+- [ ] Description / promo text / keywords → paste from `AppStore/METADATA.md` — **the Description already ends with `Privacy Policy:` and `Terms of Use (EULA):` https:// lines. Keep them.** (This is the 3.1.2 fix — see below.)
+- [ ] **Privacy Policy URL** (App Information): `https://avaj845.github.io/Hummingbirdv1/privacy.html`
+- [ ] **License Agreement** (App Information) → **Custom** → `https://avaj845.github.io/Hummingbirdv1/terms.html` — **NOT "Standard Apple EULA".** ⚠️ **Skipping this = automatic 3.1.2 rejection** for a subscription app.
+- [ ] **Both URLs return HTTP 200** — check in a browser before submitting. If the repo is private, GitHub Pages needs GitHub Pro; make the repo public or enable Pages (§1).
 - [ ] **App Privacy** ("nutrition label"): **Data Not Collected** (no account, no tracking)
-- [ ] Upload the **5 screenshots** from `AppStore/` to the **6.9″** slot + set the 1024 icon
+- [ ] **Screenshots** — raw re-shoot is **done** for both required sets: `AppStore/raw-screens/*.png` (12 real 6.9″ iPhone captures, 1320×2868) and `AppStore/raw-screens-ipad/*.png` (12 real 13″ iPad captures, 2064×2752) — both from the `HummingbirdUITests` harness, regenerate with the commands in `AppStore/METADATA.md` §Screenshots. What's left is a **design pass** on both sets: add marketing frames + captions, pick the 3–5 strongest, order honesty-first (`11_accuracy_report` → `05_sketch_result` → `06_reliability` → `12_watchlist` → `04_home_empty`). **Upload 6.9″ iPhone screenshots AND 13″ iPad screenshots** (the iPad slot is required once the app declares iPad support) + set the 1024 icon (`sh AppStore/icon/render.sh`). The old `AppStore/0*_*.png` predate the round-1/2 UI and must not ship.
 
-## 4 · Create the subscriptions
-Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**, then two products:
+## 4 · Create the Pro products (3 total)
+
+**4a · Subscriptions** — Apps → Hummingbird → **Subscriptions** → group **Hummingbird Pro**:
 - [ ] **Yearly:** `com.avaresearch.hummingbird.pro.yearly` · ref `Pro Yearly` · **1 Year** · **$19.99** · add a **7-day free trial** (Introductory Offer → Free → 1 week)
 - [ ] **Monthly:** `com.avaresearch.hummingbird.pro.monthly` · ref `Pro Monthly` · **1 Month** · **$2.99**
 - [ ] Set both **Ready to Submit** (product IDs must match exactly)
 - [ ] Display name `Hummingbird Pro` + description (from `METADATA.md`)
-- [ ] Add a review screenshot + set to **Ready to Submit**
-- [ ] Set the app's EULA to Apple's Standard, or your Terms URL
+
+**4b · In-App Purchase (non-consumable)** — Apps → Hummingbird → **In-App Purchases**:
+- [ ] **Lifetime:** `com.avaresearch.hummingbird.pro.lifetime` · type **Non-Consumable** · ref `Pro Lifetime` · **$49.99** · display name `Hummingbird Pro — Lifetime`
+- [ ] Same feature set as the subscription — it's a one-time unlock, no renewal. Set **Ready to Submit**.
+
+- [ ] Add a review screenshot for the group + the IAP (**use `AppStore/raw-screens/08_paywall_plans.png`** — shows all three tiers + prices + trial) + set all to **Ready to Submit**
+- [ ] EULA: leave it on the **custom** Terms URL set in §3 (App Information → License Agreement). Do **not** switch to Apple's Standard EULA — see the 3.1.2 pre-flight in §6.
 
 ## 5 · Build & upload (Release)
 The `xattr` pre-codesign phase is already wired, so signing is clean.
@@ -63,17 +73,28 @@ xcodebuild -project Hummingbird.xcodeproj -scheme Hummingbird \
 - [ ] Wait for the build to finish **processing** in App Store Connect (~10–30 min).
 
 ## 6 · Submit for review
-- [ ] Attach the processed build to the version, attach the subscription to the submission.
+- [ ] Attach the processed build to the version; attach **all three** Pro products (Yearly, Monthly, Lifetime) to the submission.
 - [ ] **App Review notes:** paste the "Review notes" block from `AppStore/METADATA.md`
       (educational tool, not advice, no trading, no accounts).
 - [ ] **Submit.** Review typically takes ~24–48h.
 
+### 3.1.2 pre-flight (do NOT submit until every box is checked)
+The last app was rejected on 3.1.2 for a missing Terms-of-Use link. All of these must be true:
+- [ ] The **App Description** contains the literal lines `Privacy Policy: https://…` and `Terms of Use (EULA): https://…` (they're in `METADATA.md`'s Description — paste it verbatim, don't trim the tail).
+- [ ] **App Information → License Agreement = Custom**, set to `https://avaj845.github.io/Hummingbirdv1/terms.html`.
+- [ ] **App Information → Privacy Policy URL** set to `https://avaj845.github.io/Hummingbirdv1/privacy.html`.
+- [ ] Open both URLs in a private browser window → each returns a real page (HTTP 200), not a 404.
+- [ ] The Description also states the subscription price, period, and renewal terms (it does — keep that paragraph).
+- [ ] In-app: open the paywall on a device → **Privacy Policy** and **Terms of Use (EULA)** rows both open a readable document.
+
 ---
 
 ## Sanity checks (all already true in the repo)
-- [x] Release build **omits** the debug QA unlock (verified: 0 occurrences).
-- [x] `isPro` in Release = real StoreKit purchases only.
+- [x] Release build **omits** the debug QA unlock — the `debugUnlocked` property, `setDebugUnlocked`, and both toggle UIs are fully `#if DEBUG`; re-verified with `strings`/`nm` on a Release build (0 occurrences of `debugUnlock` / `proUnlocked` / `TestSupport` / `UITEST_`). Even in a Debug build the toggles need `-DEBUG_MENU`.
+- [x] `isPro` in Release = real StoreKit purchases (or a TestFlight sandbox receipt — never a production App Store install).
 - [x] Legal + not-advice framing on every surface.
+- [x] In-app paywall shows working **Privacy Policy** + **Terms of Use (EULA)** links right by the purchase buttons (`PaywallView` Legal section) — the custom EULA (`TERMS.md` / `terms.html`) incorporates Apple's standard Licensed Application EULA by reference, so no separate Apple-EULA link is needed.
+- [x] `METADATA.md` Description ends with plain-text `Privacy Policy:` / `Terms of Use (EULA):` https:// lines for the App Store product page (Guideline 3.1.2).
 - [x] `CODE_SIGNING_ALLOWED=NO` only for local sim builds — device/release uses your team.
 
 ## Optional after launch
