@@ -52,8 +52,8 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] **Lifetime:** `com.avaresearch.hummingbird.pro.lifetime` · type **Non-Consumable** · ref `Pro Lifetime` · **$49.99** · display name `Hummingbird Pro — Lifetime`
 - [ ] Same feature set as the subscription — it's a one-time unlock, no renewal. Set **Ready to Submit**.
 
-- [ ] Add a review screenshot for the group + the IAP (**use `AppStore/raw-screens/08_paywall_plans.png`** — re-capture first, it predates the Lifetime row) + set all to **Ready to Submit**
-- [ ] Set the app's EULA to Apple's Standard, or your Terms URL
+- [ ] Add a review screenshot for the group + the IAP (**use `AppStore/raw-screens/08_paywall_plans.png`** — shows all three tiers + prices + trial) + set all to **Ready to Submit**
+- [ ] EULA: leave it on the **custom** Terms URL set in §3 (App Information → License Agreement). Do **not** switch to Apple's Standard EULA — see the 3.1.2 pre-flight in §6.
 
 ## 5 · Build & upload (Release)
 The `xattr` pre-codesign phase is already wired, so signing is clean.
