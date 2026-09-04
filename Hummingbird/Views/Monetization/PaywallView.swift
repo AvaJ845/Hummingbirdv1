@@ -193,6 +193,7 @@ struct PaywallView: View {
             }
             #endif
         }
+        .readableContentWidth()
         .navigationTitle("Pro")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

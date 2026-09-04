@@ -86,6 +86,7 @@ struct PaperPortfolioView: View {
             shareSection
             disclaimerSection
         }
+        .readableContentWidth()
         .navigationTitle("Practice portfolio")
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.revalueDue(using: service) }

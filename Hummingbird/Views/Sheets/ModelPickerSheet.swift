@@ -52,6 +52,7 @@ struct ModelPickerSheet: View {
                 }
             }
         }
+        .readableContentWidth()
         .navigationTitle("Methods")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

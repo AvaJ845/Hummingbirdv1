@@ -254,6 +254,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .readableContentWidth()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

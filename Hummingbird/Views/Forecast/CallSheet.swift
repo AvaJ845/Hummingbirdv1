@@ -84,6 +84,7 @@ struct CallSheet: View {
                     .disabled(direction == nil)
                 }
                 .padding()
+                .readableContentWidth(fillColor: nil)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

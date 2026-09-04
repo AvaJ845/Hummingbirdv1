@@ -427,6 +427,7 @@ struct ContentView: View {
             }
             .padding(.horizontal)
             .padding(.bottom, 32)
+            .readableContentWidth()
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.hasResult)
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.isLoading)
             .animation(reduceMotion ? nil : NavigationMotion.page, value: viewModel.forecastGeneration)

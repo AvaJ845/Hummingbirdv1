@@ -67,6 +67,11 @@ struct OnboardingView: View {
                     .padding(.bottom, 16)
             }
         }
+        // Keep the onboarding column to a readable measure on iPad; the paging
+        // dots, the setup step and the buttons all live inside this VStack so
+        // they narrow together. No-op on iPhone.
+        .readableContentWidth(fillColor: nil)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
     }
 

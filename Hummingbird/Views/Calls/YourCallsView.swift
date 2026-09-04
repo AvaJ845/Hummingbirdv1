@@ -46,6 +46,7 @@ struct YourCallsView: View {
             }
             aboutSection
         }
+        .readableContentWidth()
         .navigationTitle("Your calls")
         .navigationBarTitleDisplayMode(.inline)
         .task { await resolveDue() }

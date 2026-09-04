@@ -47,6 +47,7 @@ struct RecallView: View {
                 }
                 .padding()
                 .padding(.top, 8)
+                .readableContentWidth(fillColor: nil)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
