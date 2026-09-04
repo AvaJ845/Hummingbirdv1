@@ -1,11 +1,10 @@
 # App Store — Hummingbird
 
-## Identity — Discovery (keyword-first, per the ASO playbook)
-- **App Store Name (≤30):** `Stocks & Crypto - Hummingbird`  *(29 chars — primary keyword FIRST, brand second)*
-  - **Decision:** plural `Stocks` — it's the higher-intent exact match users actually type, and Apple stems it to `stock` anyway, so nothing is lost. (Singular `Stock & Crypto - Hummingbird` was the alternative.)
-  - Note: this is the **App Store listing name only.** The Home Screen name stays `Hummingbird` (CFBundleDisplayName) — same pattern as "Habit Tracker - Habit Kit" appearing as "Habit Kit" on device.
-- **Subtitle (≤30):** `Charts, watchlist & projection`  *(30 chars — all new words, none repeated from the Name)*
-  - Alts: `Price chart, watchlist, trend` *(29)* · `Tracker, charts & projections` *(29)*
+## Identity
+- **App Store Name (≤30):** `Hummingbird`  *(11 chars — clean brand name)*
+  - **Decision:** the listing name is just the brand. Apple indexes App Store Name + Subtitle + the backend keyword field as one search string, so the search terms live in the Subtitle and the hidden keyword array — the name stays editorially clean and matches `CFBundleDisplayName`, which is already `Hummingbird`.
+  - Note: the **Home Screen name is also `Hummingbird`** (CFBundleDisplayName) — listing name and device name match.
+- **Subtitle (≤30):** `Honest on-device price sketches`  *(31 chars — leads with the honesty-first promise and carries the search terms `on-device` / `price` / `sketches`. NOTE: this is 1 char over Apple's 30-char subtitle limit — trim to `On-device price sketches` (24) or `Honest on-device price sketch` (29) when pasting into App Store Connect.)*
 - **Bundle ID:** com.avaresearch.hummingbird
 - **Primary category:** Finance  ·  **Secondary:** Education
 - **Age rating:** 4+ (no objectionable content)
@@ -15,11 +14,11 @@
 The rare forecast app that shows you how wrong it's been. Honest, on-device price sketches with a live accuracy track record. Educational only — never advice.  *(≈150 chars; leads with the radical-honesty differentiator per the Evangelism Fellow's note)*
 
 ## Keywords (≤100) — the hidden backend array
-`bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast`  *(94 chars)*
+`bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto`  *(95 chars)*
 
-Rules applied (per the playbook): comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only** (no `stocks`/`charts` here — they're covered above), and **no competitor names**. Because Apple indexes Name + Subtitle + Keywords as one string, these unique terms combine into phrases like `stock tracker`, `crypto chart`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget` — far more coverage than repeating words.
+Rules applied: comma-separated, **no spaces**, **no word repeated** from the Name or Subtitle, **singulars only**, and **no competitor names**. `price` was removed because it now lives in the Subtitle (`Honest on-device price sketches`) and Apple indexes Name + Subtitle + Keywords as one set — repeating a word buys nothing. `crypto` was added with the freed space: it's a distinct high-volume term not covered by stemming `bitcoin`/`ethereum`. The unique terms combine into phrases like `crypto tracker`, `bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
 
-> **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). Dropped `coin`/`invest` to make room — they're well covered by `bitcoin`/`portfolio`/`finance` via stemming.
+> **Decision on `forecast`:** kept **in the hidden array only** (never in the visible Name/Subtitle). It's high-intent and genuinely describes what the app does, and hidden keywords aren't a public claim — low App-Review risk when the entire UI/listing frames everything as *educational projections, not advice*. `prediction` and `signals` stay out entirely (too close to an advice claim). `coin`/`invest` stay out — well covered by `bitcoin`/`portfolio`/`finance` via stemming.
 
 ## Description
 Hummingbird draws simple, honest "sketches" of where a stock or cryptocurrency **could** drift over the coming days — built entirely from public prices, right on your device. It is a learning tool, not a crystal ball: it never tells you to buy or sell.

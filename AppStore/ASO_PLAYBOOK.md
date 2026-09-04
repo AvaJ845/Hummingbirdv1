@@ -12,13 +12,13 @@ risk and protect the "not advice" brand.
 ## ① Discovery (keywords) — *get found*  ✅ done
 Full strings live in **`METADATA.md`**. Summary:
 
-- **App Store Name** (heaviest field): `Stocks & Crypto - Hummingbird` — primary keyword FIRST, brand second. Home Screen name stays `Hummingbird`.
-- **Subtitle**: `Charts, watchlist & projection` — secondary keywords, zero repeats from the Name.
-- **Keyword array** (94/100): `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,price,etf,forecast` — no repeats, singulars, no competitors.
+- **App Store Name** (heaviest field): `Hummingbird` — clean brand name. Search terms live in the Subtitle + keyword array, which Apple indexes alongside the Name anyway. Home Screen name is also `Hummingbird`.
+- **Subtitle**: `Honest on-device price sketches` — honesty-first promise; carries `on-device` / `price` / `sketches`. (31 chars — trim 1 to fit the field; see `METADATA.md`.)
+- **Keyword array** (95/100): `bitcoin,ethereum,ticker,portfolio,market,finance,trend,widget,alert,tracker,etf,forecast,crypto` — no repeats, singulars, no competitors.
 
 Because Apple indexes Name + Subtitle + Keywords as **one string**, the unique
-terms combine into phrases we rank for: `stock tracker`, `crypto chart`,
-`bitcoin price`, `crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`.
+terms combine into phrases we rank for: `crypto tracker`, `bitcoin price`,
+`crypto watchlist`, `stock market`, `etf tracker`, `crypto widget`, `price forecast`.
 
 **Guardrail:** `forecast` lives in the hidden array only; `prediction`/`signals`
 stay out entirely (advice-claim risk).
@@ -83,9 +83,9 @@ algorithm rewards consistency.**
 ## One-look checklist
 | Part | Item | Status |
 |---|---|---|
-| Discovery | Keyword-first App Name | ✅ |
+| Discovery | Clean brand App Name | ✅ |
 | Discovery | Searchable Subtitle (no repeats) | ✅ |
-| Discovery | 100-char keyword array (deduped) | ✅ (94) |
+| Discovery | 100-char keyword array (deduped) | ✅ (95) |
 | Conversion | Authentic, feature-first screenshots | ✅ set ready |
 | Conversion | A/B test (Product Page Optimization) | ▢ after launch |
 | Conversion | App Preview video | ▢ optional |
