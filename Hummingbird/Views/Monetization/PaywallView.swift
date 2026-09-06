@@ -84,7 +84,10 @@ struct PaywallView: View {
             }
 
             Section {
-                if entitlements.isLoading && entitlements.products.isEmpty {
+                // First-load spinner only — once a load has failed, the error
+                // block below owns the "trying again" state so the UI never
+                // flashes empty mid-retry.
+                if entitlements.isLoading && entitlements.products.isEmpty && entitlements.lastError == nil {
                     HStack {
                         ProgressView()
                         Text("Loading App Store products…")
@@ -118,37 +121,53 @@ struct PaywallView: View {
                     )
                 }
 
+                // Honest failure state — shown whenever a load has failed, and
+                // kept on screen *through* a retry (gated on `lastError`, not
+                // `!isLoading`) so the error context and the button never blink
+                // out mid-backoff. Distinct from the by-design DEBUG stub, which
+                // has no `lastError`.
+                if entitlements.products.isEmpty, let error = entitlements.lastError {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entitlements.isLoading ? "Trying again…" : "Plans aren't available right now")
+                                    .font(.subheadline.weight(.semibold))
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundStyle(Theme.down)
+                        }
+                        Button {
+                            Task { await entitlements.loadProducts() }
+                        } label: {
+                            HStack(spacing: 6) {
+                                if entitlements.isLoading {
+                                    ProgressView().controlSize(.small)
+                                    Text("Retrying…")
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("Retry")
+                                }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(entitlements.isLoading)
+                        .accessibilityIdentifier("paywall.retry")
+                        Text("Plans below are for reference — purchasing will be available once the App Store responds.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                // Reference prices + DEBUG stub — the resting state when there
+                // are no products and nothing is in flight.
                 if entitlements.products.isEmpty && !entitlements.isLoading {
                     VStack(alignment: .leading, spacing: 8) {
-                        // An honest failure state — distinct from the by-design
-                        // DEBUG stub (which has no `lastError`). Retry re-runs the
-                        // bounded-backoff load; the price list below stays as
-                        // informational context but isn't purchasable right now.
-                        if let error = entitlements.lastError {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Plans aren't available right now")
-                                        .font(.subheadline.weight(.semibold))
-                                    Text(error)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: "wifi.exclamationmark")
-                                    .foregroundStyle(.orange)
-                            }
-                            Button {
-                                Task { await entitlements.loadProducts() }
-                            } label: {
-                                Label("Retry", systemImage: "arrow.clockwise")
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .accessibilityIdentifier("paywall.retry")
-                            Text("Plans below are for reference — purchasing will be available once the App Store reconnects.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 2)
-                        }
                         fairPriceRow(
                             label: "Pro Yearly",
                             price: "$\(AppPricing.yearlyUSD)/year",
@@ -204,7 +223,7 @@ struct PaywallView: View {
                 if let error = entitlements.lastError ?? manageError {
                     Text(error)
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.down)
                 }
             }
 

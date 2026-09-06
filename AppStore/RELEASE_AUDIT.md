@@ -472,3 +472,17 @@ risk.
 4. A real signed `xcodebuild archive` upload to confirm the watch app nests
    under `Watch/` after the `project.yml` test-target edits (verified locally in
    this pass; App Store Connect processing is the human step).
+
+## Fellows-roast follow-ups (2026-09-06)
+
+Of the 7 items the fresh roast surfaced: 3 folded into `e7b6759`, 2 into
+`<this commit>` (retry-button busy state so the error block no longer blinks
+out mid-backoff; `.orange` → `Theme.down` at both sites, ~2.3:1 → AA, with a
+`ThemeContrastTests` case). **Deferred to 1.0.1** — all test-infra only, no
+shipping-code impact:
+- a "frozen per-model JSON fixture" registry test guarding the *class* of
+  silent-wipe bug (the specific `WatchlistItem` one is fixed + regression-tested)
+- scoping `-Wno-deprecated-declarations` (from `StoreKitTest.framework`'s own
+  deprecated ObjC headers) to the one file vs. the whole test target
+- replacing a 20ms sleep in `testSecondLoadWhileFirstInFlightIsANoOp` with a
+  `CheckedContinuation` barrier
