@@ -152,6 +152,11 @@ final class EntitlementStore {
             await refreshPurchases()
             return
         }
+        // Re-entrancy guard: ContentView.task and PaywallView.task both call
+        // this, and a flaky connection can retrigger it. Without this, two
+        // 4-attempt backoff loops run concurrently, doubling StoreKit calls and
+        // wakeups. The in-flight load will set `products` / `lastError` for us.
+        guard !isLoading else { return }
 
         isLoading = true
         lastError = nil
@@ -253,7 +258,11 @@ enum StoreError: LocalizedError {
         case .failedVerification:
             "Purchase could not be verified."
         case .emptyProductList:
-            "Couldn't reach the App Store. Check your connection and try again."
+            // Covers both "the store returned nothing" causes without guessing:
+            // a transient App Store hiccup, or the products not being approved
+            // in App Store Connect yet. Deliberately does NOT tell the user to
+            // check a connection that may be fine.
+            "The App Store isn't offering the Pro plans right now. Try again in a moment."
         }
     }
 }

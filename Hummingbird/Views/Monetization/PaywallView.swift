@@ -127,7 +127,7 @@ struct PaywallView: View {
                         if let error = entitlements.lastError {
                             Label {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Couldn't reach the App Store")
+                                    Text("Plans aren't available right now")
                                         .font(.subheadline.weight(.semibold))
                                     Text(error)
                                         .font(.caption)

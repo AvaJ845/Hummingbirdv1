@@ -11,10 +11,13 @@ enum PriceSanitizer {
         // NaN/Inf, non-positive, or absurdly large close is never a real price.
         // Drop those points outright so the Hampel filter, the forecast models,
         // and every downstream percentage never see a non-finite number.
-        let sane = input.points.filter { $0.close.isFinite && $0.close > 0 && $0.close < 1e12 }
-        let series = sane.count == input.points.count
-            ? input
-            : PriceSeries(symbol: input.symbol, assetClass: input.assetClass, points: sane, isSample: input.isSample)
+        // Fast path: the overwhelmingly common case is all-clean data — only
+        // rebuild the array (and pay the allocation) if something is actually bad.
+        func isValid(_ p: PricePoint) -> Bool { p.close.isFinite && p.close > 0 && p.close < 1e12 }
+        let series = input.points.contains(where: { !isValid($0) })
+            ? PriceSeries(symbol: input.symbol, assetClass: input.assetClass,
+                          points: input.points.filter(isValid), isSample: input.isSample)
+            : input
 
         let points = series.points
         guard points.count >= 5 else { return series }

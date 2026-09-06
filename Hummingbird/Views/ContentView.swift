@@ -225,15 +225,25 @@ struct ContentView: View {
             updatedAt: Date()
         )
         // Same reload-budget guard as the track-record snapshot: a revalue that
-        // lands on the same rounded value shouldn't spend a timeline reload.
+        // lands on the same value shouldn't spend a timeline reload. `edge` is a
+        // ratio of recomputed Doubles — compare with a tolerance, not `==`.
         if let existing = SharedStorage.portfolioSnapshot(),
            abs(existing.value - snapshot.value) < 0.005,
-           existing.edge == snapshot.edge,
+           nearlyEqual(existing.edge, snapshot.edge),
            existing.tradeCount == snapshot.tradeCount {
             return
         }
         SharedStorage.savePortfolioSnapshot(snapshot)
         WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
+    }
+
+    /// Optional-Double equality with a tolerance (both nil counts as equal).
+    private func nearlyEqual(_ a: Double?, _ b: Double?, tolerance: Double = 0.0001) -> Bool {
+        switch (a, b) {
+        case (nil, nil): return true
+        case let (x?, y?): return abs(x - y) < tolerance
+        default: return false
+        }
     }
 
     /// Single debounced entry point for "catch up on anything that may have gone

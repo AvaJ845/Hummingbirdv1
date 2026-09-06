@@ -98,11 +98,11 @@ final class ParserResilienceTests: XCTestCase {
         let json = """
         { "chart": { "result": [{
           "timestamp": [1,2,3,4],
-          "indicators": { "quote": [{ "close": [-1.0, 0.0, 1000000000.0, 4.25] }] } }] } }
+          "indicators": { "quote": [{ "close": [-1.0, 0.0, 425.0, 4.25] }] } }] } }
         """
         let snap = try EconomicParsing.parseYahooPercent(data(json), kind: .treasury10Y)
         XCTAssertTrue(snap.value.isFinite && snap.value > 0)
-        XCTAssertEqual(snap.value, 4.25, accuracy: 0.0001, "1e9 rate is nonsense and is filtered")
+        XCTAssertEqual(snap.value, 4.25, accuracy: 0.0001, "a 425% 'yield' is a corrupt tick and is filtered")
     }
 
     func testEconomicParsingSinglePoint() throws {
