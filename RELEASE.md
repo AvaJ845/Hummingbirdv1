@@ -54,6 +54,7 @@ GitHub Pages on a private repo needs GitHub Pro. Simplest: **make the repo publi
 - [ ] Same feature set as the subscription — it's a one-time unlock, no renewal. Set **Ready to Submit**.
 
 - [ ] Add a review screenshot for the group + the IAP (**use `AppStore/raw-screens/08_paywall_plans.png`** — shows all three tiers + prices + trial) + set all to **Ready to Submit**
+- [ ] **Promotional Image** (optional, 1024×1024) for each product — **use `AppStore/promo/SubscriptionPromo-Pro.png`**. Shown in win-back / offer-code sheets, and on the product page if App Store Promotion is enabled. Regenerate with `python3 AppStore/promo/render_promo.py`; see `AppStore/promo/README.md`.
 - [ ] EULA: leave it on the **custom** Terms URL set in §3 (App Information → License Agreement). Do **not** switch to Apple's Standard EULA — see the 3.1.2 pre-flight in §6.
 
 ## 5 · Build & upload (Release)
