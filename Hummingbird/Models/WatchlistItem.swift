@@ -11,6 +11,25 @@ struct WatchlistItem: Codable, Identifiable, Hashable, Sendable {
     var title: String {
         displayName ?? (assetClass == .stock ? symbol.uppercased() : symbol.capitalized)
     }
+
+    init(symbol: String, assetClass: AssetClass, displayName: String? = nil, addedAt: Date = .now) {
+        self.symbol = symbol
+        self.assetClass = assetClass
+        self.displayName = displayName
+        self.addedAt = addedAt
+    }
+
+    // Backward-compatible decoding: a synthesized `Decodable` treats a property
+    // with a default as *required*, so a watchlist saved before `addedAt` /
+    // `displayName` existed would fail to decode and the store's `try?` load
+    // would silently wipe the list. Decode both defensively.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        symbol = try c.decode(String.self, forKey: .symbol)
+        assetClass = try c.decode(AssetClass.self, forKey: .assetClass)
+        displayName = try c.decodeIfPresent(String.self, forKey: .displayName)
+        addedAt = try c.decodeIfPresent(Date.self, forKey: .addedAt) ?? .now
+    }
 }
 
 /// Compact, Codable snapshot the app writes to the App Group after each run so

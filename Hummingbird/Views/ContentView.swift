@@ -194,12 +194,22 @@ struct ContentView: View {
     /// the background, so the two paths never disagree with each other.
     private func updateTrackRecordSnapshot() {
         let report = viewModel.userCalls.report
-        SharedStorage.saveTrackRecord(TrackRecordSnapshot(
+        let snapshot = TrackRecordSnapshot(
             streak: viewModel.userCalls.currentStreak,
             hitRate: report.overall.hitRate,
             decided: report.overall.decided,
             updatedAt: Date()
-        ))
+        )
+        // Skip the write + timeline reload when nothing the widget shows has
+        // moved — WidgetKit only budgets ~40–70 reloads/day, so an unchanged
+        // foreground pass shouldn't spend one.
+        if let existing = SharedStorage.trackRecord(),
+           existing.streak == snapshot.streak,
+           existing.hitRate == snapshot.hitRate,
+           existing.decided == snapshot.decided {
+            return
+        }
+        SharedStorage.saveTrackRecord(snapshot)
         WidgetCenter.shared.reloadTimelines(ofKind: TrackRecordWidgetKind.identifier)
     }
 
@@ -208,13 +218,32 @@ struct ContentView: View {
     private func updatePortfolioSnapshot() {
         guard paper.hasStarted else { return }
         let comparison = paper.report.comparison
-        SharedStorage.savePortfolioSnapshot(PortfolioSnapshot(
+        let snapshot = PortfolioSnapshot(
             value: paper.report.value,
             edge: comparison.edge,
             tradeCount: comparison.tradeCount,
             updatedAt: Date()
-        ))
+        )
+        // Same reload-budget guard as the track-record snapshot: a revalue that
+        // lands on the same value shouldn't spend a timeline reload. `edge` is a
+        // ratio of recomputed Doubles — compare with a tolerance, not `==`.
+        if let existing = SharedStorage.portfolioSnapshot(),
+           abs(existing.value - snapshot.value) < 0.005,
+           nearlyEqual(existing.edge, snapshot.edge),
+           existing.tradeCount == snapshot.tradeCount {
+            return
+        }
+        SharedStorage.savePortfolioSnapshot(snapshot)
         WidgetCenter.shared.reloadTimelines(ofKind: PortfolioWidgetKind.identifier)
+    }
+
+    /// Optional-Double equality with a tolerance (both nil counts as equal).
+    private func nearlyEqual(_ a: Double?, _ b: Double?, tolerance: Double = 0.0001) -> Bool {
+        switch (a, b) {
+        case (nil, nil): return true
+        case let (x?, y?): return abs(x - y) < tolerance
+        default: return false
+        }
     }
 
     /// Single debounced entry point for "catch up on anything that may have gone

@@ -12,7 +12,10 @@ enum EconomicParsing {
 
         var pairs: [(Date, Double)] = []
         for (timestamp, close) in zip(timestamps, closes) {
-            guard let close, close > 0 else { continue }
+            // ^IRX / ^TNX are quoted as a plain percent (e.g. 4.25). Anything at
+            // or above 100 isn't a real short/long Treasury yield — treat it as
+            // a corrupt tick, not a data point.
+            guard let close, close.isFinite, close > 0, close < 100 else { continue }
             pairs.append((Date(timeIntervalSince1970: TimeInterval(timestamp)), close))
         }
         guard let last = pairs.last else { throw MarketDataError.decodingFailed }

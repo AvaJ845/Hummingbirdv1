@@ -6,7 +6,19 @@ import Foundation
 /// replaced with that median. Genuine sustained moves survive because they move
 /// the local median with them; only lone spikes are corrected.
 enum PriceSanitizer {
-    static func clean(_ series: PriceSeries, window: Int = 3, threshold: Double = 5) -> PriceSeries {
+    static func clean(_ input: PriceSeries, window: Int = 3, threshold: Double = 5) -> PriceSeries {
+        // Defense against malformed feed values before any statistics run: a
+        // NaN/Inf, non-positive, or absurdly large close is never a real price.
+        // Drop those points outright so the Hampel filter, the forecast models,
+        // and every downstream percentage never see a non-finite number.
+        // Fast path: the overwhelmingly common case is all-clean data — only
+        // rebuild the array (and pay the allocation) if something is actually bad.
+        func isValid(_ p: PricePoint) -> Bool { p.close.isFinite && p.close > 0 && p.close < 1e12 }
+        let series = input.points.contains(where: { !isValid($0) })
+            ? PriceSeries(symbol: input.symbol, assetClass: input.assetClass,
+                          points: input.points.filter(isValid), isSample: input.isSample)
+            : input
+
         let points = series.points
         guard points.count >= 5 else { return series }
 
