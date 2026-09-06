@@ -293,10 +293,11 @@ targets:
     platform: iOS
     sources:
       - path: HummingbirdTests
-      # Bundled so StoreKitEntitlementTests can spin up
-      # `SKTestSession(configurationFileNamed: "Products")` — CLI `xcodebuild`
-      # does not engage the scheme-attached StoreKit config, but a test-bundle
-      # copy of the same file drives SKTestSession from `xcodebuild test`.
+      # Bundled so the opt-in `StoreKitEntitlementTests` (run with
+      # RUN_STOREKIT_SESSION_TESTS=1) can spin up `SKTestSession(contentsOf:)`
+      # from this same file. A plain `xcodebuild test` never constructs the
+      # session (it corrupts storekitd on this Xcode/sim combo), so this
+      # resource is inert in the default CI run.
       - path: Products.storekit
         buildPhase: resources
     dependencies:

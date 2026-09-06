@@ -275,39 +275,43 @@ rewrite of the audit above.
 
 ## H2 · StoreKit purchase / refund / entitlement tests · ADDED
 
-New `HummingbirdTests/StoreKitEntitlementTests.swift` (`import StoreKitTest`),
-driven by `SKTestSession(configurationFileNamed: "Products")`. `Products.storekit`
-is now also bundled into the test target's resources
-(`project.yml` → `HummingbirdTests.sources`) so `configurationFileNamed:` resolves
-under CLI `xcodebuild`.
+New `HummingbirdTests/StoreKitEntitlementTests.swift`, split into
+`EntitlementStoreRetryTests` (runs everywhere) and `StoreKitEntitlementTests`
+(opt-in via `RUN_STOREKIT_SESSION_TESTS=1`). `Products.storekit` is bundled into
+the test target's resources (`project.yml` → `HummingbirdTests.sources`) for the
+opt-in `SKTestSession(contentsOf:)` path.
 
 **Local-testing note for the maintainer — the honest finding:**
 - The scheme-attached StoreKit config genuinely does *not* engage from CLI
   `xcodebuild` (`storekitd`: "Allows client override: NO").
-- `SKTestSession` **also does not serve the catalogue under this CLI
-  `xcodebuild test` + iOS 17 simulator + Xcode 26.6 combination** — tried
-  `configurationFileNamed:` and `contentsOf:` (explicit test-bundle URL), with
-  and without the scheme's `storeKitConfiguration`, on a freshly-erased sim.
-  `Product.products(for:)` returns `[]`.
-- `SKTestSession` **does** work from an Xcode GUI test run (Cmd-U) — that's the
-  way to exercise the real purchase/refund/restore flow locally without the
-  flaky scheme config.
+- Constructing an `SKTestSession` under a plain CLI `xcodebuild test` on this
+  Xcode 26.6 + iOS 17 simulator throws `SKInternalErrorDomain Code=3` ("Error
+  saving configuration file") AND leaves `storekitd` in a state that then
+  **crashes `com.avaresearch.hummingbird.dev` when the parallel
+  `HummingbirdUITests` shards launch it** — so a combined `xcodebuild build
+  test` exits 65 with an empty "Failing tests:" list even though every suite
+  passes in isolation.
+- `SKTestSession` **does** work from an Xcode GUI test run (Cmd-U).
 
-So the purchase / refund / restore / external-listener tests are written and
-compile, but `XCTSkipUnless(store.products.count == 3, …)` **skips them under
-CLI** (6 skips, 0 failures) and runs them under Xcode. The retry / backoff /
-error tests use an injected `productLoader` seam and **run unconditionally**.
-Static product-ID + price parity is already covered by `PricingTests` /
-`AppComplianceTests`, which run everywhere.
+So the split is:
+- **`EntitlementStoreRetryTests`** — the bounded-backoff retry / error /
+  re-entrancy tests use an injected `productLoader` seam, never touch
+  `SKTestSession`, and **run in every `xcodebuild test`**.
+- **`StoreKitEntitlementTests`** — the real purchase / refund / lifetime /
+  external-listener / restore tests. The whole class `XCTSkipUnless`-es out
+  **before constructing `SKTestSession`** unless `RUN_STOREKIT_SESSION_TESTS=1`
+  is set. Run them with:
+  `RUN_STOREKIT_SESSION_TESTS=1 xcodebuild test -scheme Hummingbird -only-testing:HummingbirdTests/StoreKitEntitlementTests …`
+  or a scheme Test-action env var + Cmd-U.
+- Static product-ID + price parity is covered by `PricingTests` /
+  `AppComplianceTests`, which run everywhere.
 
-Coverage written: 3-tier catalogue + price parity with `AppPricing` + yearly
-intro offer; buy yearly → `isPro` / `hasRealPurchase`; refund + expire yearly →
-entitlement drops; buy lifetime non-consumable → survives subscription expiry;
-external purchase straight through the session (no `EntitlementStore.purchase()`)
-→ picked up by the long-lived `Transaction.updates` listener in `init`;
-`restore()` surfaces an existing purchase. Runs unconditionally: bounded-backoff
-retry fires and recovers; all-attempts-fail populates `lastError` and clears
-`isLoading`.
+Coverage written in `StoreKitEntitlementTests`: 3-tier catalogue + price parity
+with `AppPricing` + yearly intro offer; buy yearly → `isPro` / `hasRealPurchase`;
+refund + expire yearly → entitlement drops; buy lifetime non-consumable →
+survives subscription expiry; external purchase straight through the session
+(no `EntitlementStore.purchase()`) → picked up by the long-lived
+`Transaction.updates` listener; `restore()` surfaces an existing purchase.
 
 ## H3 · Malformed-API-response fuzz · ADDED + parser hardening
 
