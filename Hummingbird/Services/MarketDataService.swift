@@ -141,12 +141,13 @@ actor MarketDataService: MarketDataProviding {
         }
 
         let points: [PricePoint] = decoded.prices.compactMap { pair in
-            guard pair.count == 2 else { return nil }
+            guard pair.count == 2, pair[0].isFinite, pair[1].isFinite, pair[1] > 0 else { return nil }
             return PricePoint(
                 date: Date(timeIntervalSince1970: pair[0] / 1000),
                 close: pair[1]
             )
         }
+        .sorted { $0.date < $1.date }
 
         guard !points.isEmpty else { throw MarketDataError.notFound(id) }
         return PriceSeries(symbol: id, assetClass: .crypto, points: points, isSample: false)

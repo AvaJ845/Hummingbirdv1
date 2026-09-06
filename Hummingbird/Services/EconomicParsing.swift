@@ -12,7 +12,7 @@ enum EconomicParsing {
 
         var pairs: [(Date, Double)] = []
         for (timestamp, close) in zip(timestamps, closes) {
-            guard let close, close > 0 else { continue }
+            guard let close, close.isFinite, close > 0, close < 1e9 else { continue }
             pairs.append((Date(timeIntervalSince1970: TimeInterval(timestamp)), close))
         }
         guard let last = pairs.last else { throw MarketDataError.decodingFailed }
