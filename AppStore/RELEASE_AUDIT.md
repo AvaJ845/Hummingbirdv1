@@ -240,3 +240,231 @@ audit's first pass — the "offer Lifetime, keep yearly + monthly" decision):
    for the app-group `UserDefaults` access.
 3. App Store Connect account/listing work per `RELEASE.md` (D-U-N-S, agreements,
    subscription records, screenshots — see the harness output below).
+
+---
+---
+
+# Hardening pass — 2026-09-06 · Branch: `hardening-1.0` · Xcode 26.6 · xcodegen 2.44.1
+
+Second, focused pre-submission pass driven by a Fellows review. Appended, not a
+rewrite of the audit above.
+
+## H1 · App Transport Security · PASS (zero exceptions)
+
+- `grep -rn "NSAppTransportSecurity\|NSAllowsArbitraryLoads\|NSExceptionDomains\|NSAllowsLocalNetworking"`
+  over `Hummingbird/`, `HummingbirdWidget/`, `HummingbirdWatch/`,
+  `HummingbirdWatchWidget/`, `project.yml` → **no matches.**
+- The generated `Hummingbird/Info.plist` has **no `NSAppTransportSecurity` key at
+  all** — the app runs under the OS default ATS policy (TLS ≥ 1.2, forward
+  secrecy, no arbitrary loads).
+- Every data endpoint is HTTPS, built with `URLComponents` and
+  `components.scheme = "https"`:
+  - CoinGecko — `https://api.coingecko.com/api/v3/coins/{id}/market_chart`
+    (`MarketDataService.swift:108`)
+  - Yahoo Finance chart — `https://query1.finance.yahoo.com/v8/finance/chart/{ticker}`
+    (`MarketDataService.swift:169`)
+  - Yahoo `^IRX` / `^TNX` rate series — same host, `https`
+    (`EconomicDataService.swift:48`)
+- `grep -rn "http://"` over app + extension + watch source → no plaintext URLs
+  (only the XML DOCTYPE in `Info.plist`, which is not a network URL).
+- Live fetch still works: the existing `LiveMarketAllModelsTests`,
+  `StockMarketDataServiceTests`, and `LiveMarketDataServiceTests` hit CoinGecko
+  and Yahoo for real from `xcodebuild test` and stay green in this pass.
+
+**Result: PASS — nothing to remove. The app needs, and has, zero ATS exceptions.**
+
+## H2 · StoreKit purchase / refund / entitlement tests · ADDED
+
+New `HummingbirdTests/StoreKitEntitlementTests.swift` (`import StoreKitTest`),
+driven by `SKTestSession(configurationFileNamed: "Products")`. `Products.storekit`
+is now also bundled into the test target's resources
+(`project.yml` → `HummingbirdTests.sources`) so `configurationFileNamed:` resolves
+under CLI `xcodebuild`.
+
+**Local-testing note for the maintainer — the honest finding:**
+- The scheme-attached StoreKit config genuinely does *not* engage from CLI
+  `xcodebuild` (`storekitd`: "Allows client override: NO").
+- `SKTestSession` **also does not serve the catalogue under this CLI
+  `xcodebuild test` + iOS 17 simulator + Xcode 26.6 combination** — tried
+  `configurationFileNamed:` and `contentsOf:` (explicit test-bundle URL), with
+  and without the scheme's `storeKitConfiguration`, on a freshly-erased sim.
+  `Product.products(for:)` returns `[]`.
+- `SKTestSession` **does** work from an Xcode GUI test run (Cmd-U) — that's the
+  way to exercise the real purchase/refund/restore flow locally without the
+  flaky scheme config.
+
+So the purchase / refund / restore / external-listener tests are written and
+compile, but `XCTSkipUnless(store.products.count == 3, …)` **skips them under
+CLI** (6 skips, 0 failures) and runs them under Xcode. The retry / backoff /
+error tests use an injected `productLoader` seam and **run unconditionally**.
+Static product-ID + price parity is already covered by `PricingTests` /
+`AppComplianceTests`, which run everywhere.
+
+Coverage written: 3-tier catalogue + price parity with `AppPricing` + yearly
+intro offer; buy yearly → `isPro` / `hasRealPurchase`; refund + expire yearly →
+entitlement drops; buy lifetime non-consumable → survives subscription expiry;
+external purchase straight through the session (no `EntitlementStore.purchase()`)
+→ picked up by the long-lived `Transaction.updates` listener in `init`;
+`restore()` surfaces an existing purchase. Runs unconditionally: bounded-backoff
+retry fires and recovers; all-attempts-fail populates `lastError` and clears
+`isLoading`.
+
+## H3 · Malformed-API-response fuzz · ADDED + parser hardening
+
+New `HummingbirdTests/ParserResilienceTests.swift` feeds every parsing / sanitising
+layer empty bodies, truncated / broken JSON, HTML error pages, wrong types,
+`null`-for-number, missing keys, single points, negative / zero / huge values,
+out-of-order + duplicate + epoch-0 timestamps, and a 100 000-point series
+(asserts < 1–3 s, no crash).
+
+Fixes made because the fuzz found gaps:
+- `PriceSanitizer.clean` now **drops non-finite / non-positive / absurd
+  (≥ 1e12) closes up front**, before the Hampel filter. Every real feed
+  (CoinGecko + Yahoo, both asset classes) passes through `clean`, so this is the
+  central guard: a `NaN` / `Inf` / negative tick can no longer reach the forecast
+  models or a percentage calc.
+- `EconomicParsing.parseYahooPercent` now also checks `.isFinite` and an upper
+  sanity bound (was `close > 0` only — `+Inf > 0` is `true`).
+- `MarketDataService.fetchCoinGecko` filters `!isFinite` pairs and sorts by date
+  (CoinGecko is normally ascending, but don't trust it).
+
+No force-unwrap / crash was found in `StockPriceParsing`, `PriceResolution`, or
+`CryptoSymbolMap` — they already fail closed (throw a typed `MarketDataError`,
+return `nil`). Tests lock that in.
+
+## H4 · Symbol-injection coverage + App Intents parity · EXPANDED
+
+`HummingbirdTests/SymbolSecurityTests.swift` expanded from 3 tests to ~9,
+covering `../`, `../../etc/passwd`, `%2e%2e%2f`, `?`, `&`, `#`, spaces, tabs,
+newlines, null byte, unicode (`é`, emoji, RTL override, zero-width space),
+empty / whitespace-only, 10 000-char input, `'; DROP TABLE`, `javascript:`,
+`file://`, mixed case, and 33-char length. Asserts the resulting path component
+is URL-safe or the request is rejected pre-network.
+
+**Parity — every untrusted symbol path funnels through one chokepoint,
+`MarketDataService.history(symbol:assetClass:)`**, which trims then calls
+`isValidSymbol` before building any URL:
+- text field → `ForecastViewModel.run` → `service.history` ✓
+- dictation → `DictationController.sanitizedSymbol` (strips punctuation/space)
+  → still re-validated by `service.history` ✓
+- `AddToWatchlistIntent`, `ProjectAssetIntent` → `MarketDataService().history` ✓
+- `ReadDigestIntent` → no symbol input (reads stored snapshots) ✓
+- widget `SelectAssetIntent` → picks a saved `WatchlistItemEntity` by id, no free
+  text to the network ✓
+- `AddAssetSheet`, `OpenPositionSheet`, `OnboardingView`, `WatchlistRefresh`,
+  `UserCallStore`, `PaperPortfolioStore` → all call `service.history` ✓
+- `EconomicDataService` → hard-coded `^IRX` / `^TNX`, no user input ✓
+
+No bypass found. New tests assert the intent-style and dictation-style call
+paths reject a traversal string before touching the network.
+
+## H5 · Main-thread compute · PASS (already off-main) — one assertion added
+
+Call-site trace from `ForecastViewModel` / `ContentView`:
+- `Forecaster.modelDisagreement`, `walkForwardMAPE`, `backtestMAPE`,
+  `ensemblePoints`, `ReliabilityEngine.score` — the N-model forecast + rolling
+  walk-forward backtest — already run inside `Task.detached(priority:)` in
+  `refreshModelPreviewsIfNeeded()` and `refreshReliabilityIfNeeded()`. Value
+  types are captured; results are assigned back on `@MainActor` after a
+  `Task.isCancelled` check. Both are keyed on the *configuration* (asset · model
+  · horizon · macro selection) so a silent price tick never re-runs them.
+- `recomputeForecast()` runs a *single* `Forecaster.forecast(...)` on the main
+  actor — that's one linear fit + one Holt pass over ≤ ~180 points, sub-millisecond;
+  leaving it inline is correct (moving it off-main would add a frame of latency
+  for no benefit).
+- `updateSketchContext()` runs `RegimeClassifier.classify` + scorecard
+  record/resolve on-main — small array scans over the on-device ledger, not a fit.
+
+**No synchronous heavy work on `@MainActor` was found.** `awaitModelPreviews()` is
+kept as the test seam; `ForecastModelWiringTests` exercises it.
+*Instruments time-profile / hang-detection is still a manual step (can't run it
+here).*
+
+## H6 · Widget reload budget · TIGHTENED
+
+`reloadTimelines` / `reloadAllTimelines` call sites: `ContentView` (×2,
+track-record + portfolio snapshots), `BackgroundRefresh` (×2, ~30-min BGTask
+cadence), `WatchlistRefresh` + `WatchlistView` (×1 each, end of a full manual /
+background watchlist refresh). None are per-keystroke or per-auto-refresh-tick —
+`ContentView.refreshLiveData` is already debounced to 30 s.
+
+Hardening: `ContentView.updateTrackRecordSnapshot()` /
+`updatePortfolioSnapshot()` now **skip the write *and* the timeline reload when
+the snapshot content is unchanged** vs. what's already in the App Group
+(comparing everything except `updatedAt`). A foreground return that doesn't move
+the streak / hit-rate / portfolio value no longer spends a WidgetKit reload.
+
+## H7 · Paywall retry / error UX · ADDED
+
+- `EntitlementStore.loadProducts()` now does a **bounded-backoff retry**
+  (`loadRetryDelays = [0.5s, 2s, 5s]`, i.e. up to 4 attempts). `isLoading` stays
+  true across the whole sequence; `lastError` is set only after the last attempt
+  fails; a mid-sequence success clears it. A second call once products are
+  loaded just refreshes entitlements (no UI flash back to loading). In `#if DEBUG`
+  an empty catalogue is still the by-design stub (no error, no retry storm); in
+  Release an empty catalogue is a failure and retries.
+- `PaywallView` empty state: when `products.isEmpty && !isLoading && lastError != nil`
+  it shows **"Couldn't reach the App Store"** + the underlying error + a
+  **Retry** button (`accessibilityIdentifier "paywall.retry"`) that re-runs
+  `loadProducts()`, plus a line making clear the price list below is reference-only.
+  The DEBUG stub (no `lastError`) is unchanged.
+- Seams added for tests: `retryDelays` and `productLoader` are injectable
+  `@ObservationIgnored` properties. `StoreKitEntitlementTests` covers both the
+  retry-then-recover and the all-attempts-fail paths.
+
+## H8 · Post-update data-migration test · ADDED
+
+New `HummingbirdTests/DataMigrationTests.swift`. Every on-disk store loads with
+`try? JSONDecoder().decode(...)` → swallow-to-empty, so a shape change that
+breaks an old payload = silent history wipe. Tests decode hand-written
+pre-this-cycle fixtures into the **current** types:
+- `SketchRecord` without `reliabilityAtCreation` / `regimeAtCreation`;
+  `SketchProjection` without `projectedBandHalfWidth`
+- `UserCall` without `reason` / `methodDirections` (and a mid-version one with
+  `reason` but no `methodDirections`)
+- `PaperPortfolio` / `PaperPosition` without `methodDirections` / `reason`
+- `WatchlistItem` without `addedAt`
+- `TrackRecordSnapshot` with `null` `hitRate`; `PortfolioSnapshot`
+- End-to-end: `UserCallStore`, `SketchScorecardStore`, `PaperPortfolioStore`,
+  `WatchlistStore` each loaded from a `UserDefaults` suite pre-seeded with an
+  old-shape payload → store is non-empty (no wipe).
+
+**Result: all current persisted types are backward-compatible** — every field
+added this cycle is `Optional` (decodes to `nil`) or has a default. No migration
+code needed; the tests are the regression guard. `SpacedRecallStore` /
+`WeeklyLiteracyStore` persist a plain `[String]` / small value — no Codable-shape
+risk.
+
+## Sub-bullets
+
+- **BGTaskScheduler** (`BackgroundRefresh` + `HummingbirdApp`): uses SwiftUI's
+  `.backgroundTask(.appRefresh:)` modifier — the system cancels the surrounding
+  task on expiration, and `perform()` calls `schedule()` **first** on every path
+  and checks `!Task.isCancelled` between each sub-job. Completion is handled by
+  the modifier returning. Correct for the modern idiom; no explicit
+  `BGTask.setTaskCompleted` needed. Not changed.
+- **`UIScreen.main.bounds`**: one use, `DictationOverlay.diameter` (bloom-circle
+  size). Rewritten to derive from the enclosing `GeometryReader` size so it's
+  correct on iPad / any window size. No other `UIScreen` / `keyWindow` /
+  `.bounds` assumptions in app code. `UIRequiresFullScreen: true` already
+  disables Stage Manager / Split View — external-display / resize behaviour
+  still wants a manual check.
+- **Offline `SampleData` fallback**: still rendered behind the explicit
+  "sample prices" banner; covered by existing `SampleData` + `AutoRefreshTests`.
+- **VoiceOver / AX**: static pass over views touched this cycle — paywall retry
+  UI uses text `Label`s (no icon-only control), `ReadableWidth` is a layout
+  modifier (no interactive elements), purchase buttons already carry
+  `.accessibilityLabel` + `.accessibilityHint`. A full rotor pass on a device is
+  still a manual step.
+
+## Still needs a human (this pass)
+
+1. Instruments time-profile / hang-detector run on device (H5 is code-inspection
+   only).
+2. VoiceOver rotor pass, especially the new paywall empty/retry state and the
+   practice cards.
+3. iPad external-display / window-resize smoke test (`UIRequiresFullScreen`
+   makes this low-risk but unverified).
+4. A real signed `xcodebuild archive` upload to confirm the watch app nests
+   under `Watch/` after the `project.yml` test-target edits (verified locally in
+   this pass; App Store Connect processing is the human step).
