@@ -9,12 +9,13 @@ this subscription." It appears in:
 - the app's product page, **only if** you enable *App Store Promotion* for the
   subscription
 
-## Files (both 1024×1024, RGB, no alpha)
+## Files (all 1024×1024, RGB, no alpha)
 
 | File | Use |
 | --- | --- |
-| `SubscriptionPromo-Pro.png` | **Recommended.** Mint hummingbird + a small "PRO" wordmark on the dark "Midnight" ground — unambiguous, premium-tier reading. |
-| `SubscriptionPromo.png` | Mark only, no text — use if you'd rather keep it wordless. |
+| `SubscriptionPromo-Plans.png` | **Recommended.** The actual plans + pricing (Yearly $19.99 / Monthly $2.99 / Lifetime $49.99), styled like the in-app paywall on the light grouped background. Shows exactly what the subscription is. |
+| `SubscriptionPromo-Pro.png` | Mint hummingbird + a small "PRO" wordmark on the dark "Midnight" ground — a brand-mark treatment, premium-tier reading, no pricing. |
+| `SubscriptionPromo.png` | Mark only, no text. |
 
 Upload the same image for **each** Pro product (Yearly, Monthly, Lifetime) — they
 all represent one thing, "Hummingbird Pro."
