@@ -11,8 +11,11 @@ struct DictationOverlay: View {
     let onConfirm: () -> Void
     let onCancel: () -> Void
 
-    private var diameter: CGFloat {
-        max(UIScreen.main.bounds.width, UIScreen.main.bounds.height) * 2.4
+    /// Bloom circle diameter — derived from the container size (below) rather
+    /// than `UIScreen.main.bounds` so it stays correct on iPad and in any
+    /// resized window, not just a fixed full screen.
+    private func diameter(for size: CGSize) -> CGFloat {
+        max(size.width, size.height) * 2.4
     }
 
     private var canConfirm: Bool {
@@ -28,7 +31,7 @@ struct DictationOverlay: View {
             ZStack {
                 Circle()
                     .fill(Color.black)
-                    .frame(width: diameter, height: diameter)
+                    .frame(width: diameter(for: geo.size), height: diameter(for: geo.size))
                     .scaleEffect(max(0.001, bloomProgress))
                     .position(center)
                     .opacity(Double(min(1, bloomProgress * 1.2)))
