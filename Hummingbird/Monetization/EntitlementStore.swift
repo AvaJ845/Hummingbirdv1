@@ -127,18 +127,63 @@ final class EntitlementStore {
         isPro || currentCount < FreeTierLimits.maxSelectedIndicators
     }
 
+    /// Backoff schedule between `loadProducts()` attempts — a transient App Store
+    /// outage or a cold StoreKit cache usually clears within a few seconds, so we
+    /// retry a bounded number of times before surfacing an error. `isLoading`
+    /// stays true across the whole sequence so the paywall shows one calm spinner
+    /// rather than flashing an error and recovering.
+    nonisolated static let loadRetryDelays: [Duration] = [.milliseconds(500), .seconds(2), .seconds(5)]
+
+    /// Overridable in tests to shrink the backoff and stay fast.
+    @ObservationIgnored
+    var retryDelays: [Duration] = EntitlementStore.loadRetryDelays
+
+    /// Seam for tests: how the product catalogue is fetched. Defaults to the
+    /// real StoreKit call; a test can inject a loader that throws to exercise
+    /// the bounded-backoff retry.
+    @ObservationIgnored
+    var productLoader: @Sendable ([String]) async throws -> [Product] = { try await Product.products(for: $0) }
+
     func loadProducts() async {
+        // Already have the catalogue and nothing new to retry — just refresh
+        // entitlements. Prevents a second `.task` (e.g. re-presenting the
+        // paywall) from throwing the UI back into a loading state.
+        if !products.isEmpty {
+            await refreshPurchases()
+            return
+        }
+
         isLoading = true
         lastError = nil
         defer { isLoading = false }
 
-        do {
-            products = try await Product.products(for: Self.allProductIDs)
-            await refreshPurchases()
-        } catch {
-            lastError = error.localizedDescription
-            // Keep UI usable — paywall still explains the plan.
+        // One initial attempt plus one per backoff delay.
+        let attempts = retryDelays.count + 1
+        for attempt in 0..<attempts {
+            do {
+                let loaded = try await productLoader(Self.allProductIDs)
+                #if DEBUG
+                // Without an attached StoreKit config / App Store Connect record,
+                // `Product.products` legitimately returns []. That's the paywall's
+                // by-design stub, not a failure — accept it and stop retrying.
+                let emptyIsFailure = false
+                #else
+                let emptyIsFailure = true
+                #endif
+                if loaded.isEmpty && emptyIsFailure { throw StoreError.emptyProductList }
+                products = loaded
+                lastError = nil
+                await refreshPurchases()
+                return
+            } catch {
+                lastError = error.localizedDescription
+                guard attempt < retryDelays.count else { break }
+                try? await Task.sleep(for: retryDelays[attempt])
+                guard !Task.isCancelled else { return }
+            }
         }
+        // All attempts exhausted — `lastError` is set, paywall shows an honest
+        // empty state with a Retry button. The plan copy still renders.
     }
 
     func purchase(_ product: Product) async -> Bool {
@@ -201,8 +246,14 @@ final class EntitlementStore {
 
 enum StoreError: LocalizedError {
     case failedVerification
+    case emptyProductList
 
     var errorDescription: String? {
-        "Purchase could not be verified."
+        switch self {
+        case .failedVerification:
+            "Purchase could not be verified."
+        case .emptyProductList:
+            "Couldn't reach the App Store. Check your connection and try again."
+        }
     }
 }

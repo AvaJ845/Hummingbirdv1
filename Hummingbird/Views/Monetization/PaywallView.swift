@@ -120,6 +120,35 @@ struct PaywallView: View {
 
                 if entitlements.products.isEmpty && !entitlements.isLoading {
                     VStack(alignment: .leading, spacing: 8) {
+                        // An honest failure state — distinct from the by-design
+                        // DEBUG stub (which has no `lastError`). Retry re-runs the
+                        // bounded-backoff load; the price list below stays as
+                        // informational context but isn't purchasable right now.
+                        if let error = entitlements.lastError {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Couldn't reach the App Store")
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(error)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: "wifi.exclamationmark")
+                                    .foregroundStyle(.orange)
+                            }
+                            Button {
+                                Task { await entitlements.loadProducts() }
+                            } label: {
+                                Label("Retry", systemImage: "arrow.clockwise")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("paywall.retry")
+                            Text("Plans below are for reference — purchasing will be available once the App Store reconnects.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
+                        }
                         fairPriceRow(
                             label: "Pro Yearly",
                             price: "$\(AppPricing.yearlyUSD)/year",

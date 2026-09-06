@@ -293,6 +293,12 @@ targets:
     platform: iOS
     sources:
       - path: HummingbirdTests
+      # Bundled so StoreKitEntitlementTests can spin up
+      # `SKTestSession(configurationFileNamed: "Products")` — CLI `xcodebuild`
+      # does not engage the scheme-attached StoreKit config, but a test-bundle
+      # copy of the same file drives SKTestSession from `xcodebuild test`.
+      - path: Products.storekit
+        buildPhase: resources
     dependencies:
       - target: Hummingbird
     settings:
@@ -303,6 +309,12 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Hummingbird.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Hummingbird"
         BUNDLE_LOADER: "$(TEST_HOST)"
+        # StoreKitTest.framework's own ObjC headers still reference the
+        # iOS-18-deprecated `SKPaymentTransactionState`; importing the framework
+        # in StoreKitEntitlementTests surfaces that as a Clang deprecation
+        # warning we can't fix. Scope-suppress it for the test target only so the
+        # build stays warning-clean without touching app code.
+        OTHER_SWIFT_FLAGS: "$(inherited) -Xcc -Wno-deprecated-declarations"
   HummingbirdUITests:
     type: bundle.ui-testing
     platform: iOS
