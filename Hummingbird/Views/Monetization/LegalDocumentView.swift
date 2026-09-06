@@ -12,8 +12,7 @@ struct LegalDocumentView: View {
 
     var body: some View {
         ScrollView {
-            Text(bodyText)
-                .font(.body)
+            MarkdownText(source: bodyText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
                 .textSelection(.enabled)

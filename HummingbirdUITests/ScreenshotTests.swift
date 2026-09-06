@@ -176,6 +176,14 @@ final class ScreenshotTests: XCTestCase {
         app.swipeUp()
         Thread.sleep(forTimeInterval: 0.4)
         capture("08_paywall_plans", app: app)
+
+        // Legal doc — the "Terms of Use (EULA)" row opens the bundled Markdown,
+        // now rendered as real headings/lists (not raw `#`/`**`).
+        for _ in 0..<6 where !app.buttons["Terms of Use (EULA)"].exists { app.swipeUp() }
+        if app.buttons["Terms of Use (EULA)"].exists {
+            app.buttons["Terms of Use (EULA)"].tap()
+            capture("13_terms_document", app: app, settleOn: "Hummingbird Terms of Use")
+        }
     }
 
     // MARK: - 09 + 11 Settings & accuracy report

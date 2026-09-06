@@ -16,7 +16,7 @@ settings:
     # overrides this with its own SDKROOT: watchos.
     SDKROOT: iphoneos
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "3"
+    CURRENT_PROJECT_VERSION: "4"
     SWIFT_VERSION: "5.9"
     CODE_SIGN_STYLE: Automatic
     GENERATE_INFOPLIST_FILE: YES
