@@ -13,7 +13,8 @@ this subscription." It appears in:
 
 | File | Use |
 | --- | --- |
-| `SubscriptionPromo-Plans.png` | **Recommended.** The actual plans + pricing (Yearly $19.99 / Monthly $2.99 / Lifetime $49.99), styled like the in-app paywall on the light grouped background. Shows exactly what the subscription is. |
+| `SubscriptionPromo-Screenshot.png` | **Recommended.** The real paywall pixels — the "Choose your plan" card (Yearly $19.99 / Monthly $2.99 / Lifetime $49.99) + subscription terms — cropped straight from `raw-screens/08_paywall_plans.png` to a 1024 square. Regenerate: `python3 AppStore/promo/crop_paywall_1024.py`. |
+| `SubscriptionPromo-Plans.png` | Same plans + pricing, but re-drawn (not a screenshot crop) — cleaner typography, no terms paragraph. |
 | `SubscriptionPromo-Pro.png` | Mint hummingbird + a small "PRO" wordmark on the dark "Midnight" ground — a brand-mark treatment, premium-tier reading, no pricing. |
 | `SubscriptionPromo.png` | Mark only, no text. |
 
